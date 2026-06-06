@@ -1,0 +1,2894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#F59E0B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Dad HQ">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>Dad HQ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #F5F3FF;
+      --card: #FFFFFF;
+      --border: #E5E1FF;
+      --text: #1A1523;
+      --muted: #6B7280;
+      --faint: #F9F8FF;
+
+      --act: #F59E0B;
+      --act-bg: #FFFBEB;
+      --act-dark: #92400E;
+
+      --meal: #10B981;
+      --meal-bg: #ECFDF5;
+      --meal-dark: #065F46;
+
+      --craft: #8B5CF6;
+      --craft-bg: #F5F3FF;
+      --craft-dark: #4C1D95;
+
+      --r: 14px;
+      --r-sm: 8px;
+      --shadow: 0 2px 12px rgba(99,102,241,0.08);
+      --shadow-lg: 0 8px 30px rgba(99,102,241,0.15);
+    }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 3rem;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: white;
+      border-bottom: 2px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+    .header-inner {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 1rem 1.5rem 0;
+    }
+    .app-title {
+      font-size: 1.5rem;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+    }
+    .app-title .highlight { color: var(--act); }
+    .tab-bar { display: flex; gap: 0; margin-top: 0.75rem; }
+    .tab-btn {
+      flex: 1;
+      padding: 0.7rem 0.5rem;
+      border: none;
+      background: none;
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--muted);
+      border-bottom: 3px solid transparent;
+      transition: all 0.18s;
+    }
+    .tab-btn.active[data-tab="activities"] { color: var(--act); border-bottom-color: var(--act); }
+    .tab-btn.active[data-tab="meals"]      { color: var(--meal); border-bottom-color: var(--meal); }
+    .tab-btn.active[data-tab="crafts"]     { color: var(--craft); border-bottom-color: var(--craft); }
+
+    /* ── MAIN ── */
+    main { max-width: 920px; margin: 0 auto; padding: 1.5rem; }
+    .tab-view { display: none; }
+    .tab-view.active { display: block; }
+
+    /* ── CHIPS ── */
+    .chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.8rem; }
+    .chip {
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      border: 2px solid var(--border);
+      background: white;
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .chip:hover { border-color: #C4B5FD; color: var(--craft); }
+    .chip.on-act  { border-color: var(--act);  color: var(--act-dark);  background: var(--act-bg); }
+    .chip.on-meal { border-color: var(--meal); color: var(--meal-dark); background: var(--meal-bg); }
+    .chip.on-craft{ border-color: var(--craft);color: var(--craft-dark);background: var(--craft-bg); }
+
+    /* ── FILTER ROW ── */
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1rem;
+      background: white;
+      border: 2px solid var(--border);
+      border-radius: var(--r);
+      padding: 0.75rem 1rem;
+    }
+    .filter-label { font-size: 0.78rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
+    input[type="range"] { accent-color: var(--act); cursor: pointer; }
+    #dist-label { font-size: 0.82rem; font-weight: 800; color: var(--act); min-width: 40px; }
+
+    /* ── RANDOM BUTTON ── */
+    .random-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.6rem;
+      border-radius: 999px;
+      border: none;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.18s;
+      margin-bottom: 1.25rem;
+    }
+    .random-btn:hover { transform: scale(1.04); box-shadow: var(--shadow-lg); }
+    .random-btn:active { transform: scale(0.97); }
+    .btn-act   { background: var(--act);   color: white; }
+    .btn-meal  { background: var(--meal);  color: white; }
+    .btn-craft { background: var(--craft); color: white; }
+
+    /* ── RANDOM RESULT BANNER ── */
+    .random-banner {
+      display: none;
+      border-radius: var(--r);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+      animation: slideUp 0.22s ease;
+    }
+    .random-banner.show { display: block; }
+    .random-banner.act-theme   { background: var(--act-bg);   border: 2px solid var(--act); }
+    .random-banner.meal-theme  { background: var(--meal-bg);  border: 2px solid var(--meal); }
+    .random-banner.craft-theme { background: var(--craft-bg); border: 2px solid var(--craft); }
+    .random-banner .rb-label {
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.3rem;
+      opacity: 0.6;
+    }
+    .random-banner .rb-name { font-size: 1.25rem; font-weight: 900; margin-bottom: 0.35rem; }
+    .random-banner .rb-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+    .rb-close {
+      position: absolute; top: 0.75rem; right: 0.75rem;
+      background: rgba(0,0,0,0.08); border: none; border-radius: 50%;
+      width: 26px; height: 26px; font-size: 0.75rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .rb-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
+
+    /* ── SECTION HEADER ── */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.9rem;
+    }
+    .section-count { font-size: 0.75rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .add-btn {
+      display: flex; align-items: center; gap: 0.25rem;
+      padding: 0.38rem 0.85rem;
+      border-radius: 999px;
+      border: 2px dashed var(--border);
+      background: none;
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.8rem; font-weight: 700;
+      color: var(--muted); cursor: pointer;
+      transition: all 0.15s;
+    }
+    .add-btn:hover { border-color: var(--craft); color: var(--craft); }
+
+    /* ── CARDS GRID ── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      background: var(--card);
+      border-radius: var(--r);
+      padding: 1.1rem 1.15rem;
+      border: 2px solid var(--border);
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: all 0.18s;
+      position: relative;
+    }
+    .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); border-color: #C4B5FD; }
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.45rem; }
+    .card-icon { font-size: 1.4rem; margin-right: 0.6rem; flex-shrink: 0; }
+    .card-name { font-size: 0.97rem; font-weight: 800; line-height: 1.3; flex: 1; }
+    .fav-btn { background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 2px; transition: transform 0.15s; flex-shrink: 0; }
+    .fav-btn:hover { transform: scale(1.25); }
+    .card-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.5; margin-bottom: 0.7rem; }
+    .card-badges { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+
+    /* ── BADGES ── */
+    .badge {
+      font-size: 0.7rem; font-weight: 700;
+      padding: 0.18rem 0.5rem;
+      border-radius: 5px;
+    }
+    .b-dist  { background: #EFF6FF; color: #1D4ED8; }
+    .b-free  { background: #DCFCE7; color: #166534; }
+    .b-paid  { background: #FEF3C7; color: #92400E; }
+    .b-pricey{ background: #FEE2E2; color: #991B1B; }
+    .b-rain  { background: #E0F2FE; color: #0369A1; }
+    .b-sun   { background: #FEF9C3; color: #854D0E; }
+    .b-both  { background: #F0FDF4; color: #166534; }
+    .b-time  { background: #F3F4F6; color: #374151; }
+    .b-mess1 { background: #F0FDF4; color: #166534; }
+    .b-mess2 { background: #FEF9C3; color: #854D0E; }
+    .b-mess3 { background: #FEE2E2; color: #991B1B; }
+    .b-cat   { background: var(--craft-bg); color: var(--craft-dark); }
+
+    /* ── SPOTLIGHT MODAL ── */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(26,21,35,0.55);
+      z-index: 200;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1rem;
+      animation: fadeIn 0.15s ease;
+    }
+    .spotlight {
+      background: white;
+      border-radius: 20px;
+      padding: 2rem;
+      max-width: 480px;
+      width: 100%;
+      position: relative;
+      animation: slideUp 0.2s ease;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .sp-close {
+      position: absolute; top: 1rem; right: 1rem;
+      background: #F3F4F6; border: none;
+      width: 32px; height: 32px; border-radius: 50%;
+      font-size: 0.9rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .sp-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .sp-title { font-size: 1.35rem; font-weight: 900; margin-bottom: 0.6rem; padding-right: 2rem; }
+    .sp-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.9rem; }
+    .sp-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.6; margin-bottom: 1rem; }
+    .sp-section { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.35rem; margin-top: 0.9rem; }
+    .sp-list { list-style: none; }
+    .sp-list li { font-size: 0.85rem; padding: 0.25rem 0; color: var(--text); }
+    .sp-list li::before { content: "•  "; color: var(--craft); font-weight: 900; }
+    .sp-actions { display: flex; gap: 0.5rem; margin-top: 1.25rem; }
+    .btn {
+      padding: 0.55rem 1.15rem;
+      border-radius: 999px; border: 2px solid transparent;
+      font-family: 'Nunito', sans-serif; font-size: 0.83rem; font-weight: 700;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-outline { background: white; border-color: var(--border); color: var(--muted); }
+    .btn-outline:hover { border-color: #C4B5FD; color: var(--craft); }
+
+    /* ── ADD MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(26,21,35,0.55);
+      z-index: 300;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1rem;
+    }
+    .modal {
+      background: white;
+      border-radius: 20px;
+      padding: 1.75rem;
+      max-width: 420px;
+      width: 100%;
+      animation: slideUp 0.2s ease;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .modal h3 { font-size: 1.15rem; font-weight: 900; margin-bottom: 1.15rem; }
+    .form-group { margin-bottom: 0.9rem; }
+    .form-group label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--muted); margin-bottom: 0.3rem; }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%; padding: 0.55rem 0.75rem;
+      border: 2px solid var(--border); border-radius: var(--r-sm);
+      font-family: 'Nunito', sans-serif; font-size: 0.88rem;
+      outline: none; transition: border-color 0.15s; color: var(--text);
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--craft); }
+    .form-group textarea { resize: vertical; min-height: 65px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .modal-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+
+    /* ── EMPTY STATE ── */
+    .empty {
+      text-align: center; padding: 3rem 1rem;
+      color: var(--muted);
+    }
+    .empty .e-icon { font-size: 2.8rem; margin-bottom: 0.5rem; }
+    .empty p { font-size: 0.9rem; font-weight: 600; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes pop { 0%,100% { transform:scale(1); } 50% { transform:scale(1.06); } }
+    .popping { animation: pop 0.25s ease 2; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 580px) {
+      .cards-grid { grid-template-columns: 1fr; }
+      main { padding: 1rem; }
+      .filter-row { flex-direction: column; align-items: flex-start; gap: 0.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="app-title">Dad <span class="highlight">HQ</span></div>
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="activities">🗺️ Activities</button>
+      <button class="tab-btn" data-tab="meals">🍽️ Meals</button>
+      <button class="tab-btn" data-tab="crafts">🎨 Crafts</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── ACTIVITIES ── -->
+  <div class="tab-view active" id="tab-activities">
+    <div class="chip-row" id="act-cat-row"></div>
+    <div class="chip-row" id="act-region-row"></div>
+    <div class="filter-row">
+      <span class="filter-label">Max distance</span>
+      <input type="range" id="dist-slider" min="10" max="160" value="160" step="10" style="width:140px;">
+      <span id="dist-label">Any</span>
+      <span class="filter-label" style="margin-left:0.5rem;">Cost</span>
+      <div class="chip-row" style="margin:0;" id="price-row"></div>
+    </div>
+    <button class="random-btn btn-act" id="rand-act">🎲 Surprise me!</button>
+    <div class="random-banner act-theme" id="rb-act"></div>
+    <div class="section-header">
+      <span class="section-count" id="act-count"></span>
+      <button class="add-btn" id="add-act-btn">+ Add place</button>
+    </div>
+    <div class="cards-grid" id="act-grid"></div>
+  </div>
+
+  <!-- ── MEALS ── -->
+  <div class="tab-view" id="tab-meals">
+    <div class="chip-row" id="meal-cat-row"></div>
+    <button class="random-btn btn-meal" id="rand-meal">🍽️ What's for dinner?</button>
+    <div class="random-banner meal-theme" id="rb-meal"></div>
+    <div class="section-header">
+      <span class="section-count" id="meal-count"></span>
+      <button class="add-btn" id="add-meal-btn">+ Add meal</button>
+    </div>
+    <div class="cards-grid" id="meal-grid"></div>
+  </div>
+
+  <!-- ── CRAFTS ── -->
+  <div class="tab-view" id="tab-crafts">
+    <div class="chip-row" id="craft-cat-row"></div>
+    <button class="random-btn btn-craft" id="rand-craft">🎲 Let's make something!</button>
+    <div class="random-banner craft-theme" id="rb-craft"></div>
+    <div class="section-header">
+      <span class="section-count" id="craft-count"></span>
+      <button class="add-btn" id="add-craft-btn">+ Add craft</button>
+    </div>
+    <div class="cards-grid" id="craft-grid"></div>
+  </div>
+
+</main>
+
+<!-- SPOTLIGHT -->
+<div class="overlay" id="spotlight-overlay" style="display:none;" onclick="onOverlayClick(event,'spotlight-overlay')">
+  <div class="spotlight" id="spotlight-inner"></div>
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal-overlay" id="modal-overlay" style="display:none;">
+  <div class="modal">
+    <h3 id="modal-title"></h3>
+    <div id="modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-act" id="modal-save">Save</button>
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+//  DATA
+// ════════════════════════════════════════════
+
+const ACTIVITIES = [
+  { id:'a01', name:"Macclesfield Forest", icon:"🌲",
+    desc:"Ancient conifer forest with reservoirs, muddy trails, and a small reindeer enclosure — magical in autumn and winter.",
+    cat:"outdoor", weather:"outdoor", dist:3, price:0, priceLabel:"Free", tags:["walking","nature","reindeer"] },
+
+  { id:'a02', name:"Tegg's Nose Country Park", icon:"⛰️",
+    desc:"Sweeping views over Cheshire, gentle trails, and a brilliant adventure play area. Old quarry with interesting history.",
+    cat:"outdoor", weather:"outdoor", dist:4, price:0, priceLabel:"Free", tags:["walking","views","playground"] },
+
+  { id:'a03', name:"West Park, Macclesfield", icon:"🛝",
+    desc:"Great local park with playground, paddling pool in summer, a small art museum, and a café.",
+    cat:"outdoor", weather:"both", dist:1, price:0, priceLabel:"Free", tags:["playground","park","paddling pool"] },
+
+  { id:'a04', name:"Lyme Park (National Trust)", icon:"🦌",
+    desc:"Stunning deer park with an adventure playground, beautiful gardens, and a grand Elizabethan house used in Pride & Prejudice.",
+    cat:"outdoor", weather:"both", dist:7, price:1, priceLabel:"NT / £", tags:["deer","playground","NT","gardens"] },
+
+  { id:'a05', name:"Alderley Edge (National Trust)", icon:"🧙",
+    desc:"Woodland walks through red sandstone escarpment — legendary home of Merlin. Great for imaginative kids who love a story.",
+    cat:"outdoor", weather:"outdoor", dist:8, price:0, priceLabel:"Free (parking)", tags:["walking","legend","NT","woods"] },
+
+  { id:'a06', name:"Quarry Bank Mill (National Trust)", icon:"🏭",
+    desc:"Working Victorian cotton mill with family trails, an Apprentice House, a gorgeous garden, and hands-on history.",
+    cat:"museum", weather:"both", dist:10, price:2, priceLabel:"NT / ££", tags:["history","NT","garden","indoor"] },
+
+  { id:'a07', name:"Tatton Park", icon:"🏡",
+    desc:"Massive deer park, working farm, formal gardens, and a grand mansion. Budget a full day — one of Cheshire's absolute best.",
+    cat:"outdoor", weather:"both", dist:14, price:1, priceLabel:"£ / ££", tags:["deer","farm","garden","NT"] },
+
+  { id:'a08', name:"Jodrell Bank Discovery Centre", icon:"📡",
+    desc:"Enormous radio telescope you can walk around, planetarium shows, and brilliant space science exhibits. Kids love the sheer scale.",
+    cat:"museum", weather:"both", dist:12, price:2, priceLabel:"££", tags:["science","space","planetarium"] },
+
+  { id:'a09', name:"Delamere Forest", icon:"🚵",
+    desc:"Go Ape Treetop Adventure (age 4+), forest trails perfect for bikes, orienteering, and the brilliant Gruffalo trail.",
+    cat:"outdoor", weather:"outdoor", dist:22, price:1, priceLabel:"£ (Go Ape extra)", tags:["cycling","Go Ape","Gruffalo","forest"] },
+
+  { id:'a10', name:"Poole's Cavern, Buxton", icon:"🦇",
+    desc:"Natural limestone cave below Buxton with incredible stalactites and stalagmites. Genuinely magical — like stepping underground.",
+    cat:"museum", weather:"indoor", dist:14, price:2, priceLabel:"££", tags:["cave","geology","indoor","history"] },
+
+  { id:'a11', name:"Goyt Valley", icon:"💧",
+    desc:"Peak District valley with two reservoirs, woodland walks, and the atmospheric ruins of Errwood Hall hidden in the trees.",
+    cat:"outdoor", weather:"outdoor", dist:10, price:0, priceLabel:"Free (parking)", tags:["walking","reservoir","Peak District","ruins"] },
+
+  { id:'a12', name:"Chester Zoo", icon:"🦁",
+    desc:"One of the best zoos in Europe — tigers, gorillas, giraffes, red pandas. Budget a full day and prepare to be wowed.",
+    cat:"outdoor", weather:"both", dist:36, price:3, priceLabel:"£££", tags:["zoo","animals","big day out"] },
+
+  { id:'a13', name:"Gulliver's World, Warrington", icon:"🎡",
+    desc:"Theme park built specifically for younger kids (under 13). Perfect for this age — not overwhelming, lots of rides they can actually go on.",
+    cat:"theme_park", weather:"both", dist:28, price:3, priceLabel:"£££", tags:["rides","theme park","height-friendly"] },
+
+  { id:'a14', name:"Marbury Country Park", icon:"🦆",
+    desc:"Gorgeous walks through woodland and around two meres. Brilliant birdwatching and a great café at the stables.",
+    cat:"outdoor", weather:"outdoor", dist:18, price:0, priceLabel:"Free", tags:["walking","birds","lake","nature"] },
+
+  { id:'a15', name:"Science & Industry Museum, Manchester", icon:"🚂",
+    desc:"Free museum packed with real steam trains, planes, science experiments and interactive galleries. Kids go absolutely wild for it.",
+    cat:"museum", weather:"indoor", dist:18, price:0, priceLabel:"Free", tags:["science","trains","indoor","free","Manchester"] },
+
+  { id:'a16', name:"Stockport Air Raid Shelters", icon:"🏚️",
+    desc:"Real WWII tunnels carved under Stockport town centre. Surprisingly brilliant for curious kids — atmospheric and educational.",
+    cat:"museum", weather:"indoor", dist:12, price:1, priceLabel:"£", tags:["history","WWII","underground","indoor"] },
+
+  { id:'a17', name:"Marple Locks & Canal", icon:"⛵",
+    desc:"16 locks in a row on the Peak Forest Canal — a flat, easy walk with boats passing through. Get ice cream in the village after.",
+    cat:"outdoor", weather:"outdoor", dist:9, price:0, priceLabel:"Free", tags:["canal","walking","boats"] },
+
+  { id:'a18', name:"Three Shires Head", icon:"🌊",
+    desc:"A short but memorable walk to a beautiful waterfall and packhorse bridge where Cheshire, Derbyshire, and Staffordshire meet.",
+    cat:"outdoor", weather:"outdoor", dist:16, price:0, priceLabel:"Free (parking)", tags:["waterfall","Peak District","walking"] },
+
+  { id:'a19', name:"Manchester Museum of Natural History", icon:"🦖",
+    desc:"Free University of Manchester museum with a huge T-Rex, Egyptian mummies, a vivarium with live animals, and a brilliant Stan the T-Rex.",
+    cat:"museum", weather:"indoor", dist:18, price:0, priceLabel:"Free", tags:["dinosaurs","mummies","indoor","free","Manchester"] },
+
+  { id:'a20', name:"Adlington Hall & Gardens", icon:"🌸",
+    desc:"Lovely moated hall with a walled garden and woodland walks. Occasional family events and always a beautiful, peaceful visit.",
+    cat:"outdoor", weather:"both", dist:6, price:1, priceLabel:"£", tags:["history","garden","walking"] },
+
+  { id:'a21', name:"Bollington & The Middlewood Way", icon:"🚶",
+    desc:"Cycle or walk along the old railway line through pretty Bollington — the White Nancy landmark is worth the short climb.",
+    cat:"outdoor", weather:"outdoor", dist:4, price:0, priceLabel:"Free", tags:["cycling","walking","railway","White Nancy"] },
+
+  { id:'a22', name:"Chill Factore, Manchester", icon:"⛷️",
+    desc:"Real indoor ski slope with a beginner's area, snowplay zone (age 3+), and tobogganing. Great wet weather or winter option.",
+    cat:"sport", weather:"indoor", dist:22, price:3, priceLabel:"£££", tags:["skiing","snow","indoor","winter"] },
+
+  { id:'a23', name:"Peckforton Castle Grounds", icon:"🏰",
+    desc:"Victorian castle in the Cheshire Hills with woodland walks and brilliant views. Free to walk around the grounds and estate.",
+    cat:"outdoor", weather:"outdoor", dist:28, price:0, priceLabel:"Free", tags:["castle","walking","views","Cheshire"] },
+
+  { id:'a24', name:"Wilmslow Leisure Centre (Soft Play & Pool)", icon:"🏊",
+    desc:"Soft play and swimming pool close to home. Reliable rainy day fallback that the kids always love.",
+    cat:"sport", weather:"indoor", dist:6, price:1, priceLabel:"£", tags:["swimming","soft play","indoor"] },
+
+  { id:'a25', name:"Dunham Massey (National Trust)", icon:"🦌",
+    desc:"Stunning deer park with a children's adventure playground, a moated Edwardian house, and one of the best NT estates in the North West.",
+    cat:"outdoor", weather:"both", dist:18, price:1, priceLabel:"NT / £", tags:["deer","playground","NT","gardens","moat"] },
+
+  { id:'a26', name:"Biddulph Grange Garden (National Trust)", icon:"🐉",
+    desc:"One of the most magical gardens in England — a Chinese garden, an Egyptian pyramid, an Italian terrace. Kids love exploring the secret tunnels and themed areas.",
+    cat:"outdoor", weather:"both", dist:18, price:2, priceLabel:"NT / ££", tags:["gardens","NT","tunnels","themed"] },
+
+  { id:'a27', name:"Arley Hall & Gardens", icon:"🌺",
+    desc:"One of England's finest private gardens — gorgeous double herbaceous border, woodland walk and spacious grounds. Occasional family events.",
+    cat:"outdoor", weather:"both", dist:16, price:1, priceLabel:"£", tags:["gardens","walking","flowers"] },
+
+  { id:'a28', name:"Stockley Farm, Arley", icon:"🐄",
+    desc:"Brilliant working farm open to visitors — feed animals, meet piglets, ride the trailer, play in the straw barn. A proper farm day out.",
+    cat:"outdoor", weather:"both", dist:17, price:2, priceLabel:"££", tags:["farm","animals","tractor"] },
+
+  { id:'a29', name:"Hack Green Secret Nuclear Bunker", icon:"☢️",
+    desc:"Real Cold War nuclear bunker hidden under a Cheshire field. Eerie, fascinating and surprisingly gripping for curious kids — staff are brilliant.",
+    cat:"museum", weather:"indoor", dist:26, price:2, priceLabel:"££", tags:["history","Cold War","bunker","spy"] },
+
+  { id:'a30', name:"Beeston Castle (English Heritage)", icon:"🏰",
+    desc:"Dramatic 13th-century castle perched on a crag with sweeping views across nine counties. The rocky walk up feels like a proper adventure.",
+    cat:"outdoor", weather:"both", dist:28, price:1, priceLabel:"EH / £", tags:["castle","views","history","climbing"] },
+
+  { id:'a31', name:"Trentham Gardens & Monkey Forest", icon:"🐒",
+    desc:"Stunning Italian gardens AND a separate walk-through Barbary macaque monkey forest where monkeys roam free around you. Unmissable combination.",
+    cat:"outdoor", weather:"both", dist:30, price:2, priceLabel:"££", tags:["monkeys","gardens","animals","walking"] },
+
+  { id:'a32', name:"National Football Museum, Manchester", icon:"⚽",
+    desc:"Free museum celebrating the history of English football — interactive exhibits, famous kits, World Cup memories. Perfect for any child who loves the game.",
+    cat:"museum", weather:"indoor", dist:18, price:0, priceLabel:"Free", tags:["football","sport","free","indoor","Manchester"] },
+
+  { id:'a33', name:"Wythenshawe Park & Farm", icon:"🐓",
+    desc:"Huge free park with a working farm open to visitors — goats, pigs, chickens, horses. Brilliant orchard and plenty of space to run around.",
+    cat:"outdoor", weather:"both", dist:15, price:0, priceLabel:"Free", tags:["farm","animals","park","free"] },
+
+  { id:'a34', name:"Congleton Park & Lake", icon:"🦢",
+    desc:"Pretty park with a lake, mini train (summer), playground, and café. Swan and duck feeding is a guaranteed hit.",
+    cat:"outdoor", weather:"both", dist:12, price:0, priceLabel:"Free", tags:["park","lake","ducks","playground"] },
+
+  { id:'a35', name:"Reddish Vale Country Park", icon:"🌿",
+    desc:"Hidden gem — a narrow river valley with old mill ponds, a viaduct, and woodland walks. Feels wilder than it is, close to home.",
+    cat:"outdoor", weather:"outdoor", dist:14, price:0, priceLabel:"Free", tags:["walking","river","viaduct","nature"] },
+
+  { id:'a36', name:"Gawsworth Hall", icon:"🏡",
+    desc:"One of England's finest timber-framed manor houses with a jousting ground, lakes, and peaceful grounds. Open-air theatre in summer.",
+    cat:"outdoor", weather:"both", dist:7, price:1, priceLabel:"£", tags:["history","theatre","gardens","moat"] },
+
+  { id:'a37', name:"The Lowry, Salford Quays", icon:"🎭",
+    desc:"Major arts centre with free galleries and regular family shows and workshops. The waterfront is great for a walk and ice cream too.",
+    cat:"museum", weather:"both", dist:20, price:0, priceLabel:"Free (shows extra)", tags:["art","theatre","waterfront","free"] },
+
+  { id:'a38', name:"Nether Alderley Mill (National Trust)", icon:"⚙️",
+    desc:"A working 15th-century watermill in a beautiful wooded setting. Millers on hand to explain everything — lovely short visit.",
+    cat:"museum", weather:"both", dist:8, price:1, priceLabel:"NT / £", tags:["history","NT","mill","woodland"] },
+
+  { id:'a39', name:"Poynton Pool & Recreation Ground", icon:"🎣",
+    desc:"Pretty fishing pool with walking paths, a decent playground, and easy flat terrain. Good for a local hour out without much planning.",
+    cat:"outdoor", weather:"outdoor", dist:8, price:0, priceLabel:"Free", tags:["lake","walking","playground","local"] },
+
+  { id:'a40', name:"Manchester Art Gallery", icon:"🖼️",
+    desc:"Beautiful free city gallery with world-class art and excellent family activities most weekends. The hands-on discovery room is a hit.",
+    cat:"museum", weather:"indoor", dist:18, price:0, priceLabel:"Free", tags:["art","free","indoor","Manchester","workshops"] },
+
+  { id:'a41', name:"Bollington Recreation Ground & River", icon:"🏃",
+    desc:"Brilliant free playground by the river in pretty Bollington village. Walk up to the White Nancy monument for great views and a sense of achievement.",
+    cat:"outdoor", weather:"outdoor", dist:4, price:0, priceLabel:"Free", tags:["playground","river","White Nancy","local"] },
+
+  { id:'a42', name:"Lyme Handley & Knights Low Walk", icon:"🦅",
+    desc:"Quieter side of the Lyme Park estate — beautiful open moorland with wide skies, ancient trees and a proper sense of space.",
+    cat:"outdoor", weather:"outdoor", dist:7, price:0, priceLabel:"Free (parking)", tags:["walking","moorland","NT","views"] },
+
+  { id:'a43', name:"Capesthorne Hall & Gardens", icon:"🦚",
+    desc:"Stunning Jacobean hall with beautiful gardens, a lake with black swans, and lovely walking. Family events and an adventure play area.",
+    cat:"outdoor", weather:"both", dist:9, price:1, priceLabel:"£", tags:["gardens","lake","history","swans"] },
+
+  { id:'a44', name:"Macclesfield Silk Museum & Paradise Mill", icon:"🧵",
+    desc:"The story of Macclesfield's silk weaving heritage told across two sites — a real working Jacquard loom at Paradise Mill is the highlight.",
+    cat:"museum", weather:"indoor", dist:1, price:1, priceLabel:"£", tags:["history","silk","local","indoor"] },
+
+  { id:'a45', name:"Middlewood Way (Cycling / Walking)", icon:"🚴",
+    desc:"12-mile former railway line converted into a traffic-free trail from Macclesfield to Marple. Perfect for bikes with kids — flat, safe, and scenic.",
+    cat:"outdoor", weather:"outdoor", dist:0, price:0, priceLabel:"Free", tags:["cycling","walking","railway","flat"] },
+
+  { id:'a46', name:"Kerridge Hill & White Nancy", icon:"🏔️",
+    desc:"Short but rewarding walk from Bollington up to the iconic White Nancy monument. Amazing views over the Cheshire Plain from the top.",
+    cat:"outdoor", weather:"outdoor", dist:4, price:0, priceLabel:"Free", tags:["walking","views","White Nancy","short walk"] },
+
+  { id:'a47', name:"Bolesworth Adventure (Tattenhall)", icon:"🧗",
+    desc:"Zip wires, climbing walls, high ropes, and assault courses in a gorgeous Cheshire estate. Book in advance — fills up fast at weekends.",
+    cat:"outdoor", weather:"outdoor", dist:33, price:2, priceLabel:"££", tags:["zip wire","climbing","adventure","outdoor"] },
+
+  { id:'a48', name:"Eureka! The National Children's Museum (Halifax)", icon:"🔬",
+    desc:"The UK's leading museum for children — entirely hands-on, completely designed for 4–11s. A long drive but genuinely one of the best days out in the country.",
+    cat:"museum", weather:"indoor", dist:45, price:2, priceLabel:"££", tags:["hands-on","science","best ever","indoor"] },
+
+  { id:'a49', name:"Peak District Sheep Dog Trials & Shows", icon:"🐑",
+    desc:"Various shows throughout summer in the Peak District — sheep dog trials, traditional crafts, animals. A brilliant slice of rural life.",
+    cat:"outdoor", weather:"outdoor", dist:15, price:1, priceLabel:"£", tags:["sheep","farm","summer","Peak District"] },
+
+  { id:'a50', name:"Macclesfield Canal & Clarence Mill", icon:"⚓",
+    desc:"Walk the towpath from Bollington to Macclesfield — pretty locks, colourful narrowboats, and the stunning converted Clarence Mill beside the water.",
+    cat:"outdoor", weather:"outdoor", dist:2, price:0, priceLabel:"Free", tags:["canal","walking","boats","local"] },
+
+  // ── MANCHESTER REGION ──
+  { id:'a51', name:"Heaton Park, Manchester", icon:"🦚",
+    desc:"One of the largest municipal parks in Europe — free farm with animals, boating lake, tram museum, adventure playground, and a grand hall. A full free day out.",
+    cat:"outdoor", weather:"both", dist:17, price:0, priceLabel:"Free (farm £)", region:"manchester", tags:["farm","park","tram","free"] },
+
+  { id:'a52', name:"Legoland Discovery Centre, Manchester", icon:"🧱",
+    desc:"Indoor Lego world with rides, 4D cinema, Miniland Manchester, and build-and-test zones. Ideal for 3–10 year olds on a rainy day.",
+    cat:"museum", weather:"indoor", dist:19, price:2, priceLabel:"££", region:"manchester", tags:["Lego","indoor","rides","building"] },
+
+  { id:'a53', name:"SEA LIFE Manchester", icon:"🦈",
+    desc:"Walk-through ocean tunnel, sharks, rays, jellyfish, and seahorses. Compact but impressive — great add-on to Trafford Centre.",
+    cat:"museum", weather:"indoor", dist:19, price:2, priceLabel:"££", region:"manchester", tags:["sharks","aquarium","indoor"] },
+
+  { id:'a54', name:"Man City Etihad Stadium Tour", icon:"🔵",
+    desc:"Go behind the scenes at the Etihad — changing rooms, tunnel, dugout, and press room. The tunnel walk makes it feel real.",
+    cat:"museum", weather:"indoor", dist:18, price:2, priceLabel:"££", region:"manchester", tags:["football","stadium","Man City"] },
+
+  { id:'a55', name:"Man United Museum & Stadium Tour", icon:"🔴",
+    desc:"Tour Old Trafford, see the trophies, sit in the dugout. Hallowed ground for United fans — or a chance to explain the rivalry.",
+    cat:"museum", weather:"indoor", dist:20, price:2, priceLabel:"££", region:"manchester", tags:["football","stadium","Man Utd"] },
+
+  { id:'a56', name:"Whitworth Art Gallery, Manchester", icon:"🖌️",
+    desc:"Beautiful free gallery in Whitworth Park — world-class textiles and art in a gorgeous building with a great park café and garden.",
+    cat:"museum", weather:"indoor", dist:18, price:0, priceLabel:"Free", region:"manchester", tags:["art","free","park","indoor"] },
+
+  { id:'a57', name:"Imperial War Museum North", icon:"🪖",
+    desc:"Striking Daniel Libeskind building at Salford Quays. Brilliant immersive exhibits — the floor show every hour is genuinely gripping for kids.",
+    cat:"museum", weather:"indoor", dist:20, price:0, priceLabel:"Free", region:"manchester", tags:["history","WWII","free","indoor","Salford"] },
+
+  { id:'a58', name:"People's History Museum, Manchester", icon:"✊",
+    desc:"Free museum telling the story of ordinary people — workers, suffragettes, trade unions. Surprising amount that resonates with young kids.",
+    cat:"museum", weather:"indoor", dist:18, price:0, priceLabel:"Free", region:"manchester", tags:["history","free","indoor"] },
+
+  { id:'a59', name:"Greater Manchester Museum of Transport", icon:"🚌",
+    desc:"Hundreds of historic trams and buses you can climb on. Volunteers drive trams on the track — a hidden gem of a museum.",
+    cat:"museum", weather:"indoor", dist:22, price:1, priceLabel:"£", region:"manchester", tags:["trams","buses","history","indoor"] },
+
+  { id:'a60', name:"Salford Museum & Art Gallery", icon:"🏺",
+    desc:"Free Victorian museum with a brilliant recreation of a Victorian street — gaslit cobbles, a chemist, a pawnbroker. Kids love it.",
+    cat:"museum", weather:"indoor", dist:20, price:0, priceLabel:"Free", region:"manchester", tags:["history","Victorian","free","indoor"] },
+
+  // ── CHESTER & CHESHIRE ──
+  { id:'a61', name:"Blue Planet Aquarium, Ellesmere Port", icon:"🐙",
+    desc:"The UK's largest collection of sharks in a dramatic walkthrough tunnel. Rays, piranhas, and giant turtle too. One of the best aquariums in the North.",
+    cat:"museum", weather:"indoor", dist:32, price:2, priceLabel:"££", region:"chester", tags:["sharks","aquarium","indoor","tunnel"] },
+
+  { id:'a62', name:"Chester City Walls (free walk)", icon:"🏛️",
+    desc:"Walk the complete circuit of Chester's Roman and Medieval walls — 2km, free, and full of history. Great views into the city and over the racecourse.",
+    cat:"outdoor", weather:"outdoor", dist:33, price:0, priceLabel:"Free", region:"chester", tags:["history","Roman","walking","free"] },
+
+  { id:'a63', name:"Dewa Roman Experience, Chester", icon:"⚔️",
+    desc:"Step inside Chester's Roman fortress — real archaeological dig on site, legionnaire armoury, and interactive exhibits. Perfect for curious kids.",
+    cat:"museum", weather:"indoor", dist:33, price:1, priceLabel:"£", region:"chester", tags:["Roman","history","archaeology","indoor"] },
+
+  { id:'a64', name:"Chester Boat Trips on the Dee", icon:"🚤",
+    desc:"Hop on a boat from the Groves for a gentle trip along the River Dee. Lovely way to see the city from the water.",
+    cat:"outdoor", weather:"outdoor", dist:33, price:1, priceLabel:"£", region:"chester", tags:["boat","river","Chester"] },
+
+  { id:'a65', name:"Ness Botanic Gardens, Neston", icon:"🌺",
+    desc:"University of Liverpool's stunning botanic garden above the Dee estuary. Brilliant rock gardens, woodland, and a great café.",
+    cat:"outdoor", weather:"outdoor", dist:35, price:1, priceLabel:"£", region:"chester", tags:["gardens","botanic","walking"] },
+
+  { id:'a66', name:"Cholmondeley Castle Gardens", icon:"🦢",
+    desc:"Romantic lakeside gardens with ornamental waterways, ancient temple, and parkland. Occasional jousting and family events in summer.",
+    cat:"outdoor", weather:"outdoor", dist:22, price:1, priceLabel:"£", region:"chester", tags:["castle","gardens","lake","summer events"] },
+
+  // ── LIVERPOOL & MERSEYSIDE ──
+  { id:'a67', name:"World Museum Liverpool", icon:"🦕",
+    desc:"Free and absolutely brilliant — a T-Rex skeleton, Egyptian mummies, a vivarium with live animals, planetarium, and an aquarium. Budget three hours minimum.",
+    cat:"museum", weather:"indoor", dist:40, price:0, priceLabel:"Free", region:"liverpool", tags:["dinosaurs","mummies","free","indoor","planetarium"] },
+
+  { id:'a68', name:"Merseyside Maritime Museum", icon:"⚓",
+    desc:"The story of Liverpool's extraordinary seafaring and emigrant history — Titanic, slavery, and the Battle of the Atlantic. Free and genuinely moving.",
+    cat:"museum", weather:"indoor", dist:40, price:0, priceLabel:"Free", region:"liverpool", tags:["history","ships","Titanic","free","indoor"] },
+
+  { id:'a69', name:"The Beatles Story", icon:"🎸",
+    desc:"Immersive Beatles museum on the Albert Dock. Even if they don't know the music yet, the atmosphere and story is genuinely compelling.",
+    cat:"museum", weather:"indoor", dist:40, price:2, priceLabel:"££", region:"liverpool", tags:["Beatles","music","history","Albert Dock"] },
+
+  { id:'a70', name:"Knowsley Safari Park", icon:"🦒",
+    desc:"Drive-through safari with lions, tigers, rhinos, and giraffes, plus a brilliant on-foot zoo and rides area. One of the best safari parks in England.",
+    cat:"outdoor", weather:"both", dist:35, price:2, priceLabel:"££", region:"liverpool", tags:["safari","lions","rhinos","animals","drive-through"] },
+
+  { id:'a71', name:"Croxteth Hall & Country Park", icon:"🦌",
+    desc:"Free country estate with a home farm, walled garden, woodland trails, and a Victorian hall to explore. Brilliant free family day.",
+    cat:"outdoor", weather:"both", dist:37, price:0, priceLabel:"Free (hall £)", region:"liverpool", tags:["farm","deer","free","gardens","Victorian"] },
+
+  { id:'a72', name:"Walker Art Gallery, Liverpool", icon:"🖼️",
+    desc:"One of the finest art collections in England — free, and with a brilliant kids activity room. The costume and armour gallery is always popular.",
+    cat:"museum", weather:"indoor", dist:40, price:0, priceLabel:"Free", region:"liverpool", tags:["art","free","indoor"] },
+
+  { id:'a73', name:"Williamson's Tunnels, Liverpool", icon:"🕳️",
+    desc:"Bizarre Victorian network of tunnels built by eccentric merchant Joseph Williamson under Edge Hill — no one really knows why. Kids find it brilliant.",
+    cat:"museum", weather:"indoor", dist:40, price:1, priceLabel:"£", region:"liverpool", tags:["tunnels","Victorian","underground","mystery"] },
+
+  { id:'a74', name:"Liverpool Cathedral", icon:"⛪",
+    desc:"One of the largest cathedrals in the world — free to enter, astonishing scale. The tower lift gives panoramic views across the city and Mersey.",
+    cat:"museum", weather:"indoor", dist:40, price:0, priceLabel:"Free (tower £)", region:"liverpool", tags:["cathedral","views","free","architecture"] },
+
+  { id:'a75', name:"Formby (National Trust)", icon:"🐿️",
+    desc:"Red squirrel reserve, ancient sand dunes, and a beautiful wide beach. The red squirrels come incredibly close — one of the best NT spots in the NW.",
+    cat:"outdoor", weather:"outdoor", dist:42, price:0, priceLabel:"Free (parking)", region:"liverpool", tags:["red squirrels","beach","NT","sand dunes"] },
+
+  { id:'a76', name:"WWT Martin Mere, Burscough", icon:"🦩",
+    desc:"Wetland centre with huge numbers of wildfowl, flamingos, and otters. Great hides for birdwatching and a good indoor play area.",
+    cat:"outdoor", weather:"both", dist:32, price:2, priceLabel:"££", region:"liverpool", tags:["birds","wetland","flamingos","nature"] },
+
+  { id:'a77', name:"Blackpool Pleasure Beach", icon:"🎢",
+    desc:"The ultimate classic British theme park. Best for slightly older kids but the Nickelodeon Land section is perfect for 4–7 year olds.",
+    cat:"theme_park", weather:"outdoor", dist:58, price:3, priceLabel:"£££", region:"liverpool", tags:["rides","rollercoasters","Nickelodeon","seaside"] },
+
+  { id:'a78', name:"Blackpool Tower & Beach", icon:"🗼",
+    desc:"Walk the glass floor at the top, watch the Tower Circus, or just enjoy the beach and trams. A classic, slightly bonkers British day out.",
+    cat:"museum", weather:"both", dist:58, price:2, priceLabel:"££", region:"liverpool", tags:["tower","circus","beach","glass floor"] },
+
+  // ── PEAK DISTRICT & DERBYSHIRE ──
+  { id:'a79', name:"Chatsworth House & Garden", icon:"🏰",
+    desc:"One of England's great stately homes — the garden alone is worth the trip. The farmyard and adventure playground make it brilliant for kids.",
+    cat:"outdoor", weather:"both", dist:25, price:2, priceLabel:"££", region:"peaks", tags:["stately home","garden","farmyard","deer"] },
+
+  { id:'a80', name:"Haddon Hall", icon:"🏚️",
+    desc:"The most complete medieval manor in England — hauntingly beautiful and little-changed since the 15th century. Feels like stepping back in time.",
+    cat:"museum", weather:"both", dist:24, price:2, priceLabel:"££", region:"peaks", tags:["medieval","history","manor house"] },
+
+  { id:'a81', name:"Heights of Abraham, Matlock Bath", icon:"🚡",
+    desc:"Cable car up to the top — then cavern tours, fossil displays, and views across the gorge. A brilliant half-day out in the Derwent Valley.",
+    cat:"outdoor", weather:"both", dist:30, price:2, priceLabel:"££", region:"peaks", tags:["cable car","caves","fossils","views"] },
+
+  { id:'a82', name:"Dovedale & Stepping Stones", icon:"🪨",
+    desc:"One of the Peak District's most iconic short walks — cross the famous stepping stones, walk through the gorge, and scramble up Thorpe Cloud.",
+    cat:"outdoor", weather:"outdoor", dist:30, price:0, priceLabel:"Free (parking)", region:"peaks", tags:["stepping stones","gorge","walking","Peak District"] },
+
+  { id:'a83', name:"Monsal Trail Cycling", icon:"🚴",
+    desc:"8 miles of traffic-free cycling along a converted railway line through stunning limestone dale scenery. Hire bikes at Hassop Station.",
+    cat:"outdoor", weather:"outdoor", dist:22, price:0, priceLabel:"Free (bike hire extra)", region:"peaks", tags:["cycling","railway","Peak District","flat"] },
+
+  { id:'a84', name:"Mam Tor & Great Ridge Walk", icon:"🌬️",
+    desc:"The 'Shivering Mountain' — a dramatic ridge walk above Castleton with huge views in every direction. Windy, exhilarating, and not too long.",
+    cat:"outdoor", weather:"outdoor", dist:20, price:0, priceLabel:"Free (parking)", region:"peaks", tags:["walking","ridge","views","Peak District"] },
+
+  { id:'a85', name:"Castleton & Peak Cavern", icon:"🐉",
+    desc:"Beautiful village beneath Peveril Castle, with the entrance to Peak Cavern (the Devil's Arse) — largest cave entrance in England. Brilliant rope-making demo inside.",
+    cat:"outdoor", weather:"both", dist:22, price:2, priceLabel:"£ / ££ (cave)", region:"peaks", tags:["cave","castle","history","village"] },
+
+  { id:'a86', name:"Ladybower Reservoir", icon:"💧",
+    desc:"The dramatic drowned village reservoir — fascinating history of the submerged village of Ashopton. Walk the dam, spot the mysterious plug holes.",
+    cat:"outdoor", weather:"outdoor", dist:25, price:0, priceLabel:"Free (parking)", region:"peaks", tags:["reservoir","WWII","Dambusters","walking"] },
+
+  { id:'a87', name:"Bakewell Town & Tarts", icon:"🥧",
+    desc:"Lovely Peak District market town — buy a proper Bakewell pudding (not tart) from the original shop, browse the market, and walk by the river.",
+    cat:"outdoor", weather:"outdoor", dist:23, price:0, priceLabel:"Free (food £)", region:"peaks", tags:["market","food","walking","Peak District"] },
+
+  { id:'a88', name:"Calke Abbey (National Trust)", icon:"🏚️",
+    desc:"A crumbling, deliberately un-restored mansion — frozen in time, with rooms as they were abandoned. One of NT's most atmospheric and unusual places.",
+    cat:"museum", weather:"both", dist:40, price:2, priceLabel:"NT / ££", region:"peaks", tags:["abandoned","NT","history","unusual"] },
+
+  { id:'a89', name:"Cromford Mills, Derbyshire", icon:"🏭",
+    desc:"Where the Industrial Revolution began — Arkwright's first water-powered cotton mill, beautifully preserved. Fascinating free heritage site on the Derwent Valley.",
+    cat:"museum", weather:"both", dist:30, price:0, priceLabel:"Free (tours £)", region:"peaks", tags:["history","Industrial Revolution","UNESCO","Arkwright"] },
+
+  { id:'a90', name:"Carsington Water", icon:"⛵",
+    desc:"Big reservoir with a sailing centre, cycle hire, visitor centre, and lovely walks. Gentler than the wilder Peak District — good for all weathers.",
+    cat:"outdoor", weather:"both", dist:32, price:0, priceLabel:"Free (bike hire extra)", region:"peaks", tags:["reservoir","cycling","sailing","walking"] },
+
+  { id:'a91', name:"Gulliver's Kingdom, Matlock", icon:"🎠",
+    desc:"Theme park specifically designed for young kids (under 13) in the Derwent Valley. Great combination with Matlock Bath cable car nearby.",
+    cat:"theme_park", weather:"both", dist:30, price:3, priceLabel:"£££", region:"peaks", tags:["theme park","rides","Matlock","family"] },
+
+  { id:'a92', name:"Eyam Village (Plague Trail)", icon:"🪦",
+    desc:"The village that quarantined itself during the 1665 plague to stop it spreading. Self-guided trail, museum, and churchyard — eerie and fascinating history.",
+    cat:"outdoor", weather:"outdoor", dist:22, price:0, priceLabel:"Free (museum £)", region:"peaks", tags:["history","plague","village","Peak District"] },
+
+  { id:'a93', name:"Ilam Park & Dovedale (NT)", icon:"🌊",
+    desc:"NT estate in a hidden Staffordshire valley with a dramatic hall, riverside meadows and direct access to the start of the Dovedale gorge walk.",
+    cat:"outdoor", weather:"outdoor", dist:30, price:0, priceLabel:"Free (parking)", region:"peaks", tags:["NT","valley","walking","river"] },
+
+  // ── SHEFFIELD & SOUTH YORKSHIRE ──
+  { id:'a94', name:"Kelham Island Museum, Sheffield", icon:"⚙️",
+    desc:"Free museum in a real Victorian island mill — the massive River Don Engine fires up every day. Brilliant social history and industrial machinery.",
+    cat:"museum", weather:"indoor", dist:33, price:0, priceLabel:"Free", region:"sheffield", tags:["industry","history","free","steam engine"] },
+
+  { id:'a95', name:"Tropical Butterfly House, Sheffield", icon:"🦋",
+    desc:"Walk among free-flying exotic butterflies, meet meerkats, lemurs and giant spiders. Compact but genuinely lovely — great for young children.",
+    cat:"outdoor", weather:"both", dist:37, price:1, priceLabel:"£", region:"sheffield", tags:["butterflies","meerkats","animals","indoor"] },
+
+  { id:'a96', name:"Sheffield Botanical Gardens", icon:"🌸",
+    desc:"Victorian glasshouses, themed gardens, and 19 acres of free parkland. A lovely escape with a good café and regular family events.",
+    cat:"outdoor", weather:"both", dist:33, price:0, priceLabel:"Free", region:"sheffield", tags:["gardens","glasshouses","free","Victorian"] },
+
+  { id:'a97', name:"Graves Park & Animal Farm, Sheffield", icon:"🐖",
+    desc:"Sheffield's largest park with a free animal farm — goats, pigs, deer, and peacocks. Brilliant playground and café too.",
+    cat:"outdoor", weather:"both", dist:35, price:0, priceLabel:"Free", region:"sheffield", tags:["farm","animals","park","free","playground"] },
+
+  { id:'a98', name:"Magna Science Adventure Centre, Rotherham", icon:"🔥",
+    desc:"Inside a former steelworks — four giant pavilions exploring air, earth, fire and water. The fire tornado and water cannons are the highlights.",
+    cat:"museum", weather:"indoor", dist:37, price:2, priceLabel:"££", region:"sheffield", tags:["science","fire","interactive","indoor","steelworks"] },
+
+  // ── YORKSHIRE ──
+  { id:'a99', name:"National Railway Museum, York", icon:"🚂",
+    desc:"The finest railway museum in the world — and it's FREE. Mallard, the Bullet Train, a Royal carriage, and engines as far as the eye can see. An unmissable day.",
+    cat:"museum", weather:"indoor", dist:95, price:0, priceLabel:"Free", region:"yorkshire", tags:["trains","free","York","world class","steam engines"] },
+
+  { id:'a100', name:"JORVIK Viking Centre, York", icon:"⚔️",
+    desc:"A time-car ride through reconstructed Viking-age York, based on real excavations. Smells, sounds, and genuine 1,000-year-old artefacts.",
+    cat:"museum", weather:"indoor", dist:95, price:2, priceLabel:"££", region:"yorkshire", tags:["Vikings","York","history","immersive","indoor"] },
+
+  { id:'a101', name:"York Minster", icon:"⛪",
+    desc:"One of the greatest Gothic cathedrals in Europe — free to wander outside, the interior is breathtaking, and the undercroft tour reveals Roman York beneath.",
+    cat:"museum", weather:"both", dist:95, price:1, priceLabel:"£ (interior)", region:"yorkshire", tags:["cathedral","Gothic","free outside","history","York"] },
+
+  { id:'a102', name:"York City Walls (free walk)", icon:"🏰",
+    desc:"Walk the medieval walls for free — the best views of the Minster and city are from up here. Shorter sections are great for young legs.",
+    cat:"outdoor", weather:"outdoor", dist:95, price:0, priceLabel:"Free", region:"yorkshire", tags:["walls","walking","York","views","free","medieval"] },
+
+  { id:'a103', name:"The Dig, York", icon:"🏺",
+    desc:"Hands-on archaeology experience for kids — dig a simulated pit and uncover real replica artefacts. Run by the JORVIK Trust and brilliantly done.",
+    cat:"museum", weather:"indoor", dist:95, price:2, priceLabel:"££", region:"yorkshire", tags:["archaeology","York","kids","hands-on","indoor"] },
+
+  { id:'a104', name:"Royal Armouries Museum, Leeds", icon:"🛡️",
+    desc:"World-class FREE museum of arms and armour — five galleries including a tournament hall and War elephant. Jousting demonstrations in summer.",
+    cat:"museum", weather:"indoor", dist:70, price:0, priceLabel:"Free", region:"yorkshire", tags:["armour","swords","free","Leeds","history","jousting"] },
+
+  { id:'a105', name:"Tropical World, Leeds", icon:"🌴",
+    desc:"Free rainforest and desert ecosystems under glass — butterflies, crocodiles, meerkats, and giant fish. Also a brilliant adjacent park.",
+    cat:"museum", weather:"indoor", dist:72, price:0, priceLabel:"Free", region:"yorkshire", tags:["butterflies","rainforest","free","Leeds","indoor"] },
+
+  { id:'a106', name:"Yorkshire Sculpture Park", icon:"🗿",
+    desc:"Huge outdoor sculpture park with works by Henry Moore and Barbara Hepworth scattered across beautiful landscape. Free grounds — brilliant space for kids to explore.",
+    cat:"outdoor", weather:"both", dist:62, price:0, priceLabel:"Free (parking)", region:"yorkshire", tags:["sculpture","art","free","Yorkshire","outdoors"] },
+
+  { id:'a107', name:"Harewood House & Bird Garden", icon:"🦜",
+    desc:"Grand Capability Brown estate with Chippendale interiors, a lakeside bird garden with exotic species, and adventure playground. Yorkshire at its finest.",
+    cat:"outdoor", weather:"both", dist:73, price:2, priceLabel:"££", region:"yorkshire", tags:["stately home","bird garden","gardens","deer","playground"] },
+
+  { id:'a108', name:"National Coal Mining Museum, Wakefield", icon:"⛏️",
+    desc:"FREE and genuinely brilliant — you descend in a real cage to an underground mine, guided by ex-miners. Authentic, moving, and fascinating for kids.",
+    cat:"museum", weather:"indoor", dist:60, price:0, priceLabel:"Free", region:"yorkshire", tags:["coal","mining","underground","free","history"] },
+
+  { id:'a109', name:"Flamingo Land, Yorkshire", icon:"🦩",
+    desc:"Big theme park plus zoo — rollercoasters, Flamingos, rhinos, and a water park. One of the best value combined parks in the country.",
+    cat:"theme_park", weather:"outdoor", dist:85, price:3, priceLabel:"£££", region:"yorkshire", tags:["rides","zoo","flamingos","water park","theme park"] },
+
+  { id:'a110', name:"Yorkshire Wildlife Park", icon:"🐆",
+    desc:"Walk-through game reserves with polar bears, lions, giraffes and the world's most successful polar bear facility. Stunning park near Doncaster.",
+    cat:"outdoor", weather:"both", dist:65, price:2, priceLabel:"££", region:"yorkshire", tags:["polar bears","lions","giraffes","walk-through","zoo"] },
+
+  { id:'a111', name:"Skipton Castle", icon:"🏰",
+    desc:"One of the most complete medieval castles in England — a real fortress with banqueting hall, dungeon, and a yew tree planted in 1659.",
+    cat:"museum", weather:"both", dist:68, price:1, priceLabel:"£", region:"yorkshire", tags:["castle","medieval","history","Yorkshire Dales"] },
+
+  { id:'a112', name:"Bolton Abbey & the Strid", icon:"🌊",
+    desc:"Ruined priory in a breathtaking Wharfedale setting — walk from the Abbey to the terrifying Strid (a narrow gorge where the whole river squeezes through).",
+    cat:"outdoor", weather:"outdoor", dist:68, price:0, priceLabel:"Free (parking)", region:"yorkshire", tags:["abbey","ruins","river","gorge","walking","Yorkshire Dales"] },
+
+  { id:'a113', name:"Malham Cove & Gordale Scar", icon:"🪨",
+    desc:"A dramatic 260ft limestone cliff formed by a waterfall 12,000 years ago. Climb to the top for the limestone pavement from Harry Potter. Gordale Scar is terrifyingly dramatic.",
+    cat:"outdoor", weather:"outdoor", dist:75, price:0, priceLabel:"Free (parking)", region:"yorkshire", tags:["limestone","cove","waterfall","Harry Potter","Yorkshire Dales"] },
+
+  { id:'a114', name:"Whitby Abbey & Town", icon:"🦇",
+    desc:"Dramatic ruined abbey atop a cliff — inspiration for Dracula. The 199 steps, the harbour, fish and chips, and jet jewellery. A perfect day trip town.",
+    cat:"outdoor", weather:"both", dist:115, price:1, priceLabel:"EH / £", region:"yorkshire", tags:["Dracula","abbey","harbour","fishing","fish and chips","North Yorkshire"] },
+
+  { id:'a115', name:"Scarborough Castle & Beaches", icon:"🏖️",
+    desc:"Two brilliant sandy beaches, a dramatic clifftop castle, and a proper seaside town. North Bay is quieter; South Bay has the funicular and arcades.",
+    cat:"outdoor", weather:"both", dist:105, price:1, priceLabel:"£ (castle)", region:"yorkshire", tags:["beach","castle","funicular","seaside","fish and chips"] },
+
+  { id:'a116', name:"Haworth & Brontë Parsonage", icon:"📖",
+    desc:"The village where the Brontës lived — cobbled main street, the parsonage museum, and the dramatic moorland of Wuthering Heights above.",
+    cat:"outdoor", weather:"both", dist:68, price:1, priceLabel:"£", region:"yorkshire", tags:["Brontë","moors","literary","cobbled village"] },
+
+  // ── MIDLANDS ──
+  { id:'a117', name:"Cadbury World, Birmingham", icon:"🍫",
+    desc:"The story of chocolate from cacao tree to bar — plus rides, a 4D cinema, a massive Cadbury shop, and unlimited chocolate. Hard to beat for kids.",
+    cat:"museum", weather:"indoor", dist:85, price:2, priceLabel:"££", region:"midlands", tags:["chocolate","Cadbury","factory","indoor","Birmingham"] },
+
+  { id:'a118', name:"Drayton Manor Theme Park", icon:"🎡",
+    desc:"Classic British theme park with a brilliant Thomas Land for young kids. Big rides for older ones too — easy to book and good value.",
+    cat:"theme_park", weather:"outdoor", dist:68, price:3, priceLabel:"£££", region:"midlands", tags:["Thomas the Tank","rides","theme park","young kids"] },
+
+  { id:'a119', name:"Alton Towers", icon:"🎢",
+    desc:"The UK's biggest theme park. CBeebies Land is designed for 1–6 year olds — perfect for this age. The larger rides will be there for when they're older.",
+    cat:"theme_park", weather:"outdoor", dist:42, price:3, priceLabel:"£££", region:"midlands", tags:["CBeebies","theme park","rides","young kids","Staffordshire"] },
+
+  { id:'a120', name:"Black Country Living Museum, Dudley", icon:"⛏️",
+    desc:"Open-air museum recreating 1900s Black Country life — rides a working chainshop, visits a back-to-back house, eats fish and chips from the chip shop. Immersive and brilliant.",
+    cat:"museum", weather:"both", dist:80, price:2, priceLabel:"££", region:"midlands", tags:["industrial","Victorian","open air","fish and chips","history"] },
+
+  { id:'a121', name:"Dudley Zoo & Castle", icon:"🦁",
+    desc:"Unique zoo set within a real castle — lions, bears, wolves, and rhinos with battlements above them. One of the UK's most historic zoo sites.",
+    cat:"outdoor", weather:"both", dist:80, price:2, priceLabel:"££", region:"midlands", tags:["zoo","castle","animals","history","Dudley"] },
+
+  { id:'a122', name:"Warwick Castle", icon:"🏰",
+    desc:"One of England's greatest medieval castles — the trebuchet firing, the dungeon, falconry displays, and Merlin's Dragon Tower. A full action-packed day.",
+    cat:"museum", weather:"both", dist:85, price:3, priceLabel:"£££", region:"midlands", tags:["castle","trebuchet","falconry","medieval","history"] },
+
+  { id:'a123', name:"Shakespeare's Birthplace, Stratford-upon-Avon", icon:"🎭",
+    desc:"Visit where Shakespeare was born, see his school desk, and walk to Anne Hathaway's thatched cottage. Beautiful riverside town for lunch after.",
+    cat:"museum", weather:"both", dist:95, price:2, priceLabel:"££", region:"midlands", tags:["Shakespeare","history","Tudor","Stratford"] },
+
+  { id:'a124', name:"Cannock Chase Forest", icon:"🌲",
+    desc:"AONB forest with a brilliant Gruffalo trail, dedicated cycling tracks, deer herds, and orienteering. Easy to get to and great for a half day out.",
+    cat:"outdoor", weather:"outdoor", dist:55, price:0, priceLabel:"Free (parking)", region:"midlands", tags:["Gruffalo","cycling","deer","forest","walking"] },
+
+  { id:'a125', name:"Twycross Zoo", icon:"🦍",
+    desc:"Specialises in primates — the best gibbon collection in Europe, plus gorillas, chimps, orangutans, and snow leopards. A serious conservation zoo.",
+    cat:"outdoor", weather:"both", dist:70, price:2, priceLabel:"££", region:"midlands", tags:["zoo","gorillas","primates","chimps","conservation"] },
+
+  { id:'a126', name:"Thinktank, Birmingham Science Museum", icon:"🔭",
+    desc:"The Midlands' flagship science museum — a real Spitfire, a working steam engine, a Planetarium, and a brilliant outdoor science garden.",
+    cat:"museum", weather:"both", dist:85, price:2, priceLabel:"££", region:"midlands", tags:["science","Spitfire","steam","planetarium","Birmingham"] },
+
+  { id:'a127', name:"Wollaton Hall & Deer Park, Nottingham", icon:"🦌",
+    desc:"Free Elizabethan mansion (the Batman house in The Dark Knight Rises) in a deer park — the contrast of 500 deer outside and Tudor grandeur inside is brilliant.",
+    cat:"outdoor", weather:"both", dist:60, price:0, priceLabel:"Free", region:"midlands", tags:["Batman","deer","Tudor","free","Nottingham","hall"] },
+
+  { id:'a128', name:"City of Caves, Nottingham", icon:"🕳️",
+    desc:"Hundreds of medieval caves carved into the sandstone beneath Nottingham — tour reveals a WWII air raid shelter, a medieval tannery, and a Victorian slum.",
+    cat:"museum", weather:"indoor", dist:60, price:1, priceLabel:"£", region:"midlands", tags:["caves","underground","WWII","medieval","Nottingham"] },
+
+  { id:'a129', name:"West Midlands Safari Park", icon:"🦏",
+    desc:"Drive-through African reserves with rhinos, white lions, giraffes, and hippos, then a Sea Life centre and amusement rides. A full day out.",
+    cat:"outdoor", weather:"both", dist:90, price:2, priceLabel:"££", region:"midlands", tags:["safari","rhinos","giraffes","white lions","drive-through"] },
+
+  { id:'a130', name:"Severn Valley Railway", icon:"🚂",
+    desc:"The UK's longest standard gauge heritage railway — 16 miles of steam trains through beautiful valley scenery from Kidderminster to Bridgnorth.",
+    cat:"outdoor", weather:"both", dist:90, price:2, priceLabel:"££", region:"midlands", tags:["steam train","railway","heritage","Worcestershire"] },
+
+  { id:'a131', name:"Ironbridge Gorge Museums", icon:"🌉",
+    desc:"World Heritage Site — the world's first iron bridge, the Blists Hill open-air museum, the Tar Tunnel, and Enginuity hands-on science centre. Book multiple museums.",
+    cat:"museum", weather:"both", dist:80, price:2, priceLabel:"££", region:"midlands", tags:["iron bridge","UNESCO","Industrial Revolution","open air","hands-on"] },
+
+  // ── NORTH WALES ──
+  { id:'a132', name:"Zip World Bethesda (Velocity)", icon:"💨",
+    desc:"The fastest zip line in the world and the longest in Europe — 1 mile at up to 100mph over a slate quarry lake. Minimum age 7 but worth planning for.",
+    cat:"outdoor", weather:"outdoor", dist:90, price:3, priceLabel:"£££", region:"wales", tags:["zip wire","fastest","adrenaline","slate quarry","North Wales"] },
+
+  { id:'a133', name:"Zip World Fforest, Betws-y-Coed", icon:"🌲",
+    desc:"Family-friendly zip wires and the incredible Treetop Nets — a net city suspended in the forest canopy. Age 3+ for some activities. Brilliant.",
+    cat:"outdoor", weather:"outdoor", dist:82, price:2, priceLabel:"££", region:"wales", tags:["zip wire","nets","family","forest","all ages"] },
+
+  { id:'a134', name:"Greenwood Forest Park", icon:"🌿",
+    desc:"Award-winning eco-friendly family theme park — the famous bamboo roller coaster, solar-powered rides, and a brilliant treetop adventure. Very family focused.",
+    cat:"theme_park", weather:"outdoor", dist:88, price:2, priceLabel:"££", region:"wales", tags:["eco","bamboo","rollercoaster","family","North Wales"] },
+
+  { id:'a135', name:"Snowdon Mountain Railway", icon:"🚞",
+    desc:"Rack and pinion railway to the summit of Wales's highest mountain — views from the top on a clear day are extraordinary. Book well in advance.",
+    cat:"outdoor", weather:"outdoor", dist:95, price:3, priceLabel:"£££", region:"wales", tags:["train","Snowdon","summit","views","Wales"] },
+
+  { id:'a136', name:"Conwy Castle", icon:"🏰",
+    desc:"Edward I's magnificent UNESCO-listed fortress — towers to climb, walls to walk, and views down to the estuary and Great Orme. One of the finest medieval castles in Europe.",
+    cat:"museum", weather:"both", dist:75, price:1, priceLabel:"£", region:"wales", tags:["castle","UNESCO","Edward I","medieval","Welsh"] },
+
+  { id:'a137', name:"Caernarfon Castle", icon:"👑",
+    desc:"The greatest of Edward I's Welsh castles — birthplace of the first English Prince of Wales, with massive towers and panoramic views. Combined with the town walls it's extraordinary.",
+    cat:"museum", weather:"both", dist:92, price:1, priceLabel:"£", region:"wales", tags:["castle","Prince of Wales","medieval","UNESCO","Welsh"] },
+
+  { id:'a138', name:"Llandudno — Great Orme & Cable Car", icon:"🚠",
+    desc:"Victorian seaside resort with a tramway and aerial cable car up the Great Orme headland. Kashmiri goats roam free at the top. Two beaches, a pier, and great ice cream.",
+    cat:"outdoor", weather:"both", dist:68, price:1, priceLabel:"£", region:"wales", tags:["cable car","tram","seaside","goats","pier","beach"] },
+
+  { id:'a139', name:"Portmeirion Village", icon:"🏛️",
+    desc:"The extraordinary Italian village built by Sir Clough Williams-Ellis from 1925 — colourful piazzas, domes, and terraces above the estuary. Unique and beautiful.",
+    cat:"outdoor", weather:"both", dist:95, price:2, priceLabel:"££", region:"wales", tags:["Italian","village","architecture","unique","estuary"] },
+
+  { id:'a140', name:"Llechwedd Slate Caverns", icon:"🚂",
+    desc:"Deep mine tour by Victorian railway into the underground world of the Victorian slate miner — plus a brilliant underground adventure play area.",
+    cat:"museum", weather:"indoor", dist:88, price:2, priceLabel:"££", region:"wales", tags:["slate","mine","underground","Victorian","North Wales"] },
+
+  { id:'a141', name:"Anglesey Beaches", icon:"🏄",
+    desc:"Anglesey has some of the finest beaches in the UK — Red Wharf Bay for rock pooling, Newborough for dunes and seals, Trearddur Bay for swimming.",
+    cat:"outdoor", weather:"outdoor", dist:92, price:0, priceLabel:"Free (parking)", region:"wales", tags:["beach","rock pooling","seals","swimming","Anglesey"] },
+
+  { id:'a142', name:"Betws-y-Coed & Swallow Falls", icon:"🌊",
+    desc:"Pretty slate village in the heart of Snowdonia — base for walks, the spectacular Swallow Falls waterfall, and great outdoor shops and cafés.",
+    cat:"outdoor", weather:"outdoor", dist:82, price:0, priceLabel:"Free (falls £)", region:"wales", tags:["waterfall","village","Snowdonia","walking"] },
+
+  // ── LAKE DISTRICT ──
+  { id:'a143', name:"Windermere & Bowness-on-Windermere", icon:"⛵",
+    desc:"England's largest lake — take a steamer cruise, hire a rowing boat, visit the Beatrix Potter Gallery in Hawkshead nearby. Beautiful in any season.",
+    cat:"outdoor", weather:"both", dist:65, price:1, priceLabel:"£ (boats)", region:"lakes", tags:["lake","boats","Beatrix Potter","steamer","Lake District"] },
+
+  { id:'a144', name:"Grizedale Forest (Go Ape & Sculptures)", icon:"🎪",
+    desc:"Forestry Commission forest with 100 outdoor sculptures on trails, Go Ape (age 4+ for the junior version), and great cycle hire. Magical woodland.",
+    cat:"outdoor", weather:"outdoor", dist:72, price:1, priceLabel:"£ (Go Ape extra)", region:"lakes", tags:["Go Ape","sculptures","cycling","forest","Lake District"] },
+
+  { id:'a145', name:"Keswick & Derwentwater", icon:"✏️",
+    desc:"Boat launches on the beautiful lake, the world's only Pencil Museum, Keswick market, and easy low-level walks. Great base for the northern Lakes.",
+    cat:"outdoor", weather:"both", dist:85, price:0, priceLabel:"Free (boats £)", region:"lakes", tags:["Pencil Museum","lake","boats","market","Derwentwater"] },
+
+  { id:'a146', name:"Ullswater Steamers", icon:"🚢",
+    desc:"Historic Victorian steamers on one of the most beautiful lakes in England. The Aira Force waterfall walk from the jetty is an ideal short hike.",
+    cat:"outdoor", weather:"outdoor", dist:82, price:1, priceLabel:"£", region:"lakes", tags:["steamer","lake","waterfall","Aira Force","beautiful"] },
+
+  { id:'a147', name:"Sizergh Castle (National Trust)", icon:"🏰",
+    desc:"Medieval castle with one of the finest rock gardens in England and wonderful grounds. Home to red squirrels — a lovely, quieter NT property.",
+    cat:"outdoor", weather:"both", dist:75, price:1, priceLabel:"NT / £", region:"lakes", tags:["castle","NT","rock garden","red squirrels","medieval"] },
+
+  { id:'a148', name:"Fell Foot Park (NT), Windermere", icon:"🌊",
+    desc:"Victorian park right on the shores of Windermere — free to enter (just NT parking). Rowing boat hire, lake swimming, and a lovely café.",
+    cat:"outdoor", weather:"both", dist:65, price:0, priceLabel:"Free (parking)", region:"lakes", tags:["lake","swimming","rowing","NT","Windermere"] },
+
+  // ── NORTH EAST ──
+  { id:'a149', name:"Alnwick Castle & Poison Garden", icon:"🧙",
+    desc:"Used as Hogwarts in the first two Harry Potter films — broomstick training available! The Poison Garden tour is brilliant for curious, slightly ghoulish children.",
+    cat:"museum", weather:"both", dist:135, price:2, priceLabel:"££", region:"north", tags:["Harry Potter","Hogwarts","Poison Garden","castle","Northumberland"] },
+
+  { id:'a150', name:"Beamish Open Air Museum", icon:"🏘️",
+    desc:"Living history museum re-creating life in 1820, 1900, and 1940s North East England — ride a tram, visit a colliery, shop in a Victorian Co-op. One of the best in Europe.",
+    cat:"museum", weather:"both", dist:120, price:2, priceLabel:"££", region:"north", tags:["open air","tram","living history","1900","colliery","Durham"] },
+
+  { id:'a151', name:"Bamburgh Castle & Beach", icon:"🏰",
+    desc:"Dramatic castle rising from a dolerite outcrop above one of England's finest beaches. The interior is magnificent, and you can dig for sand in the dunes below.",
+    cat:"outdoor", weather:"both", dist:138, price:2, priceLabel:"££", region:"north", tags:["castle","beach","Northumberland","dramatic","dunes"] },
+
+  { id:'a152', name:"Hadrian's Wall & Vindolanda", icon:"🗿",
+    desc:"Walk the Wall in the wild Northumberland landscape, then visit Vindolanda — where ongoing digs find remarkable Roman objects every season. Living archaeology.",
+    cat:"outdoor", weather:"outdoor", dist:110, price:1, priceLabel:"£", region:"north", tags:["Roman","Hadrian's Wall","archaeology","Vindolanda","Northumberland"] },
+
+  { id:'a153', name:"Fame Islands Boat Trip", icon:"🐧",
+    desc:"Seasonal boat trips from Seahouses to see 100,000 puffins, guillemots, and Atlantic grey seals hauled out on the rocks. One of the great British wildlife experiences.",
+    cat:"outdoor", weather:"outdoor", dist:140, price:2, priceLabel:"££", region:"north", tags:["puffins","seals","boat","wildlife","Northumberland","seasonal"] },
+
+  { id:'a154', name:"Rievaulx Abbey (English Heritage)", icon:"🏛️",
+    desc:"The most magnificent ruined abbey in England — vast, atmospheric Cistercian remains in a hidden valley in the North York Moors.",
+    cat:"outdoor", weather:"outdoor", dist:98, price:1, priceLabel:"EH / £", region:"north", tags:["abbey","ruins","Cistercian","North York Moors","atmospheric"] },
+];
+
+const MEALS = [
+  // Quick wins (< 20 min)
+  { id:'m01', name:"Pasta with Tomato Sauce", icon:"🍝",
+    desc:"Quick homemade tomato sauce (tinned toms, garlic, olive oil) over pasta. Add hidden veg if you want.",
+    cat:"quick", time:15, helpRating:2, kidRating:3,
+    ingredients:["pasta","tinned tomatoes","garlic","olive oil","parmesan"] },
+
+  { id:'m02', name:"Egg Fried Rice", icon:"🍳",
+    desc:"Use leftover rice, scramble in eggs, add frozen peas and a splash of soy. Done in 10 minutes.",
+    cat:"quick", time:10, helpRating:2, kidRating:3,
+    ingredients:["leftover rice","eggs","frozen peas","soy sauce","sesame oil"] },
+
+  { id:'m03', name:"Quesadillas", icon:"🫓",
+    desc:"Tortillas with melted cheese and chicken or beans. Grill in a dry pan. Let the kids pick their fillings.",
+    cat:"quick", time:12, helpRating:3, kidRating:3,
+    ingredients:["flour tortillas","cheese","cooked chicken or beans","salsa","sour cream"] },
+
+  { id:'m04', name:"Fish Fingers & Wedges", icon:"🐟",
+    desc:"Baked oven wedges and fish fingers — a proper teatime classic. Serve with mushy peas or beans.",
+    cat:"quick", time:20, helpRating:1, kidRating:3,
+    ingredients:["fish fingers","potatoes","frozen peas or beans","ketchup"] },
+
+  { id:'m05', name:"Beans on Toast (Pimped)", icon:"🍞",
+    desc:"Heinz beans with grated cheese and a fried egg on top. Upgrade with sourdough if you have it.",
+    cat:"quick", time:8, helpRating:2, kidRating:3,
+    ingredients:["baked beans","bread","eggs","cheese","butter"] },
+
+  { id:'m06', name:"Soup & Bread", icon:"🥣",
+    desc:"Good shop-bought or homemade soup with crusty bread for dunking. Easy crowd-pleaser on cold days.",
+    cat:"quick", time:10, helpRating:2, kidRating:2,
+    ingredients:["soup (tinned or carton)","crusty bread","butter"] },
+
+  { id:'m07', name:"Scrambled Eggs & Toast Soldiers", icon:"🥚",
+    desc:"Creamy scrambled eggs (low heat, lots of butter) with toast soldiers. A breakfast-for-dinner winner.",
+    cat:"quick", time:8, helpRating:3, kidRating:3,
+    ingredients:["eggs","butter","milk","bread"] },
+
+  // Proper meals (20–45 min)
+  { id:'m08', name:"Spaghetti Bolognese", icon:"🍝",
+    desc:"A proper rich bolognese with hidden veg blitzed in. Let them stir and sprinkle the parmesan.",
+    cat:"proper", time:35, helpRating:3, kidRating:3,
+    ingredients:["beef mince","tinned tomatoes","onion","carrot","garlic","spaghetti","parmesan"] },
+
+  { id:'m09', name:"Homemade Pizza", icon:"🍕",
+    desc:"Use shop-bought dough or bases and let them build their own. Messy, fun, and they eat every bit.",
+    cat:"proper", time:30, helpRating:3, kidRating:3,
+    ingredients:["pizza bases or dough","passata","mozzarella","toppings of choice"] },
+
+  { id:'m10', name:"Chicken Fajitas", icon:"🌮",
+    desc:"Sizzling strips of chicken with peppers, warm tortillas and all the toppings spread out. Build-your-own always goes down well.",
+    cat:"proper", time:25, helpRating:3, kidRating:3,
+    ingredients:["chicken breast","peppers","onion","fajita seasoning","tortillas","sour cream","salsa","cheese"] },
+
+  { id:'m11', name:"Mac and Cheese", icon:"🧀",
+    desc:"Proper baked mac and cheese with a breadcrumb top. Make extra — they'll want seconds.",
+    cat:"proper", time:40, helpRating:2, kidRating:3,
+    ingredients:["macaroni","cheddar","milk","butter","flour","breadcrumbs","mustard powder"] },
+
+  { id:'m12', name:"Toad in the Hole", icon:"🌭",
+    desc:"Sausages baked in fluffy Yorkshire pudding batter. Simple, impressive-looking, universally loved.",
+    cat:"proper", time:40, helpRating:2, kidRating:3,
+    ingredients:["pork sausages","eggs","flour","milk","oil"] },
+
+  { id:'m13', name:"Chicken Stir Fry & Noodles", icon:"🍜",
+    desc:"Quick stir fry with noodles — great way to get veg in if you chop it small. Done in 20 minutes.",
+    cat:"proper", time:20, helpRating:2, kidRating:2,
+    ingredients:["chicken","noodles","broccoli","carrots","soy sauce","garlic","ginger","sesame oil"] },
+
+  { id:'m14', name:"Cottage Pie", icon:"🥧",
+    desc:"Mince and veg in a rich gravy, topped with cheesy mash. Can be made ahead and reheated.",
+    cat:"proper", time:45, helpRating:2, kidRating:3,
+    ingredients:["beef mince","onion","carrot","peas","beef stock","potatoes","butter","cheese"] },
+
+  { id:'m15', name:"Fish Pie", icon:"🐟",
+    desc:"Salmon, cod and prawns in a creamy white sauce, topped with mash. A proper comfort food pie.",
+    cat:"proper", time:45, helpRating:1, kidRating:2,
+    ingredients:["salmon","cod","prawns","potatoes","milk","butter","flour","peas","parsley"] },
+
+  // Weekend specials
+  { id:'m16', name:"Full English Breakfast", icon:"🍳",
+    desc:"The full works — bacon, eggs, sausages, beans, toast, mushrooms. Weekend morning tradition.",
+    cat:"weekend", time:25, helpRating:3, kidRating:3,
+    ingredients:["bacon","sausages","eggs","beans","mushrooms","tomatoes","bread","butter"] },
+
+  { id:'m17', name:"Pancake Stack", icon:"🥞",
+    desc:"American-style fluffy pancakes. Let the kids pour on the maple syrup and blueberries. Always goes down a storm.",
+    cat:"weekend", time:20, helpRating:3, kidRating:3,
+    ingredients:["self-raising flour","eggs","milk","butter","maple syrup","blueberries or banana"] },
+
+  { id:'m18', name:"Slow Cooker Chilli", icon:"🫘",
+    desc:"Chuck everything in the slow cooker in the morning, serve over rice with sour cream and nachos. Minimal effort, maximum flavour.",
+    cat:"weekend", time:20, helpRating:2, kidRating:2,
+    ingredients:["beef mince","kidney beans","tinned tomatoes","onion","peppers","chilli","cumin","rice"] },
+
+  { id:'m19', name:"Sunday Roast", icon:"🍗",
+    desc:"Roast chicken with roasties, yorkshire puddings, and whatever veg they'll eat. The king of weekend dinners.",
+    cat:"weekend", time:90, helpRating:2, kidRating:3,
+    ingredients:["whole chicken","potatoes","parsnips","carrots","yorkshire pud batter","gravy"] },
+
+  { id:'m20', name:"BBQ (Weather Permitting)", icon:"🔥",
+    desc:"Sausages, chicken, corn on the cob, and halloumi on the grill. Kids eat more when they help flip things.",
+    cat:"weekend", time:45, helpRating:3, kidRating:3,
+    ingredients:["sausages","chicken thighs","corn","halloumi","burger buns","salad"] },
+
+  { id:'m21', name:"Naan Bread Pizzas", icon:"🫓",
+    desc:"Even easier than proper pizza — naan breads, passata, cheese, toppings. In the oven for 10 minutes.",
+    cat:"quick", time:15, helpRating:3, kidRating:3,
+    ingredients:["naan breads","passata","mozzarella","toppings of choice"] },
+
+  { id:'m22', name:"Jacket Potato", icon:"🥔",
+    desc:"Microwave for 8 minutes, finish in the oven for a crispy skin. Let them choose their own topping — cheese and beans never fails.",
+    cat:"quick", time:15, helpRating:2, kidRating:3,
+    ingredients:["large potatoes","butter","cheddar","baked beans","sour cream"] },
+
+  { id:'m23', name:"Eggy Bread / French Toast", icon:"🍞",
+    desc:"Dip bread in egg and milk, fry in butter. Go savoury with ketchup or sweet with maple syrup and berries. Both are brilliant.",
+    cat:"quick", time:12, helpRating:3, kidRating:3,
+    ingredients:["thick bread","eggs","milk","butter","maple syrup or ketchup"] },
+
+  { id:'m24', name:"Cheese Toastie", icon:"🧀",
+    desc:"Classic melted cheese sandwich — use a sandwich press or just a frying pan with a lid. Add ham, tomato, or pickles.",
+    cat:"quick", time:8, helpRating:2, kidRating:3,
+    ingredients:["bread","cheddar","butter","ham or tomato (optional)"] },
+
+  { id:'m25', name:"Pesto Pasta with Cherry Tomatoes", icon:"🌿",
+    desc:"Cook pasta, toss with a big spoonful of pesto and halved cherry tomatoes. Done in 12 minutes. Add mozzarella if you have it.",
+    cat:"quick", time:12, helpRating:2, kidRating:3,
+    ingredients:["pasta","basil pesto","cherry tomatoes","parmesan","mozzarella (optional)"] },
+
+  { id:'m26', name:"Dippy Eggs & Soldiers", icon:"🥚",
+    desc:"Soft-boiled eggs with toast cut into soldiers for dipping. A ritual, not just a meal. The timer is everything.",
+    cat:"quick", time:7, helpRating:3, kidRating:3,
+    ingredients:["eggs","bread","butter","salt"] },
+
+  { id:'m27', name:"Crumpets with Toppings", icon:"🫓",
+    desc:"Toasted crumpets with whatever you fancy — butter and Marmite, jam, Nutella, cheese and Worcestershire sauce. 5 minutes of glory.",
+    cat:"quick", time:5, helpRating:2, kidRating:3,
+    ingredients:["crumpets","butter","assorted toppings"] },
+
+  { id:'m28', name:"Chicken Traybake", icon:"🍗",
+    desc:"Chicken thighs with potatoes, peppers, and onions all on one tray. Season, roast at 200°C for 40 mins. Minimal washing up.",
+    cat:"proper", time:45, helpRating:2, kidRating:3,
+    ingredients:["chicken thighs","potatoes","peppers","onion","olive oil","herbs","garlic"] },
+
+  { id:'m29', name:"Homemade Burgers", icon:"🍔",
+    desc:"Mix mince with egg and seasoning, form patties, griddle for 4 minutes each side. Dress in a toasted bun — much better than shop-bought.",
+    cat:"proper", time:25, helpRating:3, kidRating:3,
+    ingredients:["beef mince","egg","seasoning","burger buns","cheese","lettuce","tomato","ketchup"] },
+
+  { id:'m30', name:"Sausage & Bean Casserole", icon:"🫘",
+    desc:"Brown sausages, add tinned tomatoes, beans, and stock, simmer for 25 minutes. Serve with mash or crusty bread. Dead easy comfort food.",
+    cat:"proper", time:35, helpRating:2, kidRating:3,
+    ingredients:["pork sausages","tinned tomatoes","mixed beans","chicken stock","onion","garlic","smoked paprika"] },
+
+  { id:'m31', name:"Pasta Bake", icon:"🧀",
+    desc:"Pasta with tomato sauce, anything you have (mince, veg, tuna), topped with cheese and baked. One of the best leftovers-friendly meals.",
+    cat:"proper", time:40, helpRating:2, kidRating:3,
+    ingredients:["pasta","tinned tomatoes","onion","mince or tuna","mozzarella","cheddar","herbs"] },
+
+  { id:'m32', name:"Chicken Soup (from Leftover Roast)", icon:"🍲",
+    desc:"Strip the leftover roast chicken carcass, simmer with veg and stock for 30 mins. One of the best things you can do with a roast chicken.",
+    cat:"proper", time:40, helpRating:2, kidRating:2,
+    ingredients:["roast chicken carcass","onion","carrot","celery","chicken stock","noodles or rice","parsley"] },
+
+  { id:'m33', name:"Sweet Potato & Lentil Curry", icon:"🍛",
+    desc:"Red lentils and sweet potato in a gentle, slightly-sweet curry. Surprisingly popular with young kids — not too spicy, very filling.",
+    cat:"proper", time:30, helpRating:2, kidRating:2,
+    ingredients:["sweet potato","red lentils","tinned tomatoes","coconut milk","onion","garlic","ginger","curry powder","rice"] },
+
+  { id:'m34', name:"Homemade Chicken Nuggets", icon:"🍗",
+    desc:"Coat chicken pieces in flour, egg, and breadcrumbs. Bake or shallow fry. So much better than shop-bought — kids go mad for them.",
+    cat:"proper", time:30, helpRating:3, kidRating:3,
+    ingredients:["chicken breast","flour","eggs","breadcrumbs","oil","dipping sauce"] },
+
+  { id:'m35', name:"Lasagne", icon:"🍝",
+    desc:"Takes a bit of effort but feeds everyone twice — make double and freeze half. A proper family classic that gets better the next day.",
+    cat:"proper", time:75, helpRating:2, kidRating:3,
+    ingredients:["beef mince","tinned tomatoes","onion","garlic","lasagne sheets","milk","butter","flour","cheddar","parmesan"] },
+
+  { id:'m36', name:"Red Lentil Dahl", icon:"🫘",
+    desc:"One pot, 25 minutes — onion, garlic, ginger, spices, lentils, stock. Serve with naan or rice. Cheap, healthy, and genuinely tasty.",
+    cat:"proper", time:25, helpRating:2, kidRating:2,
+    ingredients:["red lentils","onion","garlic","ginger","cumin","turmeric","tinned tomatoes","stock","naan or rice"] },
+
+  { id:'m37', name:"Slow Cooker Pulled Pork", icon:"🐷",
+    desc:"Pork shoulder + seasoning in the slow cooker for 8 hours. Shred it, pile it into buns with slaw and BBQ sauce. Weekend showstopper.",
+    cat:"weekend", time:20, helpRating:1, kidRating:3,
+    ingredients:["pork shoulder","BBQ rub or seasoning","BBQ sauce","burger buns","coleslaw"] },
+
+  { id:'m38', name:"Crepes with Fillings", icon:"🥞",
+    desc:"Thin French pancakes — far easier than they look. Serve savoury (cheese, ham) or sweet (lemon and sugar, Nutella, strawberries).",
+    cat:"weekend", time:25, helpRating:3, kidRating:3,
+    ingredients:["plain flour","eggs","milk","butter","lemon and sugar or Nutella"] },
+
+  { id:'m39', name:"Proper Fish & Chips", icon:"🐟",
+    desc:"Battered fish and deep-fried chips at home — it's a bit of a production but the result blows any chippy out of the water.",
+    cat:"weekend", time:45, helpRating:2, kidRating:3,
+    ingredients:["cod or haddock fillets","plain flour","baking powder","sparkling water","potatoes","oil for frying","mushy peas"] },
+
+  { id:'m40', name:"Baking Session (Cupcakes or Cookies)", icon:"🧁",
+    desc:"Chocolate chip cookies or simple iced cupcakes — the whole point is doing it together. The icing / decorating stage is the main event.",
+    cat:"weekend", time:60, helpRating:3, kidRating:3,
+    ingredients:["butter","sugar","eggs","self-raising flour","vanilla","chocolate chips or icing sugar","sprinkles"] },
+
+  { id:'m41', name:"Homemade Takeaway Night", icon:"🥡",
+    desc:"Pick a favourite takeaway and make it from scratch — egg fried rice, spring rolls, sticky chicken. More fun than ordering in.",
+    cat:"weekend", time:60, helpRating:3, kidRating:3,
+    ingredients:["varies by choice","rice or noodles","soy sauce","eggs","spring roll wrappers or wonton wrappers"] },
+
+  { id:'m42', name:"Shakshuka", icon:"🍳",
+    desc:"Eggs poached in a spiced tomato and pepper sauce. Serve with crusty bread for scooping — looks impressive, takes 20 minutes.",
+    cat:"proper", time:20, helpRating:2, kidRating:2,
+    ingredients:["eggs","tinned tomatoes","peppers","onion","garlic","cumin","paprika","crusty bread"] },
+
+  // ── MORE QUICK WINS ──
+  { id:'m43', name:"Avocado on Toast", icon:"🥑",
+    desc:"Smash ripe avocado on toasted sourdough, squeeze over lemon, add chilli flakes. Top with a fried or poached egg for something more substantial.",
+    cat:"quick", time:8, helpRating:2, kidRating:2,
+    ingredients:["avocado","sourdough or bread","lemon","chilli flakes","eggs (optional)"] },
+
+  { id:'m44', name:"Greek Yoghurt Bowl", icon:"🍓",
+    desc:"Greek yoghurt with granola, honey, and whatever fruit you have. A quick breakfast or light lunch that kids can build themselves.",
+    cat:"quick", time:5, helpRating:3, kidRating:3,
+    ingredients:["Greek yoghurt","granola","honey","banana","berries or other fruit"] },
+
+  { id:'m45', name:"Hummus, Pitta & Veg Sticks", icon:"🫛",
+    desc:"Shop-bought or homemade hummus with warm pittas and whatever veg is in the fridge. A no-cook lunch that gets more veg in than almost anything else.",
+    cat:"quick", time:5, helpRating:3, kidRating:2,
+    ingredients:["hummus","pitta bread","carrots","cucumber","peppers","celery"] },
+
+  { id:'m46', name:"Smoked Salmon Bagels", icon:"🥯",
+    desc:"Toasted bagel with cream cheese and smoked salmon. Add capers and lemon if you're feeling fancy. An elevated 5-minute lunch.",
+    cat:"quick", time:5, helpRating:2, kidRating:2,
+    ingredients:["bagels","cream cheese","smoked salmon","lemon","capers (optional)"] },
+
+  { id:'m47', name:"Banana Pancakes (2-Ingredient)", icon:"🍌",
+    desc:"Mash one banana with two eggs — that's the batter. Fry in butter. Naturally sweet, gluten-free, and takes 8 minutes. The kids can help mash.",
+    cat:"quick", time:8, helpRating:3, kidRating:3,
+    ingredients:["ripe bananas","eggs","butter","maple syrup","berries"] },
+
+  { id:'m48', name:"Smoked Mackerel on Toast", icon:"🐟",
+    desc:"Flaked smoked mackerel on toast with a squeeze of lemon and some horseradish if you like it. One of the fastest proper meals going.",
+    cat:"quick", time:7, helpRating:1, kidRating:1,
+    ingredients:["smoked mackerel fillets","bread","lemon","horseradish (optional)","watercress"] },
+
+  { id:'m49', name:"Corn on the Cob with Butter", icon:"🌽",
+    desc:"Boil or grill corn on the cob, slather in butter and salt. Excellent with pretty much anything, or just on its own as a snack meal.",
+    cat:"quick", time:10, helpRating:2, kidRating:3,
+    ingredients:["corn on the cob","butter","salt","paprika (optional)"] },
+
+  { id:'m50', name:"Noodle Soup (Dressed Up)", icon:"🍜",
+    desc:"Good ramen or instant noodles with a soft-boiled egg, spring onions, soy sauce, and sesame oil. Ten minutes, genuinely satisfying.",
+    cat:"quick", time:10, helpRating:2, kidRating:3,
+    ingredients:["ramen or noodles","eggs","spring onions","soy sauce","sesame oil","chilli (optional)"] },
+
+  { id:'m51', name:"Cheese & Crackers Board", icon:"🧀",
+    desc:"Put out a variety of cheese, crackers, grapes, apple slices, and chutney. Kids love building their own — feels special with minimal effort.",
+    cat:"quick", time:5, helpRating:3, kidRating:3,
+    ingredients:["assorted cheese","crackers","grapes","apple","chutney","celery"] },
+
+  { id:'m52', name:"Rice Cakes with Nut Butter & Banana", icon:"🍯",
+    desc:"Stack rice cakes with peanut or almond butter and banana slices. Drizzle with honey. A genuinely tasty 2-minute snack-meal.",
+    cat:"quick", time:2, helpRating:3, kidRating:3,
+    ingredients:["rice cakes","peanut or almond butter","banana","honey"] },
+
+  { id:'m53', name:"Sweet Potato Wedges & Dips", icon:"🍠",
+    desc:"Cut sweet potato into wedges, toss in oil and paprika, bake 25 mins. Serve with hummus, sour cream, or ketchup. Easier and tastier than chips.",
+    cat:"quick", time:25, helpRating:2, kidRating:3,
+    ingredients:["sweet potatoes","olive oil","paprika","salt","hummus or sour cream"] },
+
+  { id:'m54', name:"Cheese Omelette", icon:"🍳",
+    desc:"Whisk eggs with a pinch of salt, pour into a hot buttered pan, add cheese before folding. Done in 4 minutes — the perfect solo supper.",
+    cat:"quick", time:5, helpRating:2, kidRating:3,
+    ingredients:["eggs","cheddar","butter","salt and pepper","chives (optional)"] },
+
+  { id:'m55', name:"Sardine Pasta", icon:"🐟",
+    desc:"Tinned sardines (or anchovies) tossed through pasta with olive oil, capers, and breadcrumbs. One of the best pantry-raid suppers.",
+    cat:"quick", time:15, helpRating:1, kidRating:1,
+    ingredients:["pasta","tinned sardines or anchovies","olive oil","capers","breadcrumbs","parsley","garlic"] },
+
+  // ── MORE PROPER MEALS ──
+  { id:'m56', name:"Chicken Tikka Masala", icon:"🍛",
+    desc:"The nation's favourite — marinated chicken in a creamy tomato and spice sauce. Make a proper batch, it gets better overnight.",
+    cat:"proper", time:45, helpRating:2, kidRating:3,
+    ingredients:["chicken breast","yoghurt","tinned tomatoes","double cream","onion","garlic","ginger","tikka spice","rice"] },
+
+  { id:'m57', name:"Chicken Katsu Curry", icon:"🍱",
+    desc:"Japanese-style breaded chicken with a sweet, mild curry sauce over rice. One of the most universally loved dishes — kids always eat every bit.",
+    cat:"proper", time:35, helpRating:2, kidRating:3,
+    ingredients:["chicken breast","breadcrumbs","egg","flour","katsu curry sauce (jar or homemade)","rice"] },
+
+  { id:'m58', name:"Thai Green Curry", icon:"🌿",
+    desc:"Fragrant coconut and lemongrass curry with chicken or prawns. Use a good paste and coconut milk — on the table in 25 minutes.",
+    cat:"proper", time:25, helpRating:2, kidRating:2,
+    ingredients:["chicken or prawns","green curry paste","coconut milk","courgette","peppers","fish sauce","rice","lime"] },
+
+  { id:'m59', name:"Proper Carbonara", icon:"🍝",
+    desc:"Eggs, Pecorino, guanciale or pancetta, and black pepper — no cream allowed. Technically tricky (don't scramble the egg) but unforgettably good.",
+    cat:"proper", time:20, helpRating:2, kidRating:3,
+    ingredients:["spaghetti","guanciale or pancetta","eggs","Pecorino Romano","black pepper"] },
+
+  { id:'m60', name:"Prawn Linguine", icon:"🦐",
+    desc:"Prawns, garlic, chilli, white wine, and pasta — a proper restaurant dish in 15 minutes. Best eaten immediately.",
+    cat:"proper", time:15, helpRating:2, kidRating:2,
+    ingredients:["linguine","prawns","garlic","chilli","white wine","olive oil","parsley","lemon"] },
+
+  { id:'m61', name:"Butter Chicken", icon:"🍗",
+    desc:"Rich, mildly spiced tomato and butter sauce with tender chicken — slightly milder than tikka masala, even more popular with young kids.",
+    cat:"proper", time:40, helpRating:2, kidRating:3,
+    ingredients:["chicken","butter","tinned tomatoes","cream","onion","garlic","ginger","garam masala","rice or naan"] },
+
+  { id:'m62', name:"Korean Beef Bulgogi Bowls", icon:"🥩",
+    desc:"Thinly sliced beef marinated in soy, sesame, garlic, and pear, then stir-fried and served in bowls with rice and pickled veg. Outstanding.",
+    cat:"proper", time:30, helpRating:2, kidRating:3,
+    ingredients:["beef sirloin","soy sauce","sesame oil","garlic","pear or apple","ginger","rice","spring onions","sesame seeds"] },
+
+  { id:'m63', name:"Risotto (Pea & Mint, or Mushroom)", icon:"🍚",
+    desc:"Proper risotto — stirring is the work but it's a meditative process. Pea and mint in spring, mushroom in autumn. Finish with a mountain of parmesan.",
+    cat:"proper", time:35, helpRating:2, kidRating:3,
+    ingredients:["arborio rice","onion","white wine","stock","parmesan","butter","peas and mint OR mushrooms and thyme"] },
+
+  { id:'m64', name:"Pan-fried Salmon with Crushed Peas", icon:"🐟",
+    desc:"Crispy skin salmon fillet on a bed of crushed minty peas. Done in 12 minutes. One of the most satisfying fast dinners.",
+    cat:"proper", time:12, helpRating:2, kidRating:2,
+    ingredients:["salmon fillets","frozen peas","butter","mint","lemon","garlic","olive oil"] },
+
+  { id:'m65', name:"Beef Stir Fry with Noodles", icon:"🥢",
+    desc:"Thinly sliced beef with peppers and broccoli in oyster sauce over noodles. 15 minutes start to finish if the veg is prepped.",
+    cat:"proper", time:15, helpRating:2, kidRating:3,
+    ingredients:["beef steak","noodles","broccoli","peppers","oyster sauce","soy sauce","garlic","ginger","sesame oil"] },
+
+  { id:'m66', name:"Spanish Omelette (Tortilla)", icon:"🥚",
+    desc:"Potato and egg omelette cooked slowly in olive oil — best served at room temperature with crusty bread. A real staple that keeps well.",
+    cat:"proper", time:40, helpRating:2, kidRating:3,
+    ingredients:["eggs","potatoes","onion","olive oil","salt"] },
+
+  { id:'m67', name:"Kedgeree", icon:"🐟",
+    desc:"Smoked haddock with spiced rice, hard-boiled eggs, and parsley. A Victorian classic that's brilliant for a hearty weekend brunch or supper.",
+    cat:"proper", time:30, helpRating:2, kidRating:2,
+    ingredients:["smoked haddock","basmati rice","eggs","onion","curry powder","butter","parsley","lemon"] },
+
+  { id:'m68', name:"Gnocchi with Butter & Sage", icon:"🌿",
+    desc:"Shop-bought gnocchi (or homemade if ambitious) fried in foaming brown butter with crispy sage leaves. Stupidly simple and utterly delicious.",
+    cat:"proper", time:10, helpRating:2, kidRating:3,
+    ingredients:["gnocchi","butter","fresh sage","parmesan","black pepper"] },
+
+  { id:'m69', name:"Meatballs in Tomato Sauce", icon:"🍝",
+    desc:"Pork and beef meatballs simmered in a rich tomato sauce — serve with spaghetti or in a sub roll. Makes the whole house smell incredible.",
+    cat:"proper", time:45, helpRating:3, kidRating:3,
+    ingredients:["pork and beef mince","breadcrumbs","egg","garlic","tinned tomatoes","onion","herbs","spaghetti or sub rolls"] },
+
+  { id:'m70', name:"Chicken & Mushroom Pie", icon:"🥧",
+    desc:"Creamy chicken and mushroom filling in a shortcrust or puff pastry case. The golden pastry lid coming out of the oven is one of life's great sights.",
+    cat:"proper", time:60, helpRating:2, kidRating:3,
+    ingredients:["chicken thighs","mushrooms","onion","cream","chicken stock","puff pastry","egg wash","thyme"] },
+
+  { id:'m71', name:"Lamb Chops with Rosemary", icon:"🍖",
+    desc:"Marinate chops in rosemary, garlic, and olive oil. Griddle 3 minutes each side. Serve with mash and greens. Quick, impressive, and delicious.",
+    cat:"proper", time:20, helpRating:2, kidRating:2,
+    ingredients:["lamb chops","rosemary","garlic","olive oil","mashed potato","green veg"] },
+
+  { id:'m72', name:"Lentil Soup", icon:"🫘",
+    desc:"Red lentils, onion, carrot, cumin, and stock — blended until smooth. Serve with crusty bread. Impossibly cheap and deeply satisfying.",
+    cat:"proper", time:30, helpRating:2, kidRating:2,
+    ingredients:["red lentils","onion","carrot","garlic","cumin","turmeric","chicken or veg stock","crusty bread"] },
+
+  { id:'m73', name:"Minestrone Soup", icon:"🥣",
+    desc:"The fridge-raid soup — whatever veg needs using, tinned tomatoes, beans, and small pasta. Endlessly adaptable and always good.",
+    cat:"proper", time:35, helpRating:2, kidRating:2,
+    ingredients:["onion","carrot","celery","tinned tomatoes","cannellini beans","small pasta","courgette","stock","parmesan rind"] },
+
+  { id:'m74', name:"Pad Thai", icon:"🥜",
+    desc:"Rice noodles with egg, prawns or chicken, beansprouts, and the classic tamarind-fish sauce-palm sugar sauce. Finish with peanuts and lime.",
+    cat:"proper", time:20, helpRating:2, kidRating:3,
+    ingredients:["rice noodles","prawns or chicken","eggs","beansprouts","spring onions","fish sauce","tamarind paste","palm sugar","peanuts","lime"] },
+
+  { id:'m75', name:"Chicken Soup (from Scratch)", icon:"🍲",
+    desc:"A whole chicken simmered with veg for 90 minutes, then shredded back in. Nothing more comforting exists. Make on a Sunday, eat it all week.",
+    cat:"proper", time:100, helpRating:1, kidRating:3,
+    ingredients:["whole chicken","onion","carrot","celery","garlic","bay leaves","thyme","egg noodles or rice","parsley"] },
+
+  { id:'m76', name:"Butternut Squash Soup", icon:"🎃",
+    desc:"Roast squash until caramelised, blitz with onion, garlic, and stock, swirl in cream. The colour alone makes it feel special.",
+    cat:"proper", time:45, helpRating:2, kidRating:3,
+    ingredients:["butternut squash","onion","garlic","chicken or veg stock","double cream","nutmeg","olive oil","crusty bread"] },
+
+  { id:'m77', name:"Stuffed Peppers", icon:"🫑",
+    desc:"Halved peppers filled with a spiced rice and mince mix, topped with cheese, and baked. Great for using up rice and making dinner feel special.",
+    cat:"proper", time:45, helpRating:3, kidRating:3,
+    ingredients:["bell peppers","beef or turkey mince","rice","tinned tomatoes","onion","garlic","cumin","cheddar"] },
+
+  { id:'m78', name:"Frittata", icon:"🍳",
+    desc:"Thick Italian omelette — cook veg in an oven-proof pan, pour over whisked eggs, cook on hob then finish under the grill. Great hot or cold.",
+    cat:"proper", time:25, helpRating:2, kidRating:3,
+    ingredients:["eggs","new potatoes","peppers","onion","courgette","feta or cheddar","olive oil","herbs"] },
+
+  { id:'m79', name:"Fish Tacos", icon:"🌮",
+    desc:"Battered or grilled fish in warm corn tortillas with shredded cabbage, lime crema, and avocado. A California classic that always works.",
+    cat:"proper", time:25, helpRating:3, kidRating:3,
+    ingredients:["white fish fillets","corn tortillas","cabbage","avocado","sour cream","lime","chipotle sauce","coriander"] },
+
+  { id:'m80', name:"Prawn & Chorizo Rice", icon:"🦐",
+    desc:"Fry sliced chorizo until crispy, add garlic, prawns, and cooked rice. Finish with lemon and parsley. 15 minutes, restaurant quality.",
+    cat:"proper", time:15, helpRating:2, kidRating:2,
+    ingredients:["prawns","chorizo","cooked rice","garlic","lemon","parsley","smoked paprika","white wine"] },
+
+  { id:'m81', name:"Easy Paella", icon:"🥘",
+    desc:"Not totally authentic but absolutely delicious — chorizo, chicken, and prawns with saffron rice all in one big pan. A crowd-pleaser.",
+    cat:"proper", time:40, helpRating:2, kidRating:3,
+    ingredients:["paella rice","chorizo","chicken thighs","prawns","red pepper","tomatoes","saffron","paprika","chicken stock","peas"] },
+
+  { id:'m82', name:"Chicken Kiev", icon:"🧈",
+    desc:"Chicken breast stuffed with garlic butter, breaded, and baked or fried. The moment the butter floods out when you cut it is deeply satisfying.",
+    cat:"proper", time:35, helpRating:2, kidRating:3,
+    ingredients:["chicken breast","butter","garlic","parsley","breadcrumbs","eggs","flour"] },
+
+  { id:'m83', name:"Steak Night", icon:"🥩",
+    desc:"A good bavette, sirloin, or ribeye. Hot pan, oil, butter, garlic, thyme. Let it rest. Serve with chips and béarnaise or peppercorn sauce.",
+    cat:"proper", time:20, helpRating:1, kidRating:3,
+    ingredients:["steak","butter","garlic","thyme","oil","chips","béarnaise or peppercorn sauce"] },
+
+  { id:'m84', name:"Moussaka", icon:"🍆",
+    desc:"Greek layered dish of spiced lamb mince, aubergine, and creamy béchamel — like a Greek lasagne. Takes time but serves loads and freezes brilliantly.",
+    cat:"proper", time:90, helpRating:2, kidRating:2,
+    ingredients:["lamb mince","aubergine","tinned tomatoes","onion","garlic","cinnamon","milk","butter","flour","eggs","parmesan"] },
+
+  // ── MORE WEEKEND ──
+  { id:'m85', name:"Eggs Benedict / Royale", icon:"🍳",
+    desc:"Toasted English muffin, Canadian bacon or smoked salmon, poached egg, and hollandaise. Weekend cooking at its most impressive — master the hollandaise.",
+    cat:"weekend", time:30, helpRating:2, kidRating:3,
+    ingredients:["English muffins","back bacon or smoked salmon","eggs","butter","egg yolks","lemon","white wine vinegar"] },
+
+  { id:'m86', name:"Homemade Waffles", icon:"🧇",
+    desc:"Crispy-outside, fluffy-inside waffles — you need a waffle iron but it's worth it. Serve with maple syrup, berries, and whipped cream.",
+    cat:"weekend", time:30, helpRating:3, kidRating:3,
+    ingredients:["plain flour","baking powder","eggs","milk","butter","vanilla","maple syrup","berries","cream"] },
+
+  { id:'m87', name:"Cinnamon Rolls", icon:"🌀",
+    desc:"Pillowy soft rolls filled with cinnamon butter and drizzled with cream cheese icing. Takes 3 hours with proving time — completely worth it.",
+    cat:"weekend", time:180, helpRating:3, kidRating:3,
+    ingredients:["strong white flour","yeast","milk","butter","sugar","egg","cinnamon","cream cheese","icing sugar"] },
+
+  { id:'m88', name:"Slow-Roasted Lamb Shoulder", icon:"🐑",
+    desc:"Lamb shoulder slow-roasted at low temperature for 4–6 hours until it falls from the bone. Serve with roasted veg and flatbreads for pulling.",
+    cat:"weekend", time:360, helpRating:1, kidRating:3,
+    ingredients:["lamb shoulder","garlic","rosemary","olive oil","onions","red wine","stock","flatbreads"] },
+
+  { id:'m89', name:"Afternoon Tea Spread", icon:"🫖",
+    desc:"Finger sandwiches, scones with clotted cream and jam, and a selection of cakes. Put it all on tiered stands for maximum effect.",
+    cat:"weekend", time:60, helpRating:3, kidRating:3,
+    ingredients:["bread","smoked salmon","cucumber","egg mayo","scones","clotted cream","jam","assorted cakes"] },
+
+  { id:'m90', name:"Indian Feast (Multiple Dishes)", icon:"🫙",
+    desc:"Choose 3–4 dishes — a curry, a dal, rice, naan, and raita. Making several things at once is the fun of it. Pick mild options for young kids.",
+    cat:"weekend", time:90, helpRating:2, kidRating:3,
+    ingredients:["chicken or veg","red lentils","basmati rice","naan","yoghurt","cucumber","assorted spices"] },
+
+  { id:'m91', name:"Mexican Feast", icon:"🌮",
+    desc:"Slow-cooked beef or pulled pork, refried beans, guacamole, salsa, and all the tortilla wrappings. Set it all out and let everyone build their own.",
+    cat:"weekend", time:90, helpRating:3, kidRating:3,
+    ingredients:["beef or pork","black beans","avocado","tomatoes","lime","coriander","jalapeños","cheese","sour cream","tortillas"] },
+
+  { id:'m92', name:"Fondue Night", icon:"🧀",
+    desc:"Melt gruyère and emmental in white wine with garlic — serve with bread cubes, veg, and charcuterie for dipping. A brilliant social dinner.",
+    cat:"weekend", time:20, helpRating:2, kidRating:3,
+    ingredients:["gruyère","emmental","white wine","garlic","cornflour","kirsch","crusty bread","broccoli","apple"] },
+
+  { id:'m93', name:"Homemade Sushi", icon:"🍣",
+    desc:"Sushi rice, nori sheets, and fillings — cucumber, avocado, smoked salmon. Rolling is the fun part. Don't stress about perfection.",
+    cat:"weekend", time:60, helpRating:3, kidRating:3,
+    ingredients:["sushi rice","nori sheets","smoked salmon or tuna","cucumber","avocado","soy sauce","pickled ginger","wasabi"] },
+
+  { id:'m94', name:"Tapas Spread", icon:"🫒",
+    desc:"Small dishes of patatas bravas, gambas al ajillo, manchego, jamón, pan con tomate, and olives. Nibble and graze — perfect for a relaxed evening.",
+    cat:"weekend", time:45, helpRating:3, kidRating:2,
+    ingredients:["potatoes","prawns","garlic","manchego","jamón","bread","tomatoes","olive oil","olives","capers"] },
+
+  { id:'m95', name:"Slow Cooker Beef Brisket", icon:"🥩",
+    desc:"Season brisket, sear, then slow cook all day with onions, beer, and stock. Pull apart and serve in brioche buns with coleslaw. Effortlessly impressive.",
+    cat:"weekend", time:30, helpRating:1, kidRating:3,
+    ingredients:["beef brisket","onions","garlic","beer or beef stock","BBQ rub","brioche buns","coleslaw"] },
+
+  // ── BAKING ──
+  { id:'m96', name:"Chocolate Chip Cookies", icon:"🍪",
+    desc:"Classic chewy chocolate chip cookies — brown butter them if you want extra depth. The kids can do most of the work themselves.",
+    cat:"baking", time:30, helpRating:3, kidRating:3,
+    ingredients:["plain flour","butter","brown sugar","caster sugar","eggs","vanilla","chocolate chips","baking soda","salt"] },
+
+  { id:'m97', name:"Victoria Sponge", icon:"🎂",
+    desc:"The classic British cake — equal weight butter, sugar, flour, and eggs; split and filled with jam and cream. A reliable crowd-pleaser.",
+    cat:"baking", time:45, helpRating:3, kidRating:3,
+    ingredients:["butter","caster sugar","self-raising flour","eggs","vanilla","strawberry jam","double cream"] },
+
+  { id:'m98', name:"Banana Bread", icon:"🍌",
+    desc:"The perfect use for overripe bananas — moist, sweet, and endlessly good. Add chocolate chips or walnuts for variations.",
+    cat:"baking", time:70, helpRating:3, kidRating:3,
+    ingredients:["overripe bananas","butter","sugar","eggs","self-raising flour","vanilla","chocolate chips (optional)"] },
+
+  { id:'m99', name:"Blueberry Muffins", icon:"🫐",
+    desc:"Big-topped American-style muffins with juicy blueberries. The secret is not to overmix — lumpy batter makes better muffins.",
+    cat:"baking", time:35, helpRating:3, kidRating:3,
+    ingredients:["self-raising flour","sugar","eggs","butter","milk","vanilla","blueberries","lemon zest"] },
+
+  { id:'m100', name:"Chocolate Brownies", icon:"🍫",
+    desc:"Fudgy, dense, crinkle-topped brownies. The most important thing: take them out while they still wobble slightly. They'll firm up as they cool.",
+    cat:"baking", time:40, helpRating:3, kidRating:3,
+    ingredients:["dark chocolate","butter","eggs","caster sugar","plain flour","cocoa powder","vanilla"] },
+
+  { id:'m101', name:"Rocky Road", icon:"🍫",
+    desc:"Melted chocolate mixed with broken biscuits, marshmallows, and whatever else you have — set in the fridge. A no-bake win.",
+    cat:"baking", time:15, helpRating:3, kidRating:3,
+    ingredients:["dark chocolate","butter","digestive biscuits","mini marshmallows","raisins","golden syrup"] },
+
+  { id:'m102', name:"Flapjacks", icon:"🟫",
+    desc:"Butter, golden syrup, oats, and sugar — melt, mix, press, bake. Classic and almost impossible to get wrong. Add seeds, dried fruit, or chocolate.",
+    cat:"baking", time:30, helpRating:3, kidRating:3,
+    ingredients:["rolled oats","butter","golden syrup","brown sugar","salt","dried fruit or chocolate chips (optional)"] },
+
+  { id:'m103', name:"Rice Krispie Cakes", icon:"⭐",
+    desc:"Melt chocolate and butter, stir in Rice Krispies, spoon into cases and set. Done in 10 minutes. Kids can do this one almost entirely alone.",
+    cat:"baking", time:10, helpRating:3, kidRating:3,
+    ingredients:["Rice Krispies","milk chocolate","butter","golden syrup","mini eggs or Smarties for decoration"] },
+
+  { id:'m104', name:"Gingerbread People", icon:"🫚",
+    desc:"Roll, cut, bake, and decorate — gingerbread person-making is one of the great rainy afternoon activities. Make a whole family.",
+    cat:"baking", time:45, helpRating:3, kidRating:3,
+    ingredients:["plain flour","butter","brown sugar","golden syrup","egg","ginger","cinnamon","bicarb","icing sugar for decorating"] },
+
+  { id:'m105', name:"Shortbread", icon:"🍘",
+    desc:"Three ingredients — butter, sugar, flour. Press into a tin or roll and cut into rounds. Classic Scottish biscuits that melt in the mouth.",
+    cat:"baking", time:35, helpRating:3, kidRating:3,
+    ingredients:["butter","caster sugar","plain flour","cornflour","salt"] },
+
+  { id:'m106', name:"Lemon Drizzle Cake", icon:"🍋",
+    desc:"Light, zesty sponge soaked in a sharp lemon syrup. The drizzle goes on while it's hot and crackles as it cools. Brilliant.",
+    cat:"baking", time:55, helpRating:3, kidRating:3,
+    ingredients:["self-raising flour","butter","sugar","eggs","lemon zest and juice","icing sugar"] },
+
+  { id:'m107', name:"Carrot Cake", icon:"🥕",
+    desc:"Moist, spiced carrot cake with cream cheese frosting. Easy to make, keeps for days, and sneaks vegetables in undetected.",
+    cat:"baking", time:60, helpRating:3, kidRating:3,
+    ingredients:["self-raising flour","grated carrot","eggs","oil","brown sugar","cinnamon","mixed spice","walnuts","cream cheese","icing sugar"] },
+
+  { id:'m108', name:"Fairy Cakes with Icing", icon:"🧁",
+    desc:"Simple butter sponge cupcakes — the kind your gran made. Ice with simple glacé icing and let the kids go wild with sprinkles and mini sweets.",
+    cat:"baking", time:35, helpRating:3, kidRating:3,
+    ingredients:["self-raising flour","butter","caster sugar","eggs","vanilla","icing sugar","food colouring","sprinkles"] },
+
+  { id:'m109', name:"Scones with Jam & Cream", icon:"🫖",
+    desc:"Classic afternoon tea scones — debate the jam-first vs cream-first question. Eat within an hour of baking when they're at their peak.",
+    cat:"baking", time:30, helpRating:3, kidRating:3,
+    ingredients:["self-raising flour","butter","caster sugar","milk","egg","strawberry jam","clotted cream"] },
+
+  { id:'m110', name:"Malteser Tiffin", icon:"🟤",
+    desc:"Crushed digestives, Maltesers, raisins, cocoa, and butter — no baking required. Press into a tin, refrigerate, cut into squares. Impossible to stop eating.",
+    cat:"baking", time:15, helpRating:3, kidRating:3,
+    ingredients:["digestive biscuits","Maltesers","raisins","butter","golden syrup","cocoa powder","milk chocolate for topping"] },
+
+  { id:'m111', name:"No-Bake Cheesecake", icon:"🍰",
+    desc:"Digestive base with a whipped cream cheese filling — set in the fridge for 4 hours. Top with fruit compote or lemon curd.",
+    cat:"baking", time:20, helpRating:3, kidRating:3,
+    ingredients:["digestive biscuits","butter","cream cheese","double cream","icing sugar","vanilla","lemon","fruit for topping"] },
+
+  { id:'m112', name:"Apple Crumble", icon:"🍏",
+    desc:"Stewed apples topped with a buttery oat-and-flour crumble, baked until golden. Served with custard or vanilla ice cream. Autumn in a dish.",
+    cat:"baking", time:45, helpRating:3, kidRating:3,
+    ingredients:["Bramley apples","sugar","cinnamon","plain flour","butter","rolled oats","demerara sugar","custard or ice cream"] },
+
+  { id:'m113', name:"Sticky Toffee Pudding", icon:"🍮",
+    desc:"Dense date sponge doused in hot toffee sauce. One of the greatest British puddings — use a good recipe, don't rush it.",
+    cat:"baking", time:50, helpRating:2, kidRating:3,
+    ingredients:["Medjool dates","boiling water","self-raising flour","butter","sugar","eggs","vanilla","bicarb","double cream","treacle","brown sugar"] },
+
+  { id:'m114', name:"Chocolate Lava Cakes", icon:"🍫",
+    desc:"Individual chocolate cakes with a molten centre — the magic is in the timing. Make the batter in advance, bake for exactly 12 minutes.",
+    cat:"baking", time:25, helpRating:2, kidRating:3,
+    ingredients:["dark chocolate","butter","eggs","caster sugar","plain flour","cocoa powder","icing sugar"] },
+
+  { id:'m115', name:"Bread (Simple White Loaf)", icon:"🍞",
+    desc:"500g strong flour, 7g yeast, salt, water, and patience. Knead, prove, bake. The smell of a fresh loaf is worth every minute of the wait.",
+    cat:"baking", time:150, helpRating:3, kidRating:3,
+    ingredients:["strong white flour","fast-action yeast","salt","water","olive oil"] },
+
+  { id:'m116', name:"Soda Bread (No Yeast)", icon:"🍞",
+    desc:"No proving needed — just mix, shape, and bake for 35 minutes. Best eaten the day it's made, warm from the oven with plenty of butter.",
+    cat:"baking", time:45, helpRating:3, kidRating:3,
+    ingredients:["plain flour","bicarbonate of soda","salt","buttermilk (or milk + lemon juice)"] },
+
+  { id:'m117', name:"Focaccia", icon:"🫓",
+    desc:"Dimpled olive oil flatbread with rosemary and sea salt — more forgiving than a sandwich loaf. Great for the kids to push their fingers in.",
+    cat:"baking", time:120, helpRating:3, kidRating:3,
+    ingredients:["strong white flour","yeast","olive oil","salt","water","rosemary","sea salt flakes","olives or cherry tomatoes"] },
+
+  { id:'m118', name:"Meringues & Eton Mess", icon:"☁️",
+    desc:"Beat egg whites to stiff peaks with sugar, pipe, and dry in a low oven. Smash them up with cream and strawberries for a perfect Eton Mess.",
+    cat:"baking", time:90, helpRating:3, kidRating:3,
+    ingredients:["egg whites","caster sugar","double cream","strawberries","icing sugar"] },
+
+  { id:'m119', name:"Jam Tarts", icon:"❤️",
+    desc:"The simplest pastry project — press shortcrust pastry into a tart tin, add a teaspoon of jam, bake for 12 minutes. Kids can do this almost solo.",
+    cat:"baking", time:30, helpRating:3, kidRating:3,
+    ingredients:["shortcrust pastry (sheet)","assorted jams","icing sugar"] },
+
+  { id:'m120', name:"Churros with Chocolate Sauce", icon:"🍩",
+    desc:"Piped dough fried until crispy, rolled in cinnamon sugar, and dipped in thick hot chocolate. A Spanish classic — great for a weekend treat.",
+    cat:"baking", time:30, helpRating:2, kidRating:3,
+    ingredients:["plain flour","butter","water","eggs","cinnamon","sugar","oil for frying","dark chocolate","cream"] },
+
+  { id:'m121', name:"No-Churn Ice Cream", icon:"🍨",
+    desc:"Whipped double cream folded into condensed milk — infinite flavour variations possible. Freeze 6 hours. No machine, no churning, always works.",
+    cat:"baking", time:15, helpRating:3, kidRating:3,
+    ingredients:["double cream","condensed milk","vanilla (or any flavouring)","mix-ins of choice"] },
+
+  { id:'m122', name:"Profiteroles", icon:"🍮",
+    desc:"Light choux pastry puffs filled with cream and drenched in warm chocolate sauce. Easier than they look — the key is a hot oven and not opening the door.",
+    cat:"baking", time:45, helpRating:2, kidRating:3,
+    ingredients:["water","butter","plain flour","eggs","double cream","icing sugar","dark chocolate","cream (for sauce)"] },
+
+  { id:'m123', name:"Bread & Butter Pudding", icon:"🍮",
+    desc:"Day-old bread soaked in a spiced egg custard and baked until golden. One of the great British comfort puddings — made from things you already have.",
+    cat:"baking", time:50, helpRating:2, kidRating:3,
+    ingredients:["white bread","butter","eggs","milk","double cream","caster sugar","vanilla","cinnamon","nutmeg","raisins"] },
+
+  { id:'m124', name:"Cinnamon Sugar Donuts (Baked)", icon:"🍩",
+    desc:"Baked rather than fried — easier and less mess. Dip in melted butter then roll in cinnamon sugar. Brilliant for a Saturday morning treat.",
+    cat:"baking", time:40, helpRating:3, kidRating:3,
+    ingredients:["plain flour","baking powder","sugar","egg","buttermilk","butter","cinnamon","vanilla"] },
+
+  { id:'m125', name:"Homemade Pizza Dough", icon:"🍕",
+    desc:"Make the dough from scratch — flour, yeast, water, olive oil. Prove for an hour, then stretch and top. Infinitely better than a base.",
+    cat:"baking", time:90, helpRating:3, kidRating:3,
+    ingredients:["strong white flour","fast-action yeast","salt","olive oil","water","passata","mozzarella","toppings"] },
+];
+
+const CRAFTS = [
+  { id:'c01', name:"Blow Painting", icon:"🎨",
+    desc:"Drop watered-down paint on paper and blow through a straw to create wild spidery shapes. Incredibly satisfying.",
+    cat:"painting", time:20, mess:2, materials:["paper","poster paint","straws","water"] },
+
+  { id:'c02', name:"Marble Painting", icon:"🖼️",
+    desc:"Drop marbles in paint then roll them around inside a box lid — creates beautiful, unpredictable patterns.",
+    cat:"painting", time:25, mess:2, materials:["paper","poster paint","marbles","shallow box lid"] },
+
+  { id:'c03', name:"Leaf Rubbings", icon:"🍂",
+    desc:"Collect leaves outside, place under paper and rub wax crayons over the top. Simple, beautiful, always works.",
+    cat:"painting", time:20, mess:1, materials:["paper","wax crayons or pencils","leaves from outside"] },
+
+  { id:'c04', name:"Rock Painting", icon:"🪨",
+    desc:"Collect smooth stones on a walk, then paint animals, patterns or characters. Leave them as 'kindness rocks' for others to find.",
+    cat:"painting", time:40, mess:2, materials:["smooth stones","poster paint or acrylic","paintbrushes","varnish (optional)"] },
+
+  { id:'c05', name:"Cardboard Box Fort", icon:"🏰",
+    desc:"Build a fort or castle from cereal boxes, toilet rolls and packing boxes. Cut windows, add a drawbridge. Can take all afternoon.",
+    cat:"building", time:60, mess:2, materials:["cardboard boxes","sticky tape","scissors","paint (optional)","toilet rolls"] },
+
+  { id:'c06', name:"Paper Plane Competition", icon:"✈️",
+    desc:"Fold different designs and test them — distance, accuracy, loop-de-loop. Look up 'world record paper plane' for inspo.",
+    cat:"building", time:30, mess:1, materials:["A4 paper","wide open space (garden or hallway)"] },
+
+  { id:'c07', name:"Straw & Marshmallow Tower", icon:"🏗️",
+    desc:"Who can build the tallest tower that stands up? Engineering challenge — surprisingly tricky and totally addictive.",
+    cat:"building", time:30, mess:1, materials:["drinking straws","marshmallows or sticky tack","ruler"] },
+
+  { id:'c08', name:"Bird Feeder from a Bottle", icon:"🐦",
+    desc:"Cut holes in a plastic bottle, thread a wooden spoon through for perches, fill with bird seed. Hang in the garden and watch.",
+    cat:"nature", time:20, mess:1, materials:["plastic bottle","wooden spoon","bird seed","string or wire"] },
+
+  { id:'c09', name:"Bug Hotel", icon:"🐛",
+    desc:"Stack old bricks, bamboo canes, pinecones, and straw to make a home for garden insects. Great pride when something moves in.",
+    cat:"nature", time:45, mess:2, materials:["old bricks or wood","bamboo canes","pinecones","dry leaves","straw","string"] },
+
+  { id:'c10', name:"Pressing Flowers & Leaves", icon:"🌸",
+    desc:"Collect flowers and leaves on a walk, press them between heavy books for a week, then mount on cards or frames.",
+    cat:"nature", time:20, mess:1, materials:["flowers and leaves","heavy books","paper","glue (after pressing)"] },
+
+  { id:'c11', name:"Homemade Slime", icon:"🟢",
+    desc:"Mix PVA glue, a tiny bit of bicarbonate of soda, and a splash of contact lens solution. Incredibly satisfying to make and play with.",
+    cat:"messy", time:20, mess:3, materials:["PVA glue","bicarbonate of soda","contact lens solution","food colouring","bowl"] },
+
+  { id:'c12', name:"Salt Dough Shapes", icon:"⭐",
+    desc:"Mix flour, salt, and water into dough. Cut shapes, bake until hard, then paint and varnish. Homemade decorations or gifts.",
+    cat:"messy", time:40, mess:2, materials:["plain flour","table salt","water","cookie cutters","poster paint","varnish"] },
+
+  { id:'c13', name:"Cloud Dough", icon:"☁️",
+    desc:"8 parts cornflour to 1 part baby oil — makes a magical dough that holds its shape but crumbles. Sensory play at its best.",
+    cat:"messy", time:10, mess:2, materials:["cornflour","baby oil","food colouring (optional)","tray"] },
+
+  { id:'c14', name:"Finger Painting Portraits", icon:"👆",
+    desc:"Use fingers instead of brushes — make faces, animals, or abstract patterns. No skill needed, just hands and paint.",
+    cat:"messy", time:25, mess:3, materials:["poster paint","paper","wipes (lots of them)"] },
+
+  { id:'c15', name:"Make a Comic Strip", icon:"💬",
+    desc:"Fold paper into panels, draw characters, and write the story. Can be about anything — their day, a superhero, the cat.",
+    cat:"quiet", time:30, mess:1, materials:["paper","pencils or felt tips","ruler","imagination"] },
+
+  { id:'c16', name:"Treasure Map", icon:"🗺️",
+    desc:"Draw a map of the house or garden with secret locations. Hide a treasure and write clues. They can play explorer for an hour.",
+    cat:"quiet", time:30, mess:1, materials:["paper","pencils","tea bag (for ageing effect, optional)","small treat to hide"] },
+
+  { id:'c17', name:"Origami Animals", icon:"🐸",
+    desc:"Fold a frog, a fox, or a simple boat. YouTube has brilliant step-by-step guides. Surprisingly meditative for both of you.",
+    cat:"quiet", time:25, mess:1, materials:["square paper","YouTube guide"] },
+
+  { id:'c18', name:"Secret Codes", icon:"🔐",
+    desc:"Invent a simple letter-substitution cipher and write secret messages to each other. Turns the whole day into a spy mission.",
+    cat:"quiet", time:20, mess:1, materials:["paper","pencils","imagination"] },
+
+  { id:'c19', name:"Watercolour Resist Painting", icon:"🌈",
+    desc:"Draw a picture or write words heavily with a white wax candle, then paint over with watercolours. The hidden drawing appears like magic.",
+    cat:"painting", time:30, mess:2, materials:["white candle or wax crayons","paper","watercolour paints","paintbrushes","water"] },
+
+  { id:'c20', name:"Paper Bag Puppets", icon:"🎭",
+    desc:"Decorate paper bags with faces and hair, put your hand inside for an instant puppet show. Write a script and perform it.",
+    cat:"building", time:30, mess:1, materials:["paper bags","felt tips","googly eyes (optional)","glue","wool or paper for hair"] },
+
+  { id:'c21', name:"Conker Creatures", icon:"🌰",
+    desc:"Thread conkers with cocktail sticks, add googly eyes and pipe cleaners — spiders, caterpillars, hedgehogs. Best in October.",
+    cat:"nature", time:30, mess:1, materials:["conkers","cocktail sticks","googly eyes","pipe cleaners","PVA glue"] },
+
+  { id:'c22', name:"Nature Scavenger Hunt", icon:"🔍",
+    desc:"Write a list of things to find outside (pinecone, feather, something yellow, something with spots...) and head out to tick them off.",
+    cat:"nature", time:45, mess:1, materials:["printed or written list","small bag for collecting","pencil"] },
+
+  { id:'c23', name:"Symmetry Butterfly Painting", icon:"🦋",
+    desc:"Fold paper in half, drop paint blobs on one side, fold over and press. Open to reveal a perfectly symmetrical butterfly. Always magical.",
+    cat:"painting", time:15, mess:2, materials:["paper","poster paint","paintbrush or dropper"] },
+
+  { id:'c24', name:"Bubble Wrap Printing", icon:"🫧",
+    desc:"Roll paint onto bubble wrap, then press paper down on top. The bubble texture makes brilliant spotted prints. Try making animal skins.",
+    cat:"painting", time:20, mess:2, materials:["bubble wrap","poster paint","paper","roller or sponge"] },
+
+  { id:'c25', name:"Vegetable Printing", icon:"🥦",
+    desc:"Cut a potato, pepper half, or broccoli stem, dip in paint and stamp onto paper. Broccoli makes a perfect tree. Repeat pattern wrapping paper.",
+    cat:"painting", time:25, mess:2, materials:["potatoes","peppers","broccoli","poster paint","paper"] },
+
+  { id:'c26', name:"Splatter Painting (Pollock Style)", icon:"💥",
+    desc:"Lay paper on the ground outside, thin some paint, and flick it with a brush. Repeat with different colours. Cover everything first.",
+    cat:"painting", time:20, mess:3, materials:["large paper or card","poster paint","old brushes","water","outdoor space"] },
+
+  { id:'c27', name:"Tie-Dye with Food Colouring", icon:"🌈",
+    desc:"Twist and rubber-band a white cotton t-shirt or pillowcase, apply drops of food colouring in vinegar. Leave an hour, rinse, reveal.",
+    cat:"messy", time:30, mess:3, materials:["white cotton fabric or t-shirt","food colouring","white vinegar","rubber bands","plastic gloves"] },
+
+  { id:'c28', name:"Oobleck (Non-Newtonian Fluid)", icon:"🌊",
+    desc:"2 parts cornflour to 1 part water. It flows like liquid but solidifies under pressure — genuinely mind-bending for kids (and adults).",
+    cat:"messy", time:10, mess:3, materials:["cornflour","water","food colouring (optional)","tray or bowl"] },
+
+  { id:'c29', name:"Ice Excavation", icon:"🧊",
+    desc:"Freeze small toys, plastic animals, or coins in a block of ice overnight. Give the kids a dropper of warm water and let them excavate.",
+    cat:"messy", time:15, mess:2, materials:["water","small toys or coins","freezer container","warm water","droppers or squeezy bottles"] },
+
+  { id:'c30', name:"Shaving Foam Marbling", icon:"🌀",
+    desc:"Spread shaving foam on a tray, drizzle food colouring, swirl with a skewer, press paper down and peel away. Stunning marbled effect.",
+    cat:"messy", time:20, mess:2, materials:["shaving foam","food colouring","skewer","paper","ruler or card to scrape foam off"] },
+
+  { id:'c31', name:"Homemade Playdough", icon:"🎭",
+    desc:"2 cups flour, ½ cup salt, 2 tsp cream of tartar, 2 cups boiling water, 2 tbsp oil, food colouring. Smoother and lasts longer than shop-bought.",
+    cat:"messy", time:15, mess:2, materials:["plain flour","table salt","cream of tartar","boiling water","vegetable oil","food colouring"] },
+
+  { id:'c32', name:"Blanket Den Building", icon:"🏕️",
+    desc:"Pull every blanket and cushion out, tie ropes between chairs, peg sheets over them. Spend the afternoon in the den with snacks and a torch.",
+    cat:"building", time:30, mess:1, materials:["blankets","sheets","chairs","pegs or bulldog clips","rope or string","torch","snacks"] },
+
+  { id:'c33', name:"Marble Run from Cardboard Tubes", icon:"🎰",
+    desc:"Save toilet rolls and kitchen towel tubes. Tape them to the wall at angles to make a marble run. Adjust and improve — can take all afternoon.",
+    cat:"building", time:60, mess:1, materials:["cardboard tubes","sticky tape","marbles or small balls","wall space"] },
+
+  { id:'c34', name:"Lolly Stick Bridge Challenge", icon:"🌉",
+    desc:"Can your bridge hold a full water bottle? Engineering challenge with lolly sticks and PVA glue — test it when dry. Great problem-solving.",
+    cat:"building", time:45, mess:1, materials:["lolly sticks (craft sticks)","PVA glue","heavy objects for testing"] },
+
+  { id:'c35', name:"Make Your Own Book", icon:"📖",
+    desc:"Fold and staple A4 paper into a small book. Write and illustrate a story — characters, plot, the lot. They'll treasure it forever.",
+    cat:"quiet", time:45, mess:1, materials:["A4 paper","stapler","pencils","felt tips"] },
+
+  { id:'c36', name:"Design Your Own Superhero", icon:"🦸",
+    desc:"Invent a superhero — name, powers, costume, origin story, nemesis. Draw them on card and cut them out as a figure.",
+    cat:"quiet", time:30, mess:1, materials:["paper or card","pencils","felt tips","scissors"] },
+
+  { id:'c37', name:"Shadow Tracing", icon:"☀️",
+    desc:"Put toys or interesting objects on a sunny window sill, hold paper below and trace the shadow. Try different times of day — the shadow moves.",
+    cat:"quiet", time:20, mess:1, materials:["toys or objects","paper","pencil","sunny windowsill"] },
+
+  { id:'c38', name:"Make a Jigsaw Puzzle", icon:"🧩",
+    desc:"Draw a picture on thick card, colour it in, then cut it up into pieces. Swap puzzles with a friend or sibling and see if they can solve it.",
+    cat:"quiet", time:30, mess:1, materials:["thick card or cereal box card","pencils","felt tips","scissors"] },
+
+  { id:'c39', name:"Sock Puppets", icon:"🧦",
+    desc:"An old sock + googly eyes + felt scraps = an instant puppet. Make a whole family of characters and put on a show over the back of the sofa.",
+    cat:"building", time:25, mess:1, materials:["old socks","googly eyes","felt or fabric scraps","glue or needle and thread","buttons"] },
+
+  { id:'c40', name:"Mosaic Art from Torn Paper", icon:"🎨",
+    desc:"Tear up old magazines and catalogues into small pieces, sort by colour, and glue them onto card in a pattern or picture. Beautiful results.",
+    cat:"painting", time:45, mess:1, materials:["old magazines or catalogues","card","PVA glue","pencil (to sketch outline first)"] },
+
+  { id:'c41', name:"Planting Cress Heads", icon:"🌱",
+    desc:"Draw a face on an eggshell or old tights stuffed with soil. Sprinkle cress seeds on top and water. In a week they have green hair.",
+    cat:"nature", time:15, mess:1, materials:["eggshells or old tights","soil or cotton wool","cress seeds","felt tips for faces","egg cups"] },
+
+  { id:'c42', name:"Seed Bombs", icon:"💚",
+    desc:"Mix air-dry clay (or flour dough), compost, and wildflower seeds into balls. Leave to dry, then throw into neglected garden spots.",
+    cat:"nature", time:20, mess:2, materials:["air-dry clay or flour","compost","wildflower seeds","water"] },
+
+  { id:'c43', name:"Make a Nature Journal", icon:"📔",
+    desc:"Staple paper together, head outside and fill it with observational sketches, leaf rubbings, and notes about what you find. A keepsake.",
+    cat:"nature", time:60, mess:1, materials:["stapled paper booklet","pencils","wax crayons","magnifying glass (optional)"] },
+
+  { id:'c44', name:"Finger Knitting", icon:"🧶",
+    desc:"Weave wool over and under your fingers in a simple pattern to make a chain. Kids can do this independently once shown — quietly absorbing.",
+    cat:"quiet", time:30, mess:1, materials:["chunky wool or yarn"] },
+
+  { id:'c45', name:"Paper Weaving", icon:"✂️",
+    desc:"Cut slits in a piece of card, then weave strips of coloured paper over and under. Simple but satisfying — makes a great placemat.",
+    cat:"quiet", time:25, mess:1, materials:["card","coloured paper strips","scissors","glue stick"] },
+
+  { id:'c46', name:"Homemade Kaleidoscope Drawing", icon:"🔮",
+    desc:"Fold paper into eight triangles, draw a pattern in one triangle, then trace it (flipped) into all the others. Instant symmetrical mandala.",
+    cat:"quiet", time:20, mess:1, materials:["paper","pencil","ruler","felt tips or coloured pencils"] },
+
+  { id:'c47', name:"Chalk Pavement Art", icon:"🖍️",
+    desc:"Go big on the driveway or patio with chunky chalk — hopscotch, roadways for bikes, life-size body outlines, or a whole city. Washes off in the rain.",
+    cat:"painting", time:40, mess:1, materials:["chunky chalk","outdoor hard surface","imagination"] },
+
+  { id:'c48', name:"Make a Sock Snake", icon:"🐍",
+    desc:"Stuff an old sock leg with rice or lentils for weight. Tie the end, sew or glue on eyes, add a felt tongue. Surprisingly satisfying.",
+    cat:"building", time:20, mess:1, materials:["long sock or stocking","rice or lentils","elastic band","googly eyes","red felt for tongue","glue"] },
+
+  { id:'c49', name:"Homemade Kite", icon:"🪁",
+    desc:"Two sticks, a bin bag or light plastic, string, and a tail of tied fabric strips. It really flies — proper outdoor pride when it does.",
+    cat:"building", time:40, mess:1, materials:["two thin sticks or bamboo canes","bin bag or light plastic","string","fabric strips for tail","sticky tape"] },
+
+  { id:'c50', name:"Decoupage Pots", icon:"🪴",
+    desc:"Tear up tissue paper or newspaper into strips and glue them in layers over a plant pot, jam jar, or cardboard box. Varnish when dry.",
+    cat:"messy", time:30, mess:2, materials:["plant pot or glass jar","tissue paper or newspaper","PVA glue (1:1 with water)","brush","varnish (optional)"] },
+
+  // ── SEASONAL — CHRISTMAS ──
+  { id:'c51', name:"Salt Dough Christmas Baubles", icon:"🎄",
+    desc:"Make salt dough, cut into shapes with cookie cutters, make a hole at the top, bake, paint, and hang. Homemade decorations they'll treasure.",
+    cat:"seasonal", time:60, mess:2, materials:["plain flour","table salt","water","cookie cutters","poster paint","varnish","ribbon"] },
+
+  { id:'c52', name:"Paper Chain Garlands", icon:"🎊",
+    desc:"Cut strips of paper, loop and glue into chains. Use Christmas colours or let them choose. Drape around the tree or across the room. Classic.",
+    cat:"seasonal", time:20, mess:1, materials:["coloured paper","scissors","glue stick or tape"] },
+
+  { id:'c53', name:"Paper Snowflakes", icon:"❄️",
+    desc:"Fold paper into eighths and cut small shapes from the edges — unfold to reveal a unique snowflake. No two ever the same. Hang from thread.",
+    cat:"seasonal", time:20, mess:1, materials:["white paper","scissors","thread for hanging"] },
+
+  { id:'c54', name:"Pine Cone Christmas Tree", icon:"🌲",
+    desc:"Stand a pine cone point-up, paint it green, add tiny dots of white or yellow paint for baubles. Arrange several in a row for a mini forest.",
+    cat:"seasonal", time:25, mess:2, materials:["pine cones","green paint","small brush","white or yellow dots paint","glitter (optional)"] },
+
+  { id:'c55', name:"Toilet Roll Nativity Scene", icon:"⭐",
+    desc:"Wrap cardboard tubes in fabric scraps and felt to make the nativity characters — Mary, Joseph, shepherds, kings. Set them up on a windowsill.",
+    cat:"seasonal", time:60, mess:2, materials:["toilet rolls","felt or fabric scraps","googly eyes","wool","glue","markers"] },
+
+  { id:'c56', name:"Christmas Card Factory", icon:"✉️",
+    desc:"Set up a card-making production line — potato stamps, rubber stamps, cut paper, or hand-drawn art. Post real cards to grandparents and friends.",
+    cat:"seasonal", time:45, mess:2, materials:["card blanks or folded card","envelopes","poster paint","stamps","felt tips","glitter glue"] },
+
+  { id:'c57', name:"Snow Globe (Jar)", icon:"🌨️",
+    desc:"Put a waterproof figure or plastic toy in a jar, fill with water and glycerine, add glitter, seal the lid. Shake for a snow effect.",
+    cat:"seasonal", time:30, mess:1, materials:["glass jar with tight lid","waterproof figure or toy","glycerine","white glitter","waterproof glue","water"] },
+
+  { id:'c58', name:"Advent Calendar (Paper Pockets)", icon:"📅",
+    desc:"Fold 24 small paper pockets or envelopes, number them 1–24, attach to a string, and fill with notes, sweets, or tiny toys. Better than a shop one.",
+    cat:"seasonal", time:60, mess:1, materials:["envelopes or card","string","pegs or tape","numbers 1-24","small treats or notes"] },
+
+  { id:'c59', name:"3D Paper Christmas Stars", icon:"🌟",
+    desc:"Fold strips of paper and weave them into a 3D star shape. Looks complex but follows a simple pattern — search 'German paper star' for the method.",
+    cat:"seasonal", time:30, mess:1, materials:["strips of paper (can use newspaper or wrapping paper)","scissors"] },
+
+  { id:'c60', name:"Pine Cone Bird Feeder", icon:"🐦",
+    desc:"Roll pine cones in peanut butter then bird seed. Hang from a tree with string. Watch from the window — brilliant wildlife connection for winter.",
+    cat:"seasonal", time:15, mess:2, materials:["pine cones","peanut butter","bird seed","string"] },
+
+  { id:'c61', name:"Handprint Reindeer Cards", icon:"🦌",
+    desc:"Paint your hand brown and press on card. The fingers become antlers. Add a red pompom or painted nose. Grandparents go mad for them.",
+    cat:"seasonal", time:20, mess:2, materials:["card","brown poster paint","red pompom or paint","googly eyes","pen for message"] },
+
+  { id:'c62', name:"Wreath from Card & Foliage", icon:"💚",
+    desc:"Cut a ring from cardboard, collect holly, ivy, and pinecones from outside, attach with wire or glue. Add a ribbon and hang on the door.",
+    cat:"seasonal", time:45, mess:2, materials:["thick cardboard","greenery from outside","wire or glue","ribbon","spray paint (optional)"] },
+
+  // ── SEASONAL — HALLOWEEN ──
+  { id:'c63', name:"Jack-o-Lantern Pumpkin Carving", icon:"🎃",
+    desc:"Scoop out a pumpkin, draw a face, carve with adult supervision, add a tea light. Simple faces are best — triangles and gap-toothed grins.",
+    cat:"seasonal", time:45, mess:3, materials:["pumpkin","marker","carving knife (adult)","spoon for scooping","tea light"] },
+
+  { id:'c64', name:"Ghost Mobile from Tissues", icon:"👻",
+    desc:"Scrunch a ball of newspaper inside a tissue, tie with string to make a ghost's head. Draw on eyes. Hang a row of them from a coat hanger.",
+    cat:"seasonal", time:20, mess:1, materials:["white tissues","newspaper balls","black marker","string","coat hanger"] },
+
+  { id:'c65', name:"Bat Puppets from Black Card", icon:"🦇",
+    desc:"Cut bat shapes from black card. Add googly eyes. Attach lolly sticks for a puppet — perfect for a Halloween puppet show.",
+    cat:"seasonal", time:20, mess:1, materials:["black card","scissors","googly eyes","lolly sticks","glue"] },
+
+  { id:'c66', name:"Spiderweb Weaving", icon:"🕸️",
+    desc:"Push sticks into the ground in a star pattern and weave wool between them to create a giant spiderweb. Add a toy spider in the centre.",
+    cat:"seasonal", time:25, mess:1, materials:["garden sticks or lolly sticks","wool","toy spider"] },
+
+  { id:'c67', name:"Skeleton from Cotton Buds", icon:"💀",
+    desc:"Arrange cotton buds (and cotton balls for the skull) on black card to form a skeleton. Glue down. Looks surprisingly effective and eerie.",
+    cat:"seasonal", time:30, mess:1, materials:["black card","cotton buds","cotton balls","white glue or PVA"] },
+
+  { id:'c68', name:"Haunted House Diorama", icon:"🏚️",
+    desc:"Build a spooky house scene inside a shoebox — paint the interior black, cut out a moon in the back, add cut-out ghosts, bats, and gravestones.",
+    cat:"seasonal", time:45, mess:2, materials:["shoebox","black paint","white card for cut-outs","glue","torch for lighting"] },
+
+  // ── SEASONAL — EASTER ──
+  { id:'c69', name:"Egg Decorating", icon:"🥚",
+    desc:"Hard boil eggs or blow them, then decorate with paints, stickers, elastic bands for wax-resist, or permanent marker. Make a whole Easter basket.",
+    cat:"seasonal", time:30, mess:2, materials:["eggs (hard boiled or blown)","poster paint","permanent markers","stickers","elastic bands"] },
+
+  { id:'c70', name:"Easter Basket Weaving", icon:"🧺",
+    desc:"Weave strips of paper over and under a simple card base to make a small basket. Fill with shredded paper and mini eggs.",
+    cat:"seasonal", time:30, mess:1, materials:["card for base","strips of coloured paper","stapler or glue","shredded paper","mini eggs"] },
+
+  { id:'c71', name:"Paper Plate Chick", icon:"🐥",
+    desc:"Paint a paper plate yellow, add an orange beak (folded triangle), googly eyes, and yellow feathers. Simple and brilliant for younger kids.",
+    cat:"seasonal", time:20, mess:2, materials:["paper plate","yellow paint","orange card","googly eyes","yellow feathers or paper strips"] },
+
+  { id:'c72', name:"Bunny Ears Headband", icon:"🐰",
+    desc:"Cut bunny ears from white card, add pink inner ears, attach to a headband or strip of card. Wear for the Easter egg hunt.",
+    cat:"seasonal", time:15, mess:1, materials:["white card","pink card or paint","scissors","glue","headband or strip of card"] },
+
+  { id:'c73', name:"Easter Egg Nest Cakes", icon:"🍫",
+    desc:"Melt chocolate, stir in cornflakes or shredded wheat, spoon into cases, press in mini eggs. Refrigerate an hour. No baking needed.",
+    cat:"seasonal", time:15, mess:2, materials:["milk chocolate","cornflakes or shredded wheat","paper cases","mini eggs"] },
+
+  // ── SEASONAL — VALENTINE'S ──
+  { id:'c74', name:"Paper Heart Bunting", icon:"❤️",
+    desc:"Cut heart shapes from red and pink paper, fold in half over a string, and glue. Hang across the room. A lovely little act of decoration.",
+    cat:"seasonal", time:20, mess:1, materials:["red and pink paper","scissors","string","glue stick"] },
+
+  { id:'c75', name:"Love Potion (Science-Craft Mix)", icon:"🧪",
+    desc:"Put bicarb in a 'potion bottle', add red food colouring and vinegar. Watch it fizz dramatically. Perfect Valentine's or magic-themed craft.",
+    cat:"seasonal", time:10, mess:2, materials:["bicarbonate of soda","white vinegar","red food colouring","bottle or cup","glitter (optional)"] },
+
+  { id:'c76', name:"Friendship Bracelets", icon:"🤝",
+    desc:"Tie coloured threads together, tape to a surface, and braid or knot patterns. Make one for a best friend, a sibling, or Dad.",
+    cat:"seasonal", time:30, mess:1, materials:["embroidery thread in various colours","scissors","tape"] },
+
+  // ── SEASONAL — BONFIRE NIGHT ──
+  { id:'c77', name:"Firework Chalk Pastel Art", icon:"🎆",
+    desc:"Black paper, bright chalk pastels — draw bursting firework shapes with radiating lines and dots. Smudge with fingers for a glowing effect.",
+    cat:"seasonal", time:20, mess:1, materials:["black paper","chalk pastels or oil pastels","cotton buds for smudging"] },
+
+  { id:'c78', name:"Firework Print (Straw Burst)", icon:"🎇",
+    desc:"Dab a small blob of bright paint on black paper, press a bundle of straws down on it and splay outward — creates a perfect firework burst.",
+    cat:"seasonal", time:20, mess:2, materials:["black paper","bright poster paints","drinking straws (bundle 6–8 together with elastic band)"] },
+
+  // ── SEASONAL — SUMMER ──
+  { id:'c79', name:"Sun Catcher", icon:"🌞",
+    desc:"Stick coloured tissue paper pieces onto a square of sticky-back plastic, cover with another layer. Hang in a window and watch the light pour through.",
+    cat:"seasonal", time:20, mess:1, materials:["contact film / sticky-back plastic","coloured tissue paper","scissors","thread for hanging"] },
+
+  { id:'c80', name:"Giant Bubbles", icon:"🫧",
+    desc:"Mix washing up liquid, water, and glycerine for a giant bubble solution. Use two sticks tied with string as a wand. Best on calm days outside.",
+    cat:"seasonal", time:15, mess:2, materials:["washing up liquid","water","glycerine","two sticks","string or cotton twine"] },
+
+  { id:'c81', name:"Nature Crown", icon:"👑",
+    desc:"Weave a strip of bendy willow or card into a headband. Attach flowers, leaves, and feathers found outside. Wear it on a summer walk.",
+    cat:"seasonal", time:20, mess:1, materials:["bendy twigs or card strip","flowers and leaves","string or elastic to secure"] },
+
+  { id:'c82', name:"Garden Fairy Garden", icon:"🧚",
+    desc:"Create a miniature world in a seed tray or plant pot — pebble path, twig furniture, moss lawn, and tiny clay or LEGO figures. Magical.",
+    cat:"seasonal", time:45, mess:2, materials:["seed tray or large pot","soil","pebbles","moss","twigs","air-dry clay","small figures"] },
+
+  { id:'c83', name:"Water Balloon Painting", icon:"💦",
+    desc:"Fill balloons with watered-down paint, throw them at paper pinned to a fence or the ground. Explosion of colour — and very satisfying.",
+    cat:"seasonal", time:20, mess:3, materials:["balloons","poster paint","large paper","fence or outdoor space","protective clothing"] },
+
+  // ── SEASONAL — SPRING ──
+  { id:'c84', name:"Tissue Paper Spring Flowers", icon:"🌸",
+    desc:"Cut large circles of tissue paper, layer 4–5 sheets, fold accordion-style, tie in the middle, and pull the layers apart. Instant peony-like flowers.",
+    cat:"seasonal", time:15, mess:1, materials:["tissue paper in various colours","pipe cleaners or wire","scissors"] },
+
+  { id:'c85', name:"Egg Carton Caterpillar", icon:"🐛",
+    desc:"Cut an egg carton into a strip, paint each cup a different colour, add pipe cleaner antennae and googly eyes. A classic for a reason.",
+    cat:"seasonal", time:20, mess:2, materials:["egg carton","poster paint","pipe cleaners","googly eyes","glue"] },
+
+  // ── SCIENCE EXPERIMENTS ──
+  { id:'c86', name:"Baking Soda Volcano", icon:"🌋",
+    desc:"Build a mountain around a bottle with newspaper and papier-mâché. Paint it. Fill with bicarb, pour in vinegar and red food colouring. Erupts dramatically.",
+    cat:"science", time:60, mess:3, materials:["plastic bottle","bicarbonate of soda","white vinegar","red food colouring","newspaper","PVA for papier-mâché","paint"] },
+
+  { id:'c87', name:"Rainbow Walking Water", icon:"🌈",
+    desc:"Fill glasses alternately with red, blue, and yellow water. Connect with folded paper towel bridges. Over a few hours colour walks between glasses, making orange and green.",
+    cat:"science", time:15, mess:1, materials:["glasses or jars","food colouring","water","paper towels","patience (check back after an hour)"] },
+
+  { id:'c88', name:"Invisible Ink Messages", icon:"🔍",
+    desc:"Write with lemon juice on paper — it's invisible when dry. Hold over a lamp or warm radiator to reveal the message in brown. Perfect spy activity.",
+    cat:"science", time:15, mess:1, materials:["lemon juice","cotton bud or small brush","white paper","lamp or warm radiator"] },
+
+  { id:'c89', name:"Density Jar", icon:"🫙",
+    desc:"Layer honey, washing up liquid, water, oil, and rubbing alcohol in a tall jar. Drop small objects in each layer — they settle at their matching density level.",
+    cat:"science", time:20, mess:1, materials:["tall glass jar","honey","washing up liquid","water","vegetable oil","rubbing alcohol","small objects (grape, coin, cork, ice)"] },
+
+  { id:'c90', name:"Tornado in a Bottle", icon:"🌪️",
+    desc:"Fill a 2-litre bottle two-thirds with water, add a drop of washing up liquid and glitter, seal tightly, invert, and swirl to make a water tornado.",
+    cat:"science", time:10, mess:1, materials:["two 2-litre bottles","water","washing up liquid","glitter","strong tape or connector","blu-tack"] },
+
+  { id:'c91', name:"Grow Sugar Crystals", icon:"💎",
+    desc:"Dissolve as much sugar as possible in hot water, pour into a jar with a string suspended in it. Leave a week — crystals grow up the string. Magic.",
+    cat:"science", time:20, mess:1, materials:["sugar","water","glass jar","string","pencil (to suspend string)","food colouring (optional)"] },
+
+  { id:'c92', name:"Static Electricity Experiments", icon:"⚡",
+    desc:"Rub a balloon on hair — it sticks to the wall, attracts tiny paper pieces, and can bend a stream of water. Do all three for a mini science show.",
+    cat:"science", time:15, mess:1, materials:["balloons","confetti or tiny paper pieces","running tap"] },
+
+  { id:'c93', name:"Make a Periscope", icon:"🔭",
+    desc:"Two angled mirrors inside a cardboard tube let you see around corners and over walls. Fold from a cereal box, add mirrors at 45°. Use to spy around corners.",
+    cat:"science", time:30, mess:1, materials:["cereal box or long cardboard tube","two small mirrors","scissors","tape","ruler"] },
+
+  { id:'c94', name:"Chromatography (Colour Separation)", icon:"🎨",
+    desc:"Draw a dot of felt tip 2cm from the bottom of a coffee filter, stand it in a shallow dish of water. Watch colours separate as water rises up.",
+    cat:"science", time:20, mess:1, materials:["coffee filters or filter paper","water-based felt tips","shallow dish of water","pencil"] },
+
+  { id:'c95', name:"Soap-Powered Paper Boat", icon:"🚤",
+    desc:"Cut a notch in the back of a small cardboard boat. Place on still water in the bath or a basin. Put a drop of washing up liquid in the notch — it shoots forward.",
+    cat:"science", time:10, mess:1, materials:["card","scissors","washing up liquid","large basin or bath of still water"] },
+
+  { id:'c96', name:"Grow Crystals from Epsom Salts", icon:"🔬",
+    desc:"Dissolve Epsom salts in hot water, pour into a flat dish, leave in the sun or warm place. Feathery white crystals form overnight.",
+    cat:"science", time:10, mess:1, materials:["Epsom salts","hot water","flat dish or tray","magnifying glass to inspect"] },
+
+  { id:'c97', name:"Cloud in a Jar", icon:"☁️",
+    desc:"Pour a little boiling water into a jar, hold a bag of ice above it, spray a little hairspray first. A mini cloud forms inside the jar.",
+    cat:"science", time:10, mess:1, materials:["glass jar","boiling water","bag of ice","hairspray"] },
+
+  { id:'c98', name:"Paper Helicopter (Autorotation)", icon:"🚁",
+    desc:"Cut, fold, and add a paperclip to make a simple paper samara that spins on the way down. Test from height. Adjust the wings to change spin speed.",
+    cat:"science", time:10, mess:1, materials:["paper","scissors","paperclip","template (Google 'paper helicopter template')"] },
+
+  { id:'c99', name:"Homemade Compass", icon:"🧭",
+    desc:"Magnetise a needle by stroking it with a magnet 50 times one way. Float the needle on a leaf in a bowl of water — it always points north.",
+    cat:"science", time:15, mess:1, materials:["sewing needle","strong magnet","small leaf or piece of foam","bowl of water"] },
+
+  { id:'c100', name:"Coin Boat Engineering Challenge", icon:"🪙",
+    desc:"Make a boat from foil — how many coins can it hold before sinking? Redesign, test, and improve. A brilliant introduction to engineering principles.",
+    cat:"science", time:20, mess:1, materials:["aluminium foil","coins","tray of water","ruler for measuring"] },
+
+  { id:'c101', name:"Bridge Building Challenge", icon:"🌉",
+    desc:"Build a bridge from straws, lolly sticks, or paper that can hold the weight of books or full drink cans. Test to destruction — then rebuild.",
+    cat:"science", time:35, mess:1, materials:["straws or lolly sticks","sticky tape","heavy objects for testing (books, cans)","ruler"] },
+
+  { id:'c102', name:"Cartesian Diver", icon:"🫧",
+    desc:"Fill a pen lid with a tiny bit of air, put in a full water bottle, seal tightly. Squeeze the bottle and the pen lid dives — release and it rises. Water pressure magic.",
+    cat:"science", time:10, mess:1, materials:["plastic bottle (full)","pen lid or small packet of ketchup","water"] },
+
+  { id:'c103', name:"Lemon Battery", icon:"🍋",
+    desc:"Push a copper coin and a zinc nail into a lemon. Connect with crocodile clips to a small LED. The lemon generates enough electricity to make it light up.",
+    cat:"science", time:20, mess:1, materials:["lemon","copper coin","zinc nail","crocodile clip wires","small LED"] },
+
+  { id:'c104', name:"Egg Drop Challenge", icon:"🥚",
+    desc:"Design a protective container for a raw egg using only household materials — then drop it from a height. Classic engineering and problem-solving challenge.",
+    cat:"science", time:40, mess:2, materials:["raw egg","straws","cotton wool","rubber bands","plastic bags","tape","cardboard"] },
+
+  // ── MORE PAINTING ──
+  { id:'c105', name:"Symmetry Handprint Tree", icon:"🌳",
+    desc:"Print one handprint, then mirror it by pressing the other hand symmetrically. The hands become branches of a tree — paint a trunk below.",
+    cat:"painting", time:20, mess:2, materials:["brown and green paint","paper","hands"] },
+
+  { id:'c106', name:"Fingerprint Ladybirds & Insects", icon:"🐞",
+    desc:"Press a fingertip in red or yellow paint, stamp onto paper, and add legs, spots, and wings with a fine black pen. Make a whole garden.",
+    cat:"painting", time:20, mess:2, materials:["poster paint","paper","fine black pen or marker"] },
+
+  { id:'c107', name:"Cotton Bud Pointillism", icon:"🟡",
+    desc:"Use only cotton bud tips dipped in paint — build up dots to make a picture. A lesson in how dots of colour mix optically. Look at Seurat for inspiration.",
+    cat:"painting", time:35, mess:2, materials:["cotton buds","poster paint","paper","image reference (optional)"] },
+
+  { id:'c108', name:"Sand Art", icon:"🏖️",
+    desc:"Draw a picture on card with glue, sprinkle coloured sand (or dyed plain sand) over the sticky areas. Shake off the excess — beautiful textured art.",
+    cat:"painting", time:25, mess:2, materials:["card","PVA glue","coloured sand or dyed salt","glue brush"] },
+
+  { id:'c109', name:"Pastel Smudge Sunset", icon:"🌅",
+    desc:"Lay chalk pastels on their sides to draw wide bands of colour — yellow, orange, pink, purple. Blend with fingers. Add a black silhouette skyline on top.",
+    cat:"painting", time:25, mess:2, materials:["chalk pastels","dark paper","black card for silhouette","scissors","glue"] },
+
+  { id:'c110', name:"Watercolour Wet-on-Wet Sky", icon:"🌊",
+    desc:"Wet the paper with a sponge, then drop watercolour onto it while still wet. The colours bleed and bloom in beautiful unpredictable ways.",
+    cat:"painting", time:20, mess:1, materials:["watercolour paper","watercolours","large brush","sponge","water"] },
+
+  { id:'c111', name:"Oil Pastel Resist (Watercolour)", icon:"🌈",
+    desc:"Draw heavily with oil pastels, then paint over with dark watercolour. The wax resists the paint — your drawing glows through. Great effect.",
+    cat:"painting", time:30, mess:1, materials:["oil pastels","watercolour paper","dark watercolour paint","brush","water"] },
+
+  { id:'c112', name:"Colour Mixing Wheel", icon:"🔵",
+    desc:"Draw a circle divided into six segments. Mix primary colours together to fill the secondary colour segments. A classic lesson in colour theory.",
+    cat:"painting", time:20, mess:2, materials:["paper","circle template","red blue and yellow paint","brushes"] },
+
+  // ── MORE BUILDING ──
+  { id:'c113', name:"Rubber Band Powered Car", icon:"🚗",
+    desc:"Build a car chassis from cardboard, attach axles from skewers, use bottle caps for wheels. Wind a rubber band around the axle — release to drive.",
+    cat:"building", time:45, mess:1, materials:["cardboard","bamboo skewers","plastic bottle caps","rubber bands","sticky tape"] },
+
+  { id:'c114', name:"Catapult from Lolly Sticks", icon:"⚔️",
+    desc:"Stack and bind lolly sticks with elastic bands to make a lever and arm — add a bottle cap for the cup. Launch small marshmallows or pompoms.",
+    cat:"building", time:25, mess:1, materials:["lolly sticks","elastic bands","plastic bottle cap","small pompoms or marshmallows to launch"] },
+
+  { id:'c115', name:"Parachute Engineering", icon:"🪂",
+    desc:"Make a parachute from a plastic bag, string, and a clay figure. Test how slowly it falls. Vary the size — does bigger mean slower?",
+    cat:"building", time:20, mess:1, materials:["plastic bag","string","clay or small toy figure","scissors","tape"] },
+
+  { id:'c116', name:"Newspaper Tower Challenge", icon:"📰",
+    desc:"Build the tallest possible freestanding tower using only newspaper and tape. Time limit of 15 minutes. The collapse is as much fun as the building.",
+    cat:"building", time:20, mess:1, materials:["newspaper","sticky tape","ruler for measuring height","timer"] },
+
+  { id:'c117', name:"Zip Line (Indoor)", icon:"🎿",
+    desc:"Tie string between two chairs at a slight angle. Attach a paper clip to a LEGO figure and clip it to the string. It zips from chair to chair. Upgrade the system.",
+    cat:"building", time:20, mess:1, materials:["string","two chairs","paper clips","small LEGO figures or animals"] },
+
+  { id:'c118', name:"Windmill from Paper", icon:"💨",
+    desc:"Cut a square of paper, make diagonal cuts toward the centre, fold alternate corners in, push through a bead to a stick. Hold in the wind and it spins.",
+    cat:"building", time:15, mess:1, materials:["square of paper","scissors","map pin or brad","stick or pencil","bead"] },
+
+  { id:'c119', name:"Puppet Theatre from Cardboard", icon:"🎭",
+    desc:"Turn a large cardboard box on its side, cut out a proscenium arch, decorate. Write a script for your sock or stick puppets and perform it.",
+    cat:"building", time:45, mess:2, materials:["large cardboard box","scissors or craft knife (adult)","paint","fabric scraps for curtains"] },
+
+  { id:'c120', name:"Foil Sculpture", icon:"✨",
+    desc:"Scrunch, roll, and fold aluminium foil into animal or human shapes. No glue needed — it holds itself. Great for quick three-dimensional art.",
+    cat:"building", time:20, mess:1, materials:["aluminium foil","imagination"] },
+
+  // ── MORE QUIET ──
+  { id:'c121', name:"Design a Board Game", icon:"🎲",
+    desc:"Invent a board game from scratch — the board, the pieces, the rules, the chance cards. Then play it. A multi-hour creative project.",
+    cat:"quiet", time:90, mess:1, materials:["card","pencils","felt tips","dice","small toys or counters","ruler"] },
+
+  { id:'c122', name:"Write a Recipe Book", icon:"📝",
+    desc:"Write and illustrate a recipe book of their favourite meals — ingredients, method, drawings. A lovely handmade gift for grandparents.",
+    cat:"quiet", time:45, mess:1, materials:["paper","pencils","felt tips","stapler or binding"] },
+
+  { id:'c123', name:"Design a Trainers / Sneakers", icon:"👟",
+    desc:"Print or draw a shoe outline, then design the ultimate trainers — colourway, logo, sole design, any features they want. Often wildly creative.",
+    cat:"quiet", time:25, mess:1, materials:["paper","pencils","felt tips","trainer template (draw or print)"] },
+
+  { id:'c124', name:"Make a Newspaper", icon:"📰",
+    desc:"Write the front page, sports section, and crossword of your own newspaper. Interview family members. Include the weather forecast and a cartoon.",
+    cat:"quiet", time:45, mess:1, materials:["paper","pencil","felt tips","ruler","real newspaper for reference"] },
+
+  { id:'c125', name:"Family Tree Map", icon:"🌳",
+    desc:"Draw the family tree together — going back to great-grandparents if known. Add photos, dates of birth, or drawings of each person.",
+    cat:"quiet", time:40, mess:1, materials:["large paper","pencils","felt tips","family photos (optional)","glue"] },
+
+  { id:'c126', name:"Design Your Dream Bedroom", icon:"🏠",
+    desc:"Draw your bedroom from above (floor plan) then design it the way you'd want it — furniture, colours, secret passages. Surprisingly absorbing.",
+    cat:"quiet", time:30, mess:1, materials:["graph paper or plain paper","pencil","ruler","coloured pencils"] },
+
+  { id:'c127', name:"Letter Writing to a Relative", icon:"✉️",
+    desc:"Write a real letter by hand — news, a drawing, a joke — put it in an envelope and post it. The joy of receiving a real letter is incomparable.",
+    cat:"quiet", time:20, mess:1, materials:["paper","pencil or pen","envelope","stamp","address"] },
+
+  { id:'c128', name:"Make a Feelings Journal", icon:"📔",
+    desc:"Staple pages together. Each day draw or write how you felt and why. Helps kids process emotions and is interesting to look back on in years to come.",
+    cat:"quiet", time:20, mess:1, materials:["paper","stapler","pencils","felt tips"] },
+
+  { id:'c129', name:"Illustrated Story (6 Panels)", icon:"📖",
+    desc:"Fold a piece of A4 into six panels — plan a beginning, middle, and end. Draw each scene, add dialogue bubbles. More satisfying than a full-page comic.",
+    cat:"quiet", time:30, mess:1, materials:["paper","pencil","felt tips"] },
+
+  { id:'c130', name:"Logo Design for Your Family", icon:"🎨",
+    desc:"Design a family logo or coat of arms — choose symbols that represent everyone, pick colours and a motto. Draw the final version on card.",
+    cat:"quiet", time:30, mess:1, materials:["paper","pencil","felt tips","coloured pencils"] },
+
+  // ── MORE NATURE ──
+  { id:'c131', name:"Make Natural Dye", icon:"🎨",
+    desc:"Simmer beetroot, red cabbage, or onion skins in water to make natural dye. Dip white fabric or eggs in while still warm to colour them.",
+    cat:"nature", time:45, mess:2, materials:["beetroot or red cabbage or onion skins","water","pot","white fabric or eggs","rubber bands for tie-dye effect"] },
+
+  { id:'c132', name:"Mini Wildlife Pond", icon:"🐸",
+    desc:"Sink an old washing up bowl into the ground, fill with water, add a ramp for wildlife to escape. Plants optional. Wildlife will appear within weeks.",
+    cat:"nature", time:40, mess:3, materials:["washing up bowl or large tub","water","pebbles for ramp","aquatic plants (optional)"] },
+
+  { id:'c133', name:"Grow a Potato in a Bag", icon:"🥔",
+    desc:"Place a chitted potato in a potato bag or compost bag, cover with compost. Water well. Harvest after the plant dies back — dig for buried treasure.",
+    cat:"nature", time:15, mess:2, materials:["seed potato (chitted)","potato growing bag or large pot","compost"] },
+
+  { id:'c134', name:"Windowsill Herb Garden", icon:"🌿",
+    desc:"Plant basil, mint, chives, and parsley seeds in small pots on a sunny windowsill. Water, wait, harvest, and eat. A growing project with delicious results.",
+    cat:"nature", time:20, mess:2, materials:["small pots","compost","herb seeds (basil, mint, chives)","watering can"] },
+
+  { id:'c135', name:"Wormery in a Jar", icon:"🪱",
+    desc:"Layer sand and compost alternately in a large jar. Add worms from the garden. Cover with dark paper. Over days the worms mix the layers — science in a jar.",
+    cat:"nature", time:20, mess:2, materials:["large jar","sand","compost","garden worms","dark paper","elastic band"] },
+
+  { id:'c136', name:"Leaf Skeletons", icon:"🍂",
+    desc:"Boil leaves in washing soda for 30 minutes until the flesh dissolves. Rinse, dry, and paint the delicate skeleton structure. Patience required, results are beautiful.",
+    cat:"nature", time:45, mess:2, materials:["leaves with prominent veins","washing soda (not baking soda)","water","pot","soft brush","paint or ink"] },
+
+  { id:'c137', name:"Build a Hedgehog House", icon:"🦔",
+    desc:"Stack bricks or timber to make an entrance tunnel, cover with a wooden shelter, heap leaves on top. Leave in a quiet corner and watch for hedgehog footprints.",
+    cat:"nature", time:45, mess:2, materials:["bricks or timber","plywood for lid","dry leaves","quiet garden corner"] },
+
+  { id:'c138', name:"Make a Bird Bath", icon:"🐦",
+    desc:"Fill a wide shallow dish or upturned dustbin lid with water, place on the ground or a raised surface. Clean weekly — birds will use it within days.",
+    cat:"nature", time:10, mess:1, materials:["wide shallow dish or dustbin lid","pebbles","water","suitable place to position"] },
+
+  // ── MORE MESSY ──
+  { id:'c139', name:"Mud Kitchen", icon:"🍳",
+    desc:"Set up an outdoor mud kitchen — old pots and pans, spoons, a water source, and a pile of mud. Add leaves, petals, and stones as ingredients. Hours of play.",
+    cat:"messy", time:15, mess:3, materials:["old pots and pans","spoons","outdoor space","mud","water source (hosepipe or bucket)"] },
+
+  { id:'c140', name:"Shaving Foam Sensory Tray", icon:"🫧",
+    desc:"Spray shaving foam into a tray, add a few drops of food colouring and let them swirl and mix. Wonderful sensory play — cold, silky, and surprisingly calming.",
+    cat:"messy", time:10, mess:2, materials:["shaving foam","food colouring","large tray"] },
+
+  { id:'c141', name:"Cornflour Fingerpaint", icon:"🌽",
+    desc:"Mix cornflour with water and food colouring to make a thick, smooth fingerpaint. Slow to flow, bright, and washable. Great for pre-schoolers.",
+    cat:"messy", time:10, mess:2, materials:["cornflour","water","food colouring","large paper or tray"] },
+
+  { id:'c142', name:"Paper Mache Masks", icon:"🎭",
+    desc:"Blow up a balloon to head size. Cover in petroleum jelly, then layer torn newspaper dipped in flour-and-water paste. When dry, pop the balloon and decorate.",
+    cat:"messy", time:60, mess:3, materials:["balloon","petroleum jelly","newspaper","plain flour","water","paint","elastic for wearing"] },
+
+  { id:'c143', name:"Tie-Dye with Food Colouring (Eggs)", icon:"🥚",
+    desc:"Twist hard-boiled eggs in rubber bands, dip in food colouring mixed with vinegar. Remove the bands to reveal the resist pattern. Brilliant for Easter.",
+    cat:"messy", time:20, mess:2, materials:["hard-boiled eggs","food colouring","white vinegar","rubber bands","cups","water"] },
+];
+
+// ════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════
+
+const S = {
+  tab: 'activities',
+  actCat: 'all',
+  actMaxDist: 160,
+  actRegion: 'all',
+  actMaxPrice: 'all',
+  mealCat: 'all',
+  craftCat: 'all',
+  actFavs:   new Set(loadJSON('dh_actFavs')  || []),
+  mealFavs:  new Set(loadJSON('dh_mealFavs') || []),
+  craftFavs: new Set(loadJSON('dh_craftFavs')|| []),
+  customActs:   loadJSON('dh_customActs')   || [],
+  customMeals:  loadJSON('dh_customMeals')  || [],
+  customCrafts: loadJSON('dh_customCrafts') || [],
+  modalType: null,
+};
+
+function loadJSON(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }
+function saveJSON(k,v) { localStorage.setItem(k, JSON.stringify(v)); }
+
+// ════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════
+
+function weatherBadge(w) {
+  if (w === 'indoor')  return '<span class="badge b-rain">☔ Rainy day</span>';
+  if (w === 'outdoor') return '<span class="badge b-sun">☀️ Outdoors</span>';
+  return '<span class="badge b-both">⛅ Any weather</span>';
+}
+
+function priceBadge(price, label) {
+  if (price === 0) return `<span class="badge b-free">🆓 Free</span>`;
+  if (price === 1) return `<span class="badge b-paid">£ ${label}</span>`;
+  if (price === 2) return `<span class="badge b-paid">££ ${label}</span>`;
+  return `<span class="badge b-pricey">£££ ${label}</span>`;
+}
+
+function distBadge(d) {
+  return `<span class="badge b-dist">📍 ${d} miles</span>`;
+}
+
+function timeBadge(t) {
+  if (t < 60) return `<span class="badge b-time">⏱️ ${t} min</span>`;
+  return `<span class="badge b-time">⏱️ ${Math.floor(t/60)}h ${t%60?t%60+'m':''}</span>`;
+}
+
+function messBadge(m) {
+  const labels = ['','🟢 Tidy','🟡 Messy','🔴 Very messy'];
+  const cls = ['','b-mess1','b-mess2','b-mess3'];
+  return `<span class="badge ${cls[m]}">${labels[m]}</span>`;
+}
+
+function helpBadge(h) {
+  const labels = ['','👀 Watch','🤝 Help out','⭐ Kids lead'];
+  return `<span class="badge b-cat">${labels[h]}</span>`;
+}
+
+function kidBadge(k) {
+  const stars = '⭐'.repeat(k);
+  return `<span class="badge b-cat">${stars} Kid fave</span>`;
+}
+
+const REGION_MAP = {
+  a01:'local',a02:'local',a03:'local',a04:'local',a05:'local',
+  a06:'local',a07:'chester',a08:'local',a09:'chester',a10:'peaks',
+  a11:'peaks',a12:'chester',a13:'manchester',a14:'chester',a15:'manchester',
+  a16:'manchester',a17:'local',a18:'peaks',a19:'local',a20:'local',
+  a21:'local',a22:'manchester',a23:'chester',a24:'local',
+  a25:'manchester',a26:'midlands',a27:'chester',a28:'chester',a29:'chester',
+  a30:'chester',a31:'midlands',a32:'manchester',a33:'manchester',a34:'local',
+  a35:'manchester',a36:'local',a37:'manchester',a38:'local',a39:'local',
+  a40:'manchester',a41:'local',a42:'local',a43:'local',
+  a44:'local',a45:'local',a46:'local',a47:'chester',
+  a48:'yorkshire',a49:'peaks',a50:'local',
+};
+
+function getRegion(a) { return a.region || REGION_MAP[a.id] || 'local'; }
+
+function catLabel(cat) {
+  const m = { outdoor:'Outdoor', museum:'Museum', theme_park:'Theme Park', sport:'Sport / Play',
+               quick:'Quick win', proper:'Proper meal', weekend:'Weekend special', baking:'Baking',
+               painting:'Painting', building:'Building', nature:'Nature', messy:'Messy', quiet:'Quiet',
+               seasonal:'Seasonal', science:'Science', };
+  return m[cat] || cat;
+}
+
+function catIcon(cat) {
+  const m = { outdoor:'🌳', museum:'🏛️', theme_park:'🎡', sport:'🏊', indoor:'☔',
+               quick:'⚡', proper:'🍲', weekend:'✨', baking:'🧁',
+               painting:'🎨', building:'🏗️', nature:'🌿', messy:'💦', quiet:'📚',
+               seasonal:'🎄', science:'🔬' };
+  return m[cat] || '📌';
+}
+
+function favKey(type) {
+  return type === 'act' ? 'actFavs' : type === 'meal' ? 'mealFavs' : 'craftFavs';
+}
+
+function toggleFav(type, id) {
+  const key = favKey(type);
+  const store = type === 'act' ? 'dh_actFavs' : type === 'meal' ? 'dh_mealFavs' : 'dh_craftFavs';
+  if (S[key].has(id)) S[key].delete(id); else S[key].add(id);
+  saveJSON(store, [...S[key]]);
+  renderTab(S.tab);
+}
+
+function isFav(type, id) {
+  return S[favKey(type)].has(id);
+}
+
+// ════════════════════════════════════════════
+//  FILTERING
+// ════════════════════════════════════════════
+
+function filteredActs() {
+  return [...ACTIVITIES, ...S.customActs].filter(a => {
+    if (S.actCat === 'favs') return isFav('act', a.id);
+    if (S.actCat !== 'all' && a.cat !== S.actCat) return false;
+    if (S.actRegion !== 'all' && getRegion(a) !== S.actRegion) return false;
+    if (a.dist > S.actMaxDist) return false;
+    if (S.actMaxPrice !== 'all' && a.price !== parseInt(S.actMaxPrice)) return false;
+    return true;
+  });
+}
+
+function filteredMeals() {
+  return [...MEALS, ...S.customMeals].filter(m => {
+    if (S.mealCat === 'favs') return isFav('meal', m.id);
+    if (S.mealCat !== 'all' && m.cat !== S.mealCat) return false;
+    return true;
+  });
+}
+
+function filteredCrafts() {
+  return [...CRAFTS, ...S.customCrafts].filter(c => {
+    if (S.craftCat === 'favs') return isFav('craft', c.id);
+    if (S.craftCat !== 'all' && c.cat !== S.craftCat) return false;
+    return true;
+  });
+}
+
+// ════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════
+
+function renderAll() {
+  renderChips();
+  renderTab(S.tab);
+}
+
+function renderChips() {
+  // Activity cats
+  const actCats = [
+    {val:'all',label:'All'},
+    {val:'outdoor',label:'Outdoor'},
+    {val:'museum',label:'Museum / Attraction'},
+    {val:'theme_park',label:'Theme Park'},
+    {val:'sport',label:'Sport / Play'},
+    {val:'favs',label:'⭐ Favourites'},
+  ];
+  document.getElementById('act-cat-row').innerHTML = actCats.map(c =>
+    `<button class="chip ${S.actCat===c.val?'on-act':''}" onclick="setActCat('${c.val}')">${c.label}</button>`
+  ).join('');
+
+  // Activity regions
+  const actRegions = [
+    {val:'all',label:'📍 All areas'},
+    {val:'local',label:'🏠 Local (< 20mi)'},
+    {val:'manchester',label:'🏙️ Manchester'},
+    {val:'chester',label:'🏰 Chester & Cheshire'},
+    {val:'liverpool',label:'⚽ Liverpool'},
+    {val:'peaks',label:'⛰️ Peak District'},
+    {val:'sheffield',label:'🔩 Sheffield'},
+    {val:'yorkshire',label:'🌾 Yorkshire'},
+    {val:'midlands',label:'🏭 Midlands'},
+    {val:'wales',label:'🐉 North Wales'},
+    {val:'lakes',label:'🏔️ Lake District'},
+    {val:'north',label:'🏛️ North East'},
+  ];
+  document.getElementById('act-region-row').innerHTML = actRegions.map(r =>
+    `<button class="chip ${S.actRegion===r.val?'on-act':''}" onclick="setActRegion('${r.val}')">${r.label}</button>`
+  ).join('');
+
+  // Price chips
+  const prices = [{val:'all',label:'Any'},{val:'0',label:'Free'},{val:'1',label:'£'},{val:'2',label:'££'}];
+  document.getElementById('price-row').innerHTML = prices.map(p =>
+    `<button class="chip ${S.actMaxPrice===p.val?'on-act':''}" onclick="setPrice('${p.val}')">${p.label}</button>`
+  ).join('');
+
+  // Meal cats
+  const mealCats = [
+    {val:'all',label:'All meals'},
+    {val:'quick',label:'⚡ Quick wins'},
+    {val:'proper',label:'🍲 Proper meals'},
+    {val:'weekend',label:'✨ Weekend'},
+    {val:'baking',label:'🧁 Baking'},
+    {val:'favs',label:'⭐ Favourites'},
+  ];
+  document.getElementById('meal-cat-row').innerHTML = mealCats.map(c =>
+    `<button class="chip ${S.mealCat===c.val?'on-meal':''}" onclick="setMealCat('${c.val}')">${c.label}</button>`
+  ).join('');
+
+  // Craft cats
+  const craftCats = [
+    {val:'all',label:'All'},
+    {val:'painting',label:'🎨 Painting'},
+    {val:'building',label:'🏗️ Building'},
+    {val:'nature',label:'🌿 Nature'},
+    {val:'messy',label:'💦 Messy'},
+    {val:'quiet',label:'📚 Quiet'},
+    {val:'seasonal',label:'🎄 Seasonal'},
+    {val:'science',label:'🔬 Science'},
+    {val:'favs',label:'⭐ Favourites'},
+  ];
+  document.getElementById('craft-cat-row').innerHTML = craftCats.map(c =>
+    `<button class="chip ${S.craftCat===c.val?'on-craft':''}" onclick="setCraftCat('${c.val}')">${c.label}</button>`
+  ).join('');
+}
+
+function renderTab(tab) {
+  if (tab === 'activities') renderActivities();
+  if (tab === 'meals')      renderMeals();
+  if (tab === 'crafts')     renderCrafts();
+}
+
+function renderActivities() {
+  const items = filteredActs();
+  document.getElementById('act-count').textContent = `${items.length} place${items.length!==1?'s':''}`;
+  const grid = document.getElementById('act-grid');
+  if (!items.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="e-icon">🗺️</div><p>No activities match your filters</p></div>`;
+    return;
+  }
+  grid.innerHTML = items.map(a => actCard(a)).join('');
+}
+
+function renderMeals() {
+  const items = filteredMeals();
+  document.getElementById('meal-count').textContent = `${items.length} meal${items.length!==1?'s':''}`;
+  const grid = document.getElementById('meal-grid');
+  if (!items.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="e-icon">🍽️</div><p>No meals here yet</p></div>`;
+    return;
+  }
+  grid.innerHTML = items.map(m => mealCard(m)).join('');
+}
+
+function renderCrafts() {
+  const items = filteredCrafts();
+  document.getElementById('craft-count').textContent = `${items.length} craft idea${items.length!==1?'s':''}`;
+  const grid = document.getElementById('craft-grid');
+  if (!items.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="e-icon">🎨</div><p>No crafts match your filters</p></div>`;
+    return;
+  }
+  grid.innerHTML = items.map(c => craftCard(c)).join('');
+}
+
+function actCard(a) {
+  const fav = isFav('act', a.id);
+  return `<div class="card" onclick="openSpotlight('act','${a.id}')">
+    <div class="card-top">
+      <span class="card-icon">${a.icon}</span>
+      <span class="card-name">${a.name}</span>
+      <button class="fav-btn" onclick="event.stopPropagation();toggleFav('act','${a.id}')">${fav?'⭐':'☆'}</button>
+    </div>
+    <div class="card-desc">${a.desc}</div>
+    <div class="card-badges">
+      ${distBadge(a.dist)}
+      ${priceBadge(a.price, a.priceLabel)}
+      ${weatherBadge(a.weather)}
+    </div>
+  </div>`;
+}
+
+function mealCard(m) {
+  const fav = isFav('meal', m.id);
+  return `<div class="card" onclick="openSpotlight('meal','${m.id}')">
+    <div class="card-top">
+      <span class="card-icon">${m.icon}</span>
+      <span class="card-name">${m.name}</span>
+      <button class="fav-btn" onclick="event.stopPropagation();toggleFav('meal','${m.id}')">${fav?'⭐':'☆'}</button>
+    </div>
+    <div class="card-desc">${m.desc}</div>
+    <div class="card-badges">
+      ${timeBadge(m.time)}
+      <span class="badge b-cat">${catIcon(m.cat)} ${catLabel(m.cat)}</span>
+      ${kidBadge(m.kidRating)}
+    </div>
+  </div>`;
+}
+
+function craftCard(c) {
+  const fav = isFav('craft', c.id);
+  return `<div class="card" onclick="openSpotlight('craft','${c.id}')">
+    <div class="card-top">
+      <span class="card-icon">${c.icon}</span>
+      <span class="card-name">${c.name}</span>
+      <button class="fav-btn" onclick="event.stopPropagation();toggleFav('craft','${c.id}')">${fav?'⭐':'☆'}</button>
+    </div>
+    <div class="card-desc">${c.desc}</div>
+    <div class="card-badges">
+      ${timeBadge(c.time)}
+      ${messBadge(c.mess)}
+      <span class="badge b-cat">${catIcon(c.cat)} ${catLabel(c.cat)}</span>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════
+//  SPOTLIGHT
+// ════════════════════════════════════════════
+
+function allById(type) {
+  if (type === 'act')   return [...ACTIVITIES, ...S.customActs];
+  if (type === 'meal')  return [...MEALS, ...S.customMeals];
+  if (type === 'craft') return [...CRAFTS, ...S.customCrafts];
+}
+
+function openSpotlight(type, id) {
+  const item = allById(type).find(x => x.id === id);
+  if (!item) return;
+  const inner = document.getElementById('spotlight-inner');
+  const fav = isFav(type, id);
+
+  let extra = '';
+  if (type === 'act') {
+    extra = `
+      <div class="sp-section">Tags</div>
+      <div class="rb-badges">${(item.tags||[]).map(t=>`<span class="badge b-cat">${t}</span>`).join('')}</div>
+      ${item.url ? `<div class="sp-section">Website</div><a href="${item.url}" target="_blank" style="font-size:.85rem;color:var(--craft);">${item.url}</a>` : ''}
+    `;
+  } else if (type === 'meal') {
+    extra = `
+      <div class="sp-section">Key Ingredients</div>
+      <ul class="sp-list">${(item.ingredients||[]).map(i=>`<li>${i}</li>`).join('')}</ul>
+      <div class="sp-section">Kitchen info</div>
+      <div class="rb-badges">
+        ${helpBadge(item.helpRating)}
+        ${kidBadge(item.kidRating)}
+      </div>
+    `;
+  } else if (type === 'craft') {
+    extra = `
+      <div class="sp-section">You'll need</div>
+      <ul class="sp-list">${(item.materials||[]).map(m=>`<li>${m}</li>`).join('')}</ul>
+    `;
+  }
+
+  inner.innerHTML = `
+    <button class="sp-close" onclick="closeSpotlight()">✕</button>
+    <div class="sp-icon">${item.icon}</div>
+    <div class="sp-title">${item.name}</div>
+    <div class="sp-badges">
+      ${type==='act' ? distBadge(item.dist)+priceBadge(item.price,item.priceLabel)+weatherBadge(item.weather) : ''}
+      ${type==='meal' ? timeBadge(item.time)+`<span class="badge b-cat">${catIcon(item.cat)} ${catLabel(item.cat)}</span>` : ''}
+      ${type==='craft' ? timeBadge(item.time)+messBadge(item.mess)+`<span class="badge b-cat">${catIcon(item.cat)} ${catLabel(item.cat)}</span>` : ''}
+    </div>
+    <div class="sp-desc">${item.desc}</div>
+    ${extra}
+    <div class="sp-actions">
+      <button class="btn btn-${type==='act'?'act':type==='meal'?'meal':'craft'}" onclick="toggleFav('${type}','${id}');closeSpotlight()">
+        ${fav ? '✕ Remove favourite' : '⭐ Save as favourite'}
+      </button>
+      <button class="btn btn-outline" onclick="closeSpotlight()">Close</button>
+    </div>
+  `;
+
+  document.getElementById('spotlight-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSpotlight() {
+  document.getElementById('spotlight-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function onOverlayClick(e, id) {
+  if (e.target === document.getElementById(id)) closeSpotlight();
+}
+
+// ════════════════════════════════════════════
+//  RANDOM PICKERS
+// ════════════════════════════════════════════
+
+function showRandom(type) {
+  const pools = { act: filteredActs, meal: filteredMeals, craft: filteredCrafts };
+  const items = pools[type]();
+  if (!items.length) return;
+
+  const item = items[Math.floor(Math.random() * items.length)];
+  const rb = document.getElementById(`rb-${type}`);
+
+  let badges = '';
+  if (type === 'act')   badges = distBadge(item.dist) + priceBadge(item.price, item.priceLabel) + weatherBadge(item.weather);
+  if (type === 'meal')  badges = timeBadge(item.time) + `<span class="badge b-cat">${catIcon(item.cat)} ${catLabel(item.cat)}</span>`;
+  if (type === 'craft') badges = timeBadge(item.time) + messBadge(item.mess);
+
+  rb.innerHTML = `
+    <button class="rb-close" onclick="this.parentElement.classList.remove('show')">✕</button>
+    <div class="rb-label">${type==='act'?'How about…':type==='meal'?'Tonight, make…':"Let's make…"}</div>
+    <div class="rb-name">${item.icon} ${item.name}</div>
+    <div class="rb-desc">${item.desc}</div>
+    <div class="rb-badges">${badges}</div>
+  `;
+  rb.classList.add('show');
+
+  // Bounce the button
+  const btn = document.getElementById(`rand-${type}`);
+  btn.classList.add('popping');
+  btn.addEventListener('animationend', () => btn.classList.remove('popping'), {once:true});
+}
+
+// ════════════════════════════════════════════
+//  ADD CUSTOM ITEMS
+// ════════════════════════════════════════════
+
+const MODAL_FORMS = {
+  act: () => `
+    <div class="form-group"><label>Name *</label><input id="f-name" placeholder="e.g. Sutton Park"></div>
+    <div class="form-group"><label>Description</label><textarea id="f-desc" placeholder="What's it like? What will the kids enjoy?"></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Category</label>
+        <select id="f-cat">
+          <option value="outdoor">Outdoor</option>
+          <option value="museum">Museum / Attraction</option>
+          <option value="theme_park">Theme Park</option>
+          <option value="sport">Sport / Play</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Distance (miles)</label><input id="f-dist" type="number" min="1" max="200" placeholder="e.g. 8"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Price</label>
+        <select id="f-price">
+          <option value="0">Free</option>
+          <option value="1">£</option>
+          <option value="2">££</option>
+          <option value="3">£££</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Weather</label>
+        <select id="f-weather">
+          <option value="both">Any weather</option>
+          <option value="outdoor">Outdoors only</option>
+          <option value="indoor">Rainy day</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Emoji icon</label><input id="f-icon" placeholder="📍" maxlength="2" style="width:70px;"></div>
+  `,
+
+  meal: () => `
+    <div class="form-group"><label>Name *</label><input id="f-name" placeholder="e.g. Chicken Katsu Curry"></div>
+    <div class="form-group"><label>Description</label><textarea id="f-desc" placeholder="A brief description..."></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Category</label>
+        <select id="f-cat">
+          <option value="quick">Quick win</option>
+          <option value="proper">Proper meal</option>
+          <option value="weekend">Weekend special</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Time (mins)</label><input id="f-time" type="number" min="5" max="180" placeholder="e.g. 25"></div>
+    </div>
+    <div class="form-group"><label>Key ingredients (comma-separated)</label><input id="f-ingredients" placeholder="e.g. chicken, rice, curry sauce"></div>
+    <div class="form-group"><label>Emoji icon</label><input id="f-icon" placeholder="🍲" maxlength="2" style="width:70px;"></div>
+  `,
+
+  craft: () => `
+    <div class="form-group"><label>Name *</label><input id="f-name" placeholder="e.g. Pasta Jewellery"></div>
+    <div class="form-group"><label>Description</label><textarea id="f-desc" placeholder="What do you make? What's fun about it?"></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Category</label>
+        <select id="f-cat">
+          <option value="painting">Painting</option>
+          <option value="building">Building</option>
+          <option value="nature">Nature</option>
+          <option value="messy">Messy</option>
+          <option value="quiet">Quiet</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Time (mins)</label><input id="f-time" type="number" min="5" max="180" placeholder="e.g. 30"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Mess level</label>
+        <select id="f-mess">
+          <option value="1">1 — Tidy</option>
+          <option value="2">2 — Messy</option>
+          <option value="3">3 — Very messy</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Emoji icon</label><input id="f-icon" placeholder="✂️" maxlength="2" style="width:70px;"></div>
+    </div>
+    <div class="form-group"><label>Materials (comma-separated)</label><input id="f-materials" placeholder="e.g. pasta, paint, string"></div>
+  `,
+};
+
+function openModal(type) {
+  S.modalType = type;
+  const titles = { act: 'Add a place', meal: 'Add a meal', craft: 'Add a craft idea' };
+  document.getElementById('modal-title').textContent = titles[type];
+  document.getElementById('modal-body').innerHTML = MODAL_FORMS[type]();
+  document.getElementById('modal-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+  S.modalType = null;
+}
+
+function saveCustomItem() {
+  const type = S.modalType;
+  const name = document.getElementById('f-name')?.value?.trim();
+  if (!name) { document.getElementById('f-name').style.borderColor='red'; return; }
+
+  const id = `custom-${type}-${Date.now()}`;
+  const icon = document.getElementById('f-icon')?.value?.trim() || '📌';
+  const desc = document.getElementById('f-desc')?.value?.trim() || '';
+  const cat  = document.getElementById('f-cat')?.value || 'outdoor';
+
+  let item = { id, name, icon, desc, cat };
+
+  if (type === 'act') {
+    item.dist     = parseInt(document.getElementById('f-dist')?.value) || 10;
+    item.price    = parseInt(document.getElementById('f-price')?.value) || 0;
+    item.priceLabel = ['Free','£','££','£££'][item.price];
+    item.weather  = document.getElementById('f-weather')?.value || 'both';
+    item.tags     = [];
+    S.customActs.push(item);
+    saveJSON('dh_customActs', S.customActs);
+  } else if (type === 'meal') {
+    item.time    = parseInt(document.getElementById('f-time')?.value) || 20;
+    item.kidRating = 2;
+    item.helpRating = 2;
+    item.ingredients = (document.getElementById('f-ingredients')?.value||'').split(',').map(s=>s.trim()).filter(Boolean);
+    S.customMeals.push(item);
+    saveJSON('dh_customMeals', S.customMeals);
+  } else if (type === 'craft') {
+    item.time      = parseInt(document.getElementById('f-time')?.value) || 30;
+    item.mess      = parseInt(document.getElementById('f-mess')?.value) || 1;
+    item.materials = (document.getElementById('f-materials')?.value||'').split(',').map(s=>s.trim()).filter(Boolean);
+    S.customCrafts.push(item);
+    saveJSON('dh_customCrafts', S.customCrafts);
+  }
+
+  closeModal();
+  renderChips();
+  renderTab(type === 'act' ? 'activities' : type === 'meal' ? 'meals' : 'crafts');
+}
+
+// ════════════════════════════════════════════
+//  EVENTS & INIT
+// ════════════════════════════════════════════
+
+function setActCat(val) { S.actCat = val; renderChips(); renderActivities(); }
+function setActRegion(val) { S.actRegion = val; renderChips(); renderActivities(); }
+function setMealCat(val) { S.mealCat = val; renderChips(); renderMeals(); }
+function setCraftCat(val) { S.craftCat = val; renderChips(); renderCrafts(); }
+function setPrice(val) { S.actMaxPrice = val; renderChips(); renderActivities(); }
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    S.tab = tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`tab-${tab}`).classList.add('active');
+    renderChips();
+    renderTab(tab);
+    // Hide any random banners when switching tabs
+    document.querySelectorAll('.random-banner').forEach(rb => rb.classList.remove('show'));
+  });
+});
+
+document.getElementById('dist-slider').addEventListener('input', function() {
+  S.actMaxDist = parseInt(this.value);
+  document.getElementById('dist-label').textContent = this.value >= 160 ? 'Any' : `${this.value} mi`;
+  renderActivities();
+});
+
+document.getElementById('rand-act').addEventListener('click', () => showRandom('act'));
+document.getElementById('rand-meal').addEventListener('click', () => showRandom('meal'));
+document.getElementById('rand-craft').addEventListener('click', () => showRandom('craft'));
+
+document.getElementById('add-act-btn').addEventListener('click', () => openModal('act'));
+document.getElementById('add-meal-btn').addEventListener('click', () => openModal('meal'));
+document.getElementById('add-craft-btn').addEventListener('click', () => openModal('craft'));
+
+document.getElementById('modal-save').addEventListener('click', saveCustomItem);
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeSpotlight(); closeModal(); }
+});
+
+// Init
+renderAll();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').then(r => {
+    navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
+    r.update();
+  }).catch(() => {});
+}
+</script>
+</body>
+</html>
