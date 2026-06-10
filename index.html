@@ -221,6 +221,7 @@
     }
     .random-btn:hover { transform: scale(1.04); box-shadow: var(--shadow-lg); }
     .random-btn:active { transform: scale(0.97); }
+    .random-btn.small { padding: 0.5rem 1.1rem; font-size: 0.85rem; }
     .btn-act   { background: var(--act);   color: white; }
     .btn-meal  { background: var(--meal);  color: white; }
     .btn-craft { background: var(--craft); color: white; }
@@ -306,15 +307,24 @@
     .card-links a:hover { text-decoration: underline; }
     .sp-links { display: flex; gap: 0.5rem; margin-top: 0.8rem; }
     .sp-links a { text-decoration: none; text-align: center; }
-    .sub-filters { background: white; border: 2px solid var(--border); border-radius: var(--r-sm); padding: 0.6rem 0.9rem; margin: 0.6rem 0; }
-    .sf-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.35rem 0; }
-    .sf-row + .sf-row { border-top: 1px solid var(--border); }
-    .sf-label { font-size: 0.78rem; font-weight: 700; color: var(--muted); min-width: 90px; }
-    .sf-slider { flex: 1; accent-color: var(--meal); height: 6px; }
-    .sf-val { font-size: 0.78rem; font-weight: 800; min-width: 40px; text-align: right; }
-    .toggle-btn { border: 2px solid var(--border); border-radius: 20px; padding: 0.25rem 0.75rem; font-size: 0.75rem; font-weight: 700; background: white; color: var(--muted); cursor: pointer; transition: all 0.15s; }
-    .toggle-btn.on { background: var(--act); color: white; border-color: var(--act); }
-    #craft-filters .sf-slider { accent-color: var(--craft); }
+    /* ── TOGGLE SWITCHES ── */
+    .toggle-list { display: flex; flex-direction: column; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 0.55rem 0.1rem; font-size: 0.88rem; font-weight: 700; color: var(--text); cursor: pointer; }
+    .toggle-row + .toggle-row { border-top: 1px solid var(--border); }
+    .switch { position: relative; display: inline-block; width: 44px; height: 26px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch .track { position: absolute; inset: 0; background: var(--border); border-radius: 999px; transition: 0.2s; }
+    .switch .track::before { content: ''; position: absolute; height: 20px; width: 20px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
+    .switch input:checked + .track::before { transform: translateX(18px); }
+    #meal-filter-panel .switch input:checked + .track { background: var(--meal); }
+    #craft-filter-panel .switch input:checked + .track { background: var(--craft); }
+    /* per-tab filter toggle + badge theming */
+    .filter-toggle.t-meal:hover { border-color: var(--meal); color: var(--meal-dark); }
+    .filter-toggle.t-meal.open { border-color: var(--meal); background: var(--meal-bg); color: var(--meal-dark); }
+    .filter-badge.t-meal { background: var(--meal); }
+    .filter-toggle.t-craft:hover { border-color: var(--craft); color: var(--craft-dark); }
+    .filter-toggle.t-craft.open { border-color: var(--craft); background: var(--craft-bg); color: var(--craft-dark); }
+    .filter-badge.t-craft { background: var(--craft); }
 
     /* ── BADGES ── */
     .badge {
@@ -461,7 +471,7 @@
         <span class="filter-badge" id="filter-badge" style="display:none;">0</span>
         <span class="filter-caret" id="filter-caret">▾</span>
       </button>
-      <button class="random-btn btn-act" id="rand-act">🎲 Surprise me!</button>
+      <button class="random-btn btn-act small" id="rand-act">🎲 Pick for me</button>
     </div>
 
     <div class="filter-panel" id="filter-panel">
@@ -503,19 +513,42 @@
 
   <!-- ── MEALS ── -->
   <div class="tab-view" id="tab-meals">
-    <div class="chip-row" id="meal-cat-row"></div>
-    <div class="sub-filters" id="meal-filters">
-      <div class="sf-row">
-        <span class="sf-label">⏱️ Max time</span>
-        <input type="range" id="meal-time-slider" min="5" max="60" value="60" step="5" class="sf-slider">
-        <span class="sf-val" id="meal-time-label">Any</span>
+    <div class="filter-toolbar">
+      <button class="filter-toggle t-meal" id="meal-filter-toggle">
+        <span>🔎 Filters</span>
+        <span class="filter-badge t-meal" id="meal-filter-badge" style="display:none;">0</span>
+        <span class="filter-caret">▾</span>
+      </button>
+      <button class="random-btn btn-meal small" id="rand-meal">🎲 Pick for me</button>
+    </div>
+
+    <div class="filter-panel" id="meal-filter-panel">
+      <div class="filter-group">
+        <div class="filter-group-label">Meal type</div>
+        <div class="chip-row" id="meal-cat-row"></div>
       </div>
-      <div class="sf-row">
-        <span class="sf-label">🥦 Has veg</span>
-        <button class="toggle-btn" id="meal-veg-toggle" onclick="toggleMealVeg()">Off</button>
+      <div class="filter-group">
+        <div class="filter-group-label">Time of day</div>
+        <div class="chip-row" id="meal-slot-row"></div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-group-label">Time to make</div>
+        <div class="chip-row" id="meal-time-row"></div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-group-label">Other</div>
+        <div class="toggle-list">
+          <label class="toggle-row">
+            <span>🥦 Includes veg</span>
+            <span class="switch"><input type="checkbox" id="meal-veg-toggle" onchange="toggleMealVeg()"><span class="track"></span></span>
+          </label>
+        </div>
+      </div>
+      <div class="filter-panel-footer">
+        <button class="clear-filters-btn" id="meal-clear-btn">Clear all filters</button>
       </div>
     </div>
-    <button class="random-btn btn-meal" id="rand-meal">🍽️ What's for dinner?</button>
+
     <div class="random-banner meal-theme" id="rb-meal"></div>
     <div class="section-header">
       <span class="section-count" id="meal-count"></span>
@@ -526,23 +559,42 @@
 
   <!-- ── CRAFTS ── -->
   <div class="tab-view" id="tab-crafts">
-    <div class="chip-row" id="craft-cat-row"></div>
-    <div class="sub-filters" id="craft-filters">
-      <div class="sf-row">
-        <span class="sf-label">💦 Messy ok?</span>
-        <button class="toggle-btn on" id="craft-messy-toggle" onclick="toggleCraftMessy()">Yes</button>
+    <div class="filter-toolbar">
+      <button class="filter-toggle t-craft" id="craft-filter-toggle">
+        <span>🔎 Filters</span>
+        <span class="filter-badge t-craft" id="craft-filter-badge" style="display:none;">0</span>
+        <span class="filter-caret">▾</span>
+      </button>
+      <button class="random-btn btn-craft small" id="rand-craft">🎲 Pick for me</button>
+    </div>
+
+    <div class="filter-panel" id="craft-filter-panel">
+      <div class="filter-group">
+        <div class="filter-group-label">Craft type</div>
+        <div class="chip-row" id="craft-cat-row"></div>
       </div>
-      <div class="sf-row">
-        <span class="sf-label">⏱️ Max time</span>
-        <input type="range" id="craft-time-slider" min="10" max="60" value="60" step="5" class="sf-slider">
-        <span class="sf-val" id="craft-time-label">Any</span>
+      <div class="filter-group">
+        <div class="filter-group-label">Time to make</div>
+        <div class="chip-row" id="craft-time-row"></div>
       </div>
-      <div class="sf-row">
-        <span class="sf-label">🏠 Stuff at home</span>
-        <button class="toggle-btn" id="craft-home-toggle" onclick="toggleCraftHome()">Off</button>
+      <div class="filter-group">
+        <div class="filter-group-label">Other</div>
+        <div class="toggle-list">
+          <label class="toggle-row">
+            <span>💦 Messy</span>
+            <span class="switch"><input type="checkbox" id="craft-messy-toggle" onchange="toggleCraftMessy()" checked><span class="track"></span></span>
+          </label>
+          <label class="toggle-row">
+            <span>🏠 At Home</span>
+            <span class="switch"><input type="checkbox" id="craft-home-toggle" onchange="toggleCraftHome()"><span class="track"></span></span>
+          </label>
+        </div>
+      </div>
+      <div class="filter-panel-footer">
+        <button class="clear-filters-btn" id="craft-clear-btn">Clear all filters</button>
       </div>
     </div>
-    <button class="random-btn btn-craft" id="rand-craft">🎲 Let's make something!</button>
+
     <div class="random-banner craft-theme" id="rb-craft"></div>
     <div class="section-header">
       <span class="section-count" id="craft-count"></span>
@@ -5766,12 +5818,15 @@ const S = {
   actMaxPrice: new Set(),
   filtersOpen: false,
   mealCat: new Set(),
-  mealMaxTime: 60,
+  mealSlot: new Set(),
+  mealMaxTime: 999,
   mealVeg: false,
+  mealFiltersOpen: false,
   craftCat: new Set(),
   craftMessy: true,
-  craftMaxTime: 60,
+  craftMaxTime: 999,
   craftHome: false,
+  craftFiltersOpen: false,
   actFavs:   new Set(loadJSON('dh_actFavs')  || []),
   mealFavs:  new Set(loadJSON('dh_mealFavs') || []),
   craftFavs: new Set(loadJSON('dh_craftFavs')|| []),
@@ -6004,10 +6059,38 @@ function filteredMeals() {
   return [...MEALS, ...S.customMeals].filter(m => {
     if (S.mealCat.has('favs')) return isFav('meal', m.id);
     if (S.mealCat.size && !S.mealCat.has(m.cat)) return false;
-    if (S.mealMaxTime < 60 && m.time > S.mealMaxTime) return false;
+    if (S.mealSlot.size) { const dp = mealDayparts(m); if (![...S.mealSlot].some(s => dp.has(s))) return false; }
+    if (m.time > S.mealMaxTime) return false;
     if (S.mealVeg && !hasVeg(m)) return false;
     return true;
   });
+}
+
+function activeMealFilterCount() {
+  let n = 0;
+  if (S.mealCat.size) n++;
+  if (S.mealSlot.size) n++;
+  if (S.mealMaxTime < 999) n++;
+  if (S.mealVeg) n++;
+  return n;
+}
+
+function updateMealFilterBadge() {
+  const n = activeMealFilterCount();
+  const badge = document.getElementById('meal-filter-badge');
+  if (n > 0) { badge.textContent = n; badge.style.display = 'inline-flex'; }
+  else { badge.style.display = 'none'; }
+}
+
+function clearMealFilters() {
+  S.mealCat = new Set();
+  S.mealSlot = new Set();
+  S.mealMaxTime = 999;
+  S.mealVeg = false;
+  document.getElementById('meal-veg-toggle').checked = false;
+  renderChips();
+  renderMeals();
+  updateMealFilterBadge();
 }
 
 function filteredCrafts() {
@@ -6015,10 +6098,38 @@ function filteredCrafts() {
     if (S.craftCat.has('favs')) return isFav('craft', c.id);
     if (S.craftCat.size && !S.craftCat.has(c.cat)) return false;
     if (!S.craftMessy && c.mess >= 2) return false;
-    if (S.craftMaxTime < 60 && c.time > S.craftMaxTime) return false;
+    if (c.time > S.craftMaxTime) return false;
     if (S.craftHome && !canDoAtHome(c)) return false;
     return true;
   });
+}
+
+function activeCraftFilterCount() {
+  let n = 0;
+  if (S.craftCat.size) n++;
+  if (S.craftMaxTime < 999) n++;
+  if (!S.craftMessy) n++;
+  if (S.craftHome) n++;
+  return n;
+}
+
+function updateCraftFilterBadge() {
+  const n = activeCraftFilterCount();
+  const badge = document.getElementById('craft-filter-badge');
+  if (n > 0) { badge.textContent = n; badge.style.display = 'inline-flex'; }
+  else { badge.style.display = 'none'; }
+}
+
+function clearCraftFilters() {
+  S.craftCat = new Set();
+  S.craftMaxTime = 999;
+  S.craftMessy = true;
+  S.craftHome = false;
+  document.getElementById('craft-messy-toggle').checked = true;
+  document.getElementById('craft-home-toggle').checked = false;
+  renderChips();
+  renderCrafts();
+  updateCraftFilterBadge();
 }
 
 // ════════════════════════════════════════════
@@ -6029,6 +6140,8 @@ function renderAll() {
   renderChips();
   renderTab(S.tab);
   updateFilterBadge();
+  updateMealFilterBadge();
+  updateCraftFilterBadge();
 }
 
 function renderChips() {
@@ -6101,7 +6214,7 @@ function renderChips() {
 
   // Meal cats
   const mealCats = [
-    {val:'all',label:'All meals'},
+    {val:'all',label:'All'},
     {val:'quick',label:'⚡ Quick wins'},
     {val:'proper',label:'🍲 Proper meals'},
     {val:'weekend',label:'✨ Weekend'},
@@ -6110,6 +6223,29 @@ function renderChips() {
   ];
   document.getElementById('meal-cat-row').innerHTML = mealCats.map(c =>
     `<button class="chip ${c.val==='all' ? (!S.mealCat.size?'on-meal':'') : (S.mealCat.has(c.val)?'on-meal':'')}" onclick="setMealCat('${c.val}')">${c.label}</button>`
+  ).join('');
+
+  // Meal time of day
+  const mealSlots = [
+    {val:'all',label:'Any time'},
+    {val:'breakfast',label:'🍳 Breakfast'},
+    {val:'lunch',label:'🥪 Lunch'},
+    {val:'dinner',label:'🍽️ Dinner'},
+    {val:'snack',label:'🧁 Snack / pud'},
+  ];
+  document.getElementById('meal-slot-row').innerHTML = mealSlots.map(s =>
+    `<button class="chip ${s.val==='all' ? (!S.mealSlot.size?'on-meal':'') : (S.mealSlot.has(s.val)?'on-meal':'')}" onclick="setMealSlot('${s.val}')">${s.label}</button>`
+  ).join('');
+
+  // Meal time to make
+  const mealTimes = [
+    {val:999,label:'Any'},
+    {val:15,label:'⏱️ Under 15 min'},
+    {val:30,label:'⏱️ Under 30 min'},
+    {val:45,label:'⏱️ Under 45 min'},
+  ];
+  document.getElementById('meal-time-row').innerHTML = mealTimes.map(t =>
+    `<button class="chip ${S.mealMaxTime===t.val?'on-meal':''}" onclick="setMealMaxTime(${t.val})">${t.label}</button>`
   ).join('');
 
   // Craft cats
@@ -6125,6 +6261,17 @@ function renderChips() {
   ];
   document.getElementById('craft-cat-row').innerHTML = craftCats.map(c =>
     `<button class="chip ${c.val==='all' ? (!S.craftCat.size?'on-craft':'') : (S.craftCat.has(c.val)?'on-craft':'')}" onclick="setCraftCat('${c.val}')">${c.label}</button>`
+  ).join('');
+
+  // Craft time to make
+  const craftTimes = [
+    {val:999,label:'Any'},
+    {val:15,label:'⏱️ Under 15 min'},
+    {val:30,label:'⏱️ Under 30 min'},
+    {val:45,label:'⏱️ Under 45 min'},
+  ];
+  document.getElementById('craft-time-row').innerHTML = craftTimes.map(t =>
+    `<button class="chip ${S.craftMaxTime===t.val?'on-craft':''}" onclick="setCraftMaxTime(${t.val})">${t.label}</button>`
   ).join('');
 }
 
@@ -6624,28 +6771,58 @@ function canDoAtHome(c) {
   });
 }
 
+// Classify a meal into one or more times of day (breakfast/lunch/dinner/snack)
+const BREAKFAST_WORDS = ['pancake','porridge','breakfast','brunch','waffle','granola','smoothie','egg on toast','eggs on toast','french toast','bacon butty','croissant','crumpet','overnight oats','full english','scrambled egg','cereal','bagel'];
+function mealDayparts(m) {
+  const name = m.name.toLowerCase();
+  const slots = new Set();
+  if (BREAKFAST_WORDS.some(w => name.includes(w))) slots.add('breakfast');
+  if (m.cat === 'baking') slots.add('snack');
+  if (m.cat === 'quick') { slots.add('lunch'); slots.add('dinner'); }
+  if (m.cat === 'proper' || m.cat === 'weekend') slots.add('dinner');
+  if (!slots.size) slots.add('dinner');
+  return slots;
+}
+
 function toggleMealVeg() {
-  S.mealVeg = !S.mealVeg;
-  const btn = document.getElementById('meal-veg-toggle');
-  btn.textContent = S.mealVeg ? 'On' : 'Off';
-  btn.classList.toggle('on', S.mealVeg);
+  S.mealVeg = document.getElementById('meal-veg-toggle').checked;
   renderMeals();
+  updateMealFilterBadge();
+}
+
+function setMealSlot(val) {
+  if (val === 'all') S.mealSlot.clear();
+  else if (S.mealSlot.has(val)) S.mealSlot.delete(val);
+  else S.mealSlot.add(val);
+  renderChips();
+  renderMeals();
+  updateMealFilterBadge();
+}
+
+function setMealMaxTime(val) {
+  S.mealMaxTime = val;
+  renderChips();
+  renderMeals();
+  updateMealFilterBadge();
+}
+
+function setCraftMaxTime(val) {
+  S.craftMaxTime = val;
+  renderChips();
+  renderCrafts();
+  updateCraftFilterBadge();
 }
 
 function toggleCraftMessy() {
-  S.craftMessy = !S.craftMessy;
-  const btn = document.getElementById('craft-messy-toggle');
-  btn.textContent = S.craftMessy ? 'Yes' : 'No';
-  btn.classList.toggle('on', S.craftMessy);
+  S.craftMessy = document.getElementById('craft-messy-toggle').checked;
   renderCrafts();
+  updateCraftFilterBadge();
 }
 
 function toggleCraftHome() {
-  S.craftHome = !S.craftHome;
-  const btn = document.getElementById('craft-home-toggle');
-  btn.textContent = S.craftHome ? 'On' : 'Off';
-  btn.classList.toggle('on', S.craftHome);
+  S.craftHome = document.getElementById('craft-home-toggle').checked;
   renderCrafts();
+  updateCraftFilterBadge();
 }
 
 // ════════════════════════════════════════════
@@ -6663,8 +6840,8 @@ function toggleSet(set, val) {
 function setActCat(val) { toggleSet(S.actCat, val); renderChips(); renderActivities(); updateFilterBadge(); }
 function setActWeather(val) { S.actWeather = S.actWeather === val ? 'all' : val; renderChips(); renderActivities(); updateFilterBadge(); }
 function setActRegion(val) { toggleSet(S.actRegion, val); renderChips(); renderActivities(); updateFilterBadge(); }
-function setMealCat(val) { toggleSet(S.mealCat, val); renderChips(); renderMeals(); }
-function setCraftCat(val) { toggleSet(S.craftCat, val); renderChips(); renderCrafts(); }
+function setMealCat(val) { toggleSet(S.mealCat, val); renderChips(); renderMeals(); updateMealFilterBadge(); }
+function setCraftCat(val) { toggleSet(S.craftCat, val); renderChips(); renderCrafts(); updateCraftFilterBadge(); }
 function setPrice(val) { if (val === 'all') { S.actMaxPrice.clear(); } else { toggleSet(S.actMaxPrice, parseInt(val)); } renderChips(); renderActivities(); updateFilterBadge(); }
 
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -6697,17 +6874,19 @@ document.getElementById('filter-toggle').addEventListener('click', () => {
 
 document.getElementById('clear-filters-btn').addEventListener('click', clearActFilters);
 
-document.getElementById('meal-time-slider').addEventListener('input', function() {
-  S.mealMaxTime = parseInt(this.value);
-  document.getElementById('meal-time-label').textContent = this.value >= 60 ? 'Any' : `${this.value} min`;
-  renderMeals();
+document.getElementById('meal-filter-toggle').addEventListener('click', () => {
+  S.mealFiltersOpen = !S.mealFiltersOpen;
+  document.getElementById('meal-filter-panel').classList.toggle('open', S.mealFiltersOpen);
+  document.getElementById('meal-filter-toggle').classList.toggle('open', S.mealFiltersOpen);
 });
+document.getElementById('meal-clear-btn').addEventListener('click', clearMealFilters);
 
-document.getElementById('craft-time-slider').addEventListener('input', function() {
-  S.craftMaxTime = parseInt(this.value);
-  document.getElementById('craft-time-label').textContent = this.value >= 60 ? 'Any' : `${this.value} min`;
-  renderCrafts();
+document.getElementById('craft-filter-toggle').addEventListener('click', () => {
+  S.craftFiltersOpen = !S.craftFiltersOpen;
+  document.getElementById('craft-filter-panel').classList.toggle('open', S.craftFiltersOpen);
+  document.getElementById('craft-filter-toggle').classList.toggle('open', S.craftFiltersOpen);
 });
+document.getElementById('craft-clear-btn').addEventListener('click', clearCraftFilters);
 
 document.getElementById('rand-act').addEventListener('click', () => showRandom('act'));
 document.getElementById('rand-meal').addEventListener('click', () => showRandom('meal'));
