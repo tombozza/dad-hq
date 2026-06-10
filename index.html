@@ -306,6 +306,15 @@
     .card-links a:hover { text-decoration: underline; }
     .sp-links { display: flex; gap: 0.5rem; margin-top: 0.8rem; }
     .sp-links a { text-decoration: none; text-align: center; }
+    .sub-filters { background: white; border: 2px solid var(--border); border-radius: var(--r-sm); padding: 0.6rem 0.9rem; margin: 0.6rem 0; }
+    .sf-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.35rem 0; }
+    .sf-row + .sf-row { border-top: 1px solid var(--border); }
+    .sf-label { font-size: 0.78rem; font-weight: 700; color: var(--muted); min-width: 90px; }
+    .sf-slider { flex: 1; accent-color: var(--meal); height: 6px; }
+    .sf-val { font-size: 0.78rem; font-weight: 800; min-width: 40px; text-align: right; }
+    .toggle-btn { border: 2px solid var(--border); border-radius: 20px; padding: 0.25rem 0.75rem; font-size: 0.75rem; font-weight: 700; background: white; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+    .toggle-btn.on { background: var(--act); color: white; border-color: var(--act); }
+    #craft-filters .sf-slider { accent-color: var(--craft); }
 
     /* ── BADGES ── */
     .badge {
@@ -495,6 +504,17 @@
   <!-- ── MEALS ── -->
   <div class="tab-view" id="tab-meals">
     <div class="chip-row" id="meal-cat-row"></div>
+    <div class="sub-filters" id="meal-filters">
+      <div class="sf-row">
+        <span class="sf-label">⏱️ Max time</span>
+        <input type="range" id="meal-time-slider" min="5" max="60" value="60" step="5" class="sf-slider">
+        <span class="sf-val" id="meal-time-label">Any</span>
+      </div>
+      <div class="sf-row">
+        <span class="sf-label">🥦 Has veg</span>
+        <button class="toggle-btn" id="meal-veg-toggle" onclick="toggleMealVeg()">Off</button>
+      </div>
+    </div>
     <button class="random-btn btn-meal" id="rand-meal">🍽️ What's for dinner?</button>
     <div class="random-banner meal-theme" id="rb-meal"></div>
     <div class="section-header">
@@ -507,6 +527,21 @@
   <!-- ── CRAFTS ── -->
   <div class="tab-view" id="tab-crafts">
     <div class="chip-row" id="craft-cat-row"></div>
+    <div class="sub-filters" id="craft-filters">
+      <div class="sf-row">
+        <span class="sf-label">💦 Messy ok?</span>
+        <button class="toggle-btn on" id="craft-messy-toggle" onclick="toggleCraftMessy()">Yes</button>
+      </div>
+      <div class="sf-row">
+        <span class="sf-label">⏱️ Max time</span>
+        <input type="range" id="craft-time-slider" min="10" max="60" value="60" step="5" class="sf-slider">
+        <span class="sf-val" id="craft-time-label">Any</span>
+      </div>
+      <div class="sf-row">
+        <span class="sf-label">🏠 Stuff at home</span>
+        <button class="toggle-btn" id="craft-home-toggle" onclick="toggleCraftHome()">Off</button>
+      </div>
+    </div>
     <button class="random-btn btn-craft" id="rand-craft">🎲 Let's make something!</button>
     <div class="random-banner craft-theme" id="rb-craft"></div>
     <div class="section-header">
@@ -5731,7 +5766,12 @@ const S = {
   actMaxPrice: new Set(),
   filtersOpen: false,
   mealCat: new Set(),
+  mealMaxTime: 60,
+  mealVeg: false,
   craftCat: new Set(),
+  craftMessy: true,
+  craftMaxTime: 60,
+  craftHome: false,
   actFavs:   new Set(loadJSON('dh_actFavs')  || []),
   mealFavs:  new Set(loadJSON('dh_mealFavs') || []),
   craftFavs: new Set(loadJSON('dh_craftFavs')|| []),
@@ -5964,6 +6004,8 @@ function filteredMeals() {
   return [...MEALS, ...S.customMeals].filter(m => {
     if (S.mealCat.has('favs')) return isFav('meal', m.id);
     if (S.mealCat.size && !S.mealCat.has(m.cat)) return false;
+    if (S.mealMaxTime < 60 && m.time > S.mealMaxTime) return false;
+    if (S.mealVeg && !hasVeg(m)) return false;
     return true;
   });
 }
@@ -5972,6 +6014,9 @@ function filteredCrafts() {
   return [...CRAFTS, ...S.customCrafts].filter(c => {
     if (S.craftCat.has('favs')) return isFav('craft', c.id);
     if (S.craftCat.size && !S.craftCat.has(c.cat)) return false;
+    if (!S.craftMessy && c.mess >= 2) return false;
+    if (S.craftMaxTime < 60 && c.time > S.craftMaxTime) return false;
+    if (S.craftHome && !canDoAtHome(c)) return false;
     return true;
   });
 }
@@ -6073,7 +6118,6 @@ function renderChips() {
     {val:'painting',label:'🎨 Painting'},
     {val:'building',label:'🏗️ Building'},
     {val:'nature',label:'🌿 Nature'},
-    {val:'messy',label:'💦 Messy'},
     {val:'quiet',label:'📚 Quiet'},
     {val:'seasonal',label:'🎄 Seasonal'},
     {val:'science',label:'🔬 Science'},
@@ -6161,7 +6205,7 @@ function mealCard(m) {
     <div class="card-badges">
       ${timeBadge(m.time)}
       <span class="badge b-cat">${catIcon(m.cat)} ${catLabel(m.cat)}</span>
-      ${kidBadge(m.kidRating)}
+      ${hasVeg(m) ? '<span class="badge b-cat">🥦 Veg</span>' : ''}
     </div>
   </div>`;
 }
@@ -6179,6 +6223,7 @@ function craftCard(c) {
       ${timeBadge(c.time)}
       ${messBadge(c.mess)}
       <span class="badge b-cat">${catIcon(c.cat)} ${catLabel(c.cat)}</span>
+      ${canDoAtHome(c) ? '<span class="badge b-cat">🏠 At home</span>' : ''}
     </div>
   </div>`;
 }
@@ -6216,7 +6261,7 @@ function openSpotlight(type, id) {
       <div class="sp-section">Kitchen info</div>
       <div class="rb-badges">
         ${helpBadge(item.helpRating)}
-        ${kidBadge(item.kidRating)}
+        ${hasVeg(item) ? '<span class="badge b-cat">🥦 Has veg</span>' : ''}
       </div>
     `;
   } else if (type === 'craft') {
@@ -6558,6 +6603,52 @@ function resetLocation() {
 }
 
 // ════════════════════════════════════════════
+//  MEAL & CRAFT ADVANCED FILTERS
+// ════════════════════════════════════════════
+
+const VEG_WORDS = ['carrot','carrots','peas','broccoli','spinach','courgette','peppers','pepper','onion','onions','leek','leeks','mushroom','mushrooms','tomato','tomatoes','sweetcorn','corn','celery','beans','green beans','cabbage','kale','spring greens','parsnip','parsnips','butternut squash','aubergine','cucumber','lettuce','pak choi','mangetout','beansprouts','edamame'];
+
+function hasVeg(m) {
+  if (!m.ingredients) return false;
+  const ing = m.ingredients.map(i => i.toLowerCase());
+  return ing.some(i => VEG_WORDS.some(v => i.includes(v)));
+}
+
+const HOME_MATERIALS = ['paper','card','cardboard','scissors','tape','glue','pencil','pencils','marker','markers','crayons','string','rubber bands','newspaper','tin foil','cotton wool','toilet roll','egg box','egg carton','water','salt','flour','food colouring','plastic bottle','lolly sticks','socks','buttons','felt','yoghurt','old','cups','bowls','pots','spoons','tray','sticks','leaves','pebbles','stones','flowers','pinecone','pine cone','conkers','mud','soil'];
+
+function canDoAtHome(c) {
+  if (!c.materials) return false;
+  return c.materials.every(mat => {
+    const m = mat.toLowerCase();
+    return HOME_MATERIALS.some(h => m.includes(h)) || m.includes('optional') || m.includes('household');
+  });
+}
+
+function toggleMealVeg() {
+  S.mealVeg = !S.mealVeg;
+  const btn = document.getElementById('meal-veg-toggle');
+  btn.textContent = S.mealVeg ? 'On' : 'Off';
+  btn.classList.toggle('on', S.mealVeg);
+  renderMeals();
+}
+
+function toggleCraftMessy() {
+  S.craftMessy = !S.craftMessy;
+  const btn = document.getElementById('craft-messy-toggle');
+  btn.textContent = S.craftMessy ? 'Yes' : 'No';
+  btn.classList.toggle('on', S.craftMessy);
+  renderCrafts();
+}
+
+function toggleCraftHome() {
+  S.craftHome = !S.craftHome;
+  const btn = document.getElementById('craft-home-toggle');
+  btn.textContent = S.craftHome ? 'On' : 'Off';
+  btn.classList.toggle('on', S.craftHome);
+  renderCrafts();
+}
+
+// ════════════════════════════════════════════
 //  EVENTS & INIT
 // ════════════════════════════════════════════
 
@@ -6605,6 +6696,18 @@ document.getElementById('filter-toggle').addEventListener('click', () => {
 });
 
 document.getElementById('clear-filters-btn').addEventListener('click', clearActFilters);
+
+document.getElementById('meal-time-slider').addEventListener('input', function() {
+  S.mealMaxTime = parseInt(this.value);
+  document.getElementById('meal-time-label').textContent = this.value >= 60 ? 'Any' : `${this.value} min`;
+  renderMeals();
+});
+
+document.getElementById('craft-time-slider').addEventListener('input', function() {
+  S.craftMaxTime = parseInt(this.value);
+  document.getElementById('craft-time-label').textContent = this.value >= 60 ? 'Any' : `${this.value} min`;
+  renderCrafts();
+});
 
 document.getElementById('rand-act').addEventListener('click', () => showRandom('act'));
 document.getElementById('rand-meal').addEventListener('click', () => showRandom('meal'));
