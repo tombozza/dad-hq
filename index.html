@@ -6018,7 +6018,14 @@ function filteredActs() {
     if (S.actCat.size && !S.actCat.has(getSubcat(a))) return false;
     if (S.actWeather === 'outdoor' && !(a.weather === 'outdoor' || a.weather === 'both')) return false;
     if (S.actWeather === 'indoor'  && !(a.weather === 'indoor'  || a.weather === 'both')) return false;
-    if (S.actRegion.size && !S.actRegion.has(getRegion(a))) return false;
+    if (S.actRegion.size) {
+      // 'local' means "within 20mi of the current home location" (recalculated
+      // live in guest mode); other regions are fixed geographic areas.
+      const matchesRegion = [...S.actRegion].some(r =>
+        r === 'local' ? getEffectiveDist(a) <= 20 : getRegion(a) === r
+      );
+      if (!matchesRegion) return false;
+    }
     if (getEffectiveDist(a) > S.actMaxDist) return false;
     if (S.actMaxPrice.size && !S.actMaxPrice.has(a.price)) return false;
     return true;
