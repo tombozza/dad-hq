@@ -6022,6 +6022,8 @@ function filteredActs() {
       // 'local' means "within 20mi of the current home location" (recalculated
       // live in guest mode); other regions are fixed geographic areas.
       const matchesRegion = [...S.actRegion].some(r =>
+        r === 'local5' ? getEffectiveDist(a) <= 5 :
+        r === 'local10' ? getEffectiveDist(a) <= 10 :
         r === 'local' ? getEffectiveDist(a) <= 20 : getRegion(a) === r
       );
       if (!matchesRegion) return false;
@@ -6197,6 +6199,8 @@ function renderChips() {
   // Activity regions
   const actRegions = [
     {val:'all',label:'📍 All areas'},
+    {val:'local5',label:'🏠 Local (< 5mi)'},
+    {val:'local10',label:'🏠 Local (< 10mi)'},
     {val:'local',label:'🏠 Local (< 20mi)'},
     {val:'manchester',label:'🏙️ Manchester'},
     {val:'chester',label:'🏰 Chester & Cheshire'},
@@ -6214,7 +6218,7 @@ function renderChips() {
   ).join('');
 
   // Price chips
-  const prices = [{val:'all',label:'Any'},{val:0,label:'🆓 Free'},{val:1,label:'£'},{val:2,label:'££'},{val:3,label:'£££'}];
+  const prices = [{val:'all',label:'Any'},{val:0,label:'Free'},{val:1,label:'£'},{val:2,label:'££'},{val:3,label:'£££'}];
   document.getElementById('price-row').innerHTML = prices.map(p =>
     `<button class="chip ${p.val==='all' ? (!S.actMaxPrice.size?'on-act':'') : (S.actMaxPrice.has(p.val)?'on-act':'')}" onclick="setPrice('${p.val}')">${p.label}</button>`
   ).join('');
