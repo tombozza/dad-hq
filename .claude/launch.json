@@ -4,8 +4,14 @@
     {
       "name": "dad-hq",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "-p", "4321", "."],
+      "runtimeArgs": ["serve", "-p", "4321", "public"],
       "port": 4321
+    },
+    {
+      "name": "dad-hq-worker",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["wrangler", "dev", "--port", "8788"],
+      "port": 8788
     }
   ]
 }

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#F59E0B">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -15,6 +15,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* iOS Safari zooms into any field whose text is under 16px. Pinning every
+       field to 16px is the only reliable way to stop it, so this wins over any
+       per-component font size. */
+    input, select, textarea { font-size: 16px !important; }
+    html { -webkit-text-size-adjust: 100%; }
 
     :root {
       --bg: #F5F3FF;
@@ -47,7 +53,7 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      padding-bottom: 3rem;
+      padding-bottom: calc(3rem + env(safe-area-inset-bottom));
     }
 
     /* ── HEADER ── */
@@ -62,18 +68,34 @@
     .header-inner {
       max-width: 920px;
       margin: 0 auto;
-      padding: 1rem 1.5rem 0;
+      /* env(safe-area-inset-*) keeps the header below the iPhone status bar
+         (and clear of the rounded corners) when installed to the home screen. */
+      padding: calc(1rem + env(safe-area-inset-top)) calc(1.5rem + env(safe-area-inset-right)) 0 calc(1.5rem + env(safe-area-inset-left));
     }
     .app-title {
       font-size: 1.5rem;
-      font-weight: 900;
+      font-weight: 800;
       letter-spacing: -0.5px;
     }
     .app-title .highlight { color: var(--act); }
     .title-row { display: flex; align-items: center; justify-content: space-between; }
-    .loc-btn { background: none; border: 2px solid var(--border); border-radius: var(--r-sm); padding: 0.35rem 0.65rem; font-size: 0.78rem; font-weight: 700; cursor: pointer; color: var(--muted); display: flex; align-items: center; gap: 0.3rem; }
+    .header-actions { display: flex; align-items: center; gap: 0.5rem; }
+    .loc-btn { background: none; border: 2px solid var(--border); border-radius: 50%; width: 38px; height: 38px; padding: 0; font-size: 1rem; cursor: pointer; color: var(--muted); display: grid; place-items: center; line-height: 1; }
     .loc-btn:hover { border-color: var(--act); color: var(--act); }
     .loc-btn.guest { border-color: var(--craft); color: var(--craft); }
+
+    /* Bookmark (wishlist) icon — outline until saved, then filled. */
+    .bm-icon { width: 1.05em; height: 1.05em; display: block; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linejoin: round; }
+    .on > .bm-icon, .bm-icon.on { fill: currentColor; }
+    .nav-wish-btn { position: relative; background: none; border: 2px solid var(--border); border-radius: 50%; width: 38px; height: 38px; padding: 0; font-size: 1.15rem; cursor: pointer; color: var(--muted); display: grid; place-items: center; transition: all 0.15s; }
+    .nav-wish-btn:hover { border-color: #0D9488; color: #0D9488; }
+    .nav-wish-btn.active { border-color: #0D9488; background: #CCFBF1; color: #0D9488; }
+    .nav-icon-btn { position: relative; background: none; border: 2px solid var(--border); border-radius: 50%; width: 38px; height: 38px; padding: 0; cursor: pointer; color: var(--muted); display: grid; place-items: center; transition: all 0.15s; }
+    .nav-icon-btn:hover { border-color: var(--act); color: var(--act); }
+    .nav-icon-btn.active { border-color: var(--act); background: var(--act-bg); color: var(--act-dark); }
+    .plus-icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+    .nav-add-count { position: absolute; top: -5px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px; background: var(--act); color: #fff; font-size: 0.62rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
+    .nav-wish-count { position: absolute; top: -5px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px; background: #0D9488; color: #fff; font-size: 0.62rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
     .tab-bar { display: flex; gap: 0; margin-top: 0.75rem; }
     .tab-btn {
       flex: 1;
@@ -81,19 +103,58 @@
       border: none;
       background: none;
       font-family: 'Nunito', sans-serif;
-      font-size: 0.92rem;
-      font-weight: 700;
+      font-size: 0.95rem;
+      font-weight: 600;
       cursor: pointer;
       color: var(--muted);
       border-bottom: 3px solid transparent;
       transition: all 0.18s;
     }
+    .tab-btn.active { font-weight: 800; }
     .tab-btn.active[data-tab="activities"] { color: var(--act); border-bottom-color: var(--act); }
     .tab-btn.active[data-tab="meals"]      { color: var(--meal); border-bottom-color: var(--meal); }
     .tab-btn.active[data-tab="crafts"]     { color: var(--craft); border-bottom-color: var(--craft); }
+    .tab-btn.active[data-tab="events"]     { color: #E11D8F; border-bottom-color: #E11D8F; }
 
-    /* ── MAIN ── */
-    main { max-width: 920px; margin: 0 auto; padding: 1.5rem; }
+    /* ── WISHLIST ── */
+    .chip.on-wish { border-color:#0D9488; color:#0F766E; background:#CCFBF1; }
+    .search-box.t-wish input:focus { border-color:#0D9488; }
+    .filter-toggle.t-wish:hover, .filter-toggle.t-wish.open { border-color:#0D9488; color:#0F766E; background:#CCFBF1; }
+    .filter-badge.t-wish { background:#0D9488; }
+    #wl-filter-panel .switch input:checked + .track { background:#0D9488; }
+    /* ── ADD NEW ── */
+    .an-intro { margin-bottom: 1.1rem; }
+    .an-intro h2 { font-size: 1.2rem; font-weight: 800; margin-bottom: 0.35rem; }
+    .an-intro p { font-size: 0.85rem; color: var(--muted); line-height: 1.55; max-width: 46rem; }
+    .an-card { background: var(--card); border: 2px solid var(--border); border-radius: var(--r); padding: 1.1rem 1.15rem; box-shadow: var(--shadow); margin-bottom: 1.25rem; }
+    .an-card h3, #edit-overlay .an-card h3 { font-size: 1rem; font-weight: 800; margin-bottom: 0.3rem; }
+    .an-card > p { font-size: 0.82rem; color: var(--muted); line-height: 1.5; margin-bottom: 0.8rem; }
+    .an-form { display: grid; grid-template-columns: 150px 1fr 1fr auto; gap: 0.75rem; align-items: end; }
+    .an-form .form-group { margin-bottom: 0; }
+    .an-opt { font-weight: 600; text-transform: none; opacity: 0.8; }
+    .an-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+    .btn:disabled { opacity: 0.45; cursor: default; }
+    .an-research textarea, #edit-overlay .an-card textarea#ed-paste { width: 100%; box-sizing: border-box; min-height: 110px; resize: vertical; border: 2px solid var(--border); border-radius: var(--r-sm); padding: 0.7rem 0.85rem; font-family: 'Nunito', sans-serif; font-size: 0.85rem; color: var(--text); outline: none; margin-bottom: 0.75rem; }
+    .an-research textarea:focus, #edit-overlay textarea#ed-paste:focus { border-color: var(--act); }
+    .an-list { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.25rem; }
+    .an-row { display: flex; align-items: center; gap: 0.75rem; background: var(--card); border: 2px solid var(--border); border-radius: var(--r); padding: 0.7rem 0.9rem; box-shadow: var(--shadow); }
+    .an-row .an-kind { font-size: 0.68rem; font-weight: 800; padding: 0.2rem 0.55rem; border-radius: 999px; background: var(--faint); border: 1px solid var(--border); color: var(--muted); flex: none; }
+    .an-row .an-body { flex: 1; min-width: 0; }
+    .an-row .an-name { font-size: 0.92rem; font-weight: 700; }
+    .an-row .an-note { font-size: 0.78rem; color: var(--muted); }
+    .an-row .an-del { flex: none; background: none; border: none; font-size: 0.95rem; cursor: pointer; opacity: 0.6; }
+    .an-row .an-del:hover { opacity: 1; }
+    .wl-group { margin-bottom: 1.6rem; }
+    .wl-group-head { display:flex; align-items:baseline; gap:0.5rem; margin-bottom:0.7rem; }
+    .wl-group-head h2 { font-size:1.05rem; font-weight:800; }
+    .wl-group-head span { font-size:0.78rem; font-weight:700; color:var(--muted); }
+
+    /* ── EVENTS ── */
+    .ev-refresh { background:#E11D8F; color:#fff; border:none; border-radius:var(--r-sm); padding:0.5rem 0.85rem; font-family:'Nunito',sans-serif; font-weight:800; font-size:0.85rem; cursor:pointer; display:flex; align-items:center; gap:0.4rem; }
+    .ev-refresh:hover { filter:brightness(1.06); }
+    .ev-refresh:disabled { opacity:0.6; cursor:default; }
+
+    main { max-width: 920px; margin: 0 auto; padding: 1.5rem; padding-left: calc(1.5rem + env(safe-area-inset-left)); padding-right: calc(1.5rem + env(safe-area-inset-right)); }
     .tab-view { display: none; }
     .tab-view.active { display: block; }
 
@@ -117,6 +178,22 @@
     .chip.on-meal { border-color: var(--meal); color: var(--meal-dark); background: var(--meal-bg); }
     .chip.on-craft{ border-color: var(--craft);color: var(--craft-dark);background: var(--craft-bg); }
 
+    /* ── SEARCH ── */
+    .search-box { position: relative; flex: 1 1 180px; min-width: 140px; }
+    .search-box input {
+      width: 100%; box-sizing: border-box;
+      border: 2px solid var(--border); border-radius: 999px;
+      padding: 0.65rem 1rem;
+      font-family: 'Nunito', sans-serif; font-size: 0.95rem; font-weight: 600; color: var(--text);
+      background: #fff;
+    }
+    .search-box input::placeholder { color: var(--muted); font-weight: 600; }
+    .search-box input:focus { outline: none; }
+    .search-box.t-act   input:focus { border-color: var(--act); }
+    .search-box.t-meal  input:focus { border-color: var(--meal); }
+    .search-box.t-craft input:focus { border-color: var(--craft); }
+    .search-box.t-event input:focus { border-color: #E11D8F; }
+
     /* ── FILTER TOOLBAR & PANEL ── */
     .filter-toolbar {
       display: flex;
@@ -130,12 +207,12 @@
       align-items: center;
       gap: 0.5rem;
       padding: 0.7rem 1.25rem;
-      border-radius: 999px;
+      border-radius: 12px;
       border: 2px solid var(--border);
       background: white;
       font-family: 'Nunito', sans-serif;
-      font-size: 0.95rem;
-      font-weight: 800;
+      font-size: 0.92rem;
+      font-weight: 700;
       color: var(--text);
       cursor: pointer;
       transition: all 0.15s;
@@ -157,7 +234,6 @@
     }
     .filter-caret { font-size: 0.7rem; transition: transform 0.2s; }
     .filter-toggle.open .filter-caret { transform: rotate(180deg); }
-    .filter-toolbar .random-btn { margin-bottom: 0; margin-left: auto; }
 
     .filter-panel {
       display: none;
@@ -204,57 +280,10 @@
     input[type="range"] { accent-color: var(--act); cursor: pointer; }
     #dist-label { font-size: 0.82rem; font-weight: 800; color: var(--act); min-width: 40px; }
 
-    /* ── RANDOM BUTTON ── */
-    .random-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.6rem;
-      border-radius: 999px;
-      border: none;
-      font-family: 'Nunito', sans-serif;
-      font-size: 1rem;
-      font-weight: 800;
-      cursor: pointer;
-      transition: all 0.18s;
-      margin-bottom: 1.25rem;
-    }
-    .random-btn:hover { transform: scale(1.04); box-shadow: var(--shadow-lg); }
-    .random-btn:active { transform: scale(0.97); }
-    .random-btn.small { padding: 0.5rem 1.1rem; font-size: 0.85rem; }
     .btn-act   { background: var(--act);   color: white; }
     .btn-meal  { background: var(--meal);  color: white; }
     .btn-craft { background: var(--craft); color: white; }
 
-    /* ── RANDOM RESULT BANNER ── */
-    .random-banner {
-      display: none;
-      border-radius: var(--r);
-      padding: 1.25rem 1.5rem;
-      margin-bottom: 1.5rem;
-      position: relative;
-      animation: slideUp 0.22s ease;
-    }
-    .random-banner.show { display: block; }
-    .random-banner.act-theme   { background: var(--act-bg);   border: 2px solid var(--act); }
-    .random-banner.meal-theme  { background: var(--meal-bg);  border: 2px solid var(--meal); }
-    .random-banner.craft-theme { background: var(--craft-bg); border: 2px solid var(--craft); }
-    .random-banner .rb-label {
-      font-size: 0.72rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 0.3rem;
-      opacity: 0.6;
-    }
-    .random-banner .rb-name { font-size: 1.25rem; font-weight: 900; margin-bottom: 0.35rem; }
-    .random-banner .rb-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
-    .rb-close {
-      position: absolute; top: 0.75rem; right: 0.75rem;
-      background: rgba(0,0,0,0.08); border: none; border-radius: 50%;
-      width: 26px; height: 26px; font-size: 0.75rem; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-    }
     .rb-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
 
     /* ── SECTION HEADER ── */
@@ -268,7 +297,7 @@
     .add-btn {
       display: flex; align-items: center; gap: 0.25rem;
       padding: 0.38rem 0.85rem;
-      border-radius: 999px;
+      border-radius: 10px;
       border: 2px dashed var(--border);
       background: none;
       font-family: 'Nunito', sans-serif;
@@ -297,16 +326,31 @@
     .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); border-color: #C4B5FD; }
     .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.45rem; }
     .card-icon { font-size: 1.4rem; margin-right: 0.6rem; flex-shrink: 0; }
-    .card-name { font-size: 0.97rem; font-weight: 800; line-height: 1.3; flex: 1; }
-    .fav-btn { background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 2px; transition: transform 0.15s; flex-shrink: 0; }
-    .fav-btn:hover { transform: scale(1.25); }
+    .card-name { font-size: 0.97rem; font-weight: 700; line-height: 1.3; flex: 1; }
+    .card-flags { display: flex; align-items: center; gap: 0.15rem; flex-shrink: 0; }
+    /* Star and bookmark share one 28px box so they line up wherever they appear. */
+    .fav-btn, .wish-btn {
+      width: 28px; height: 28px; padding: 0; flex-shrink: 0;
+      background: none; border: none; cursor: pointer; line-height: 1;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: transform 0.15s, color 0.15s;
+    }
+    .fav-btn { color: var(--text); }
+    .fav-btn.on { color: #F59E0B; }
+    .fav-btn:hover { transform: scale(1.2); color: #F59E0B; }
+    .st-icon { width: 1.15rem; height: 1.15rem; display: block; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+    .fav-btn.on .st-icon { fill: currentColor; }
+    .wish-btn { color: var(--text); }
+    .wish-btn.on { color: #0D9488; }
+    .wish-btn:hover { transform: scale(1.2); color: #0D9488; }
+    .wish-btn .bm-icon { width: 1.05rem; height: 1.05rem; }
+    .card-where { font-size: 0.78rem; font-weight: 700; color: var(--muted); margin-bottom: 0.4rem; }
     .card-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.5; margin-bottom: 0.7rem; }
     .card-badges { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-    .card-links { display: flex; gap: 0.5rem; margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid var(--border); }
-    .card-links a { font-size: 0.75rem; color: var(--act); text-decoration: none; font-weight: 600; }
-    .card-links a:hover { text-decoration: underline; }
-    .sp-links { display: flex; gap: 0.5rem; margin-top: 0.8rem; }
-    .sp-links a { text-decoration: none; text-align: center; }
+    .sp-actions a.btn { text-decoration: none; text-align: center; line-height: 1.5; }
+    .ed-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 0.5rem; padding: 0.7rem 1rem; border-radius: 12px; border: 2px solid var(--border); background: white; font-family: 'Nunito', sans-serif; font-size: 0.92rem; font-weight: 700; color: var(--text); cursor: pointer; }
+    .ed-toggle:hover, .ed-toggle.open { border-color: var(--act); color: var(--act-dark); background: var(--act-bg); }
+    .ed-toggle.open .filter-caret { transform: rotate(180deg); }
     /* ── TOGGLE SWITCHES ── */
     .toggle-list { display: flex; flex-direction: column; }
     .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 0.55rem 0.1rem; font-size: 0.88rem; font-weight: 700; color: var(--text); cursor: pointer; }
@@ -325,6 +369,12 @@
     .filter-toggle.t-craft:hover { border-color: var(--craft); color: var(--craft-dark); }
     .filter-toggle.t-craft.open { border-color: var(--craft); background: var(--craft-bg); color: var(--craft-dark); }
     .filter-badge.t-craft { background: var(--craft); }
+    .filter-toggle.t-event:hover { border-color: #E11D8F; color: #9D174D; }
+    .filter-toggle.t-event.open { border-color: #E11D8F; background: #FCE7F3; color: #9D174D; }
+    .filter-badge.t-event { background: #E11D8F; }
+    .chip.on-event { border-color: #E11D8F; color: #9D174D; background: #FCE7F3; }
+    #ev-filter-panel .switch input:checked + .track { background: #E11D8F; }
+    .filter-toolbar .ev-seg { margin-left: auto; }
 
     /* ── BADGES ── */
     .badge {
@@ -333,6 +383,7 @@
       border-radius: 5px;
     }
     .b-dist  { background: #EFF6FF; color: #1D4ED8; }
+    .b-date  { background: #FCE7F3; color: #9D174D; }
     .b-free  { background: #DCFCE7; color: #166534; }
     .b-paid  { background: #FEF3C7; color: #92400E; }
     .b-pricey{ background: #FEE2E2; color: #991B1B; }
@@ -372,18 +423,22 @@
       font-size: 0.9rem; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
     }
-    .sp-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-    .sp-title { font-size: 1.35rem; font-weight: 900; margin-bottom: 0.6rem; padding-right: 2rem; }
+    .sp-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.5rem; padding-right: 2.5rem; }
+    .sp-icon { font-size: 2.5rem; line-height: 1; }
+    .sp-flags { transform: scale(1.15); transform-origin: right top; }
+    .sp-where { font-size: 0.85rem; font-weight: 700; color: var(--muted); }
+    .sp-title { font-size: 1.35rem; font-weight: 800; margin-bottom: 0.6rem; padding-right: 2rem; }
     .sp-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.9rem; }
     .sp-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.6; margin-bottom: 1rem; }
     .sp-section { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.35rem; margin-top: 0.9rem; }
     .sp-list { list-style: none; }
     .sp-list li { font-size: 0.85rem; padding: 0.25rem 0; color: var(--text); }
     .sp-list li::before { content: "•  "; color: var(--craft); font-weight: 900; }
-    .sp-actions { display: flex; gap: 0.5rem; margin-top: 1.25rem; }
+    .sp-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.25rem; }
+    .sp-actions .btn { flex: 1 1 auto; min-width: 8.5rem; }
     .btn {
-      padding: 0.55rem 1.15rem;
-      border-radius: 999px; border: 2px solid transparent;
+      padding: 0.6rem 1.15rem;
+      border-radius: 12px; border: 2px solid transparent;
       font-family: 'Nunito', sans-serif; font-size: 0.83rem; font-weight: 700;
       cursor: pointer; transition: all 0.15s;
     }
@@ -399,6 +454,7 @@
       padding: 1rem;
     }
     .modal {
+      position: relative;
       background: white;
       border-radius: 20px;
       padding: 1.75rem;
@@ -408,7 +464,7 @@
       max-height: 85vh;
       overflow-y: auto;
     }
-    .modal h3 { font-size: 1.15rem; font-weight: 900; margin-bottom: 1.15rem; }
+    .modal h3 { font-size: 1.15rem; font-weight: 800; margin-bottom: 1.15rem; padding-right: 2.5rem; }
     .form-group { margin-bottom: 0.9rem; }
     .form-group label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--muted); margin-bottom: 0.3rem; }
     .form-group input, .form-group textarea, .form-group select {
@@ -420,7 +476,8 @@
     .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--craft); }
     .form-group textarea { resize: vertical; min-height: 65px; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-    .modal-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+    .modal-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+    .modal-actions .btn { flex: 1 1 auto; min-width: 7.5rem; }
 
     /* ── EMPTY STATE ── */
     .empty {
@@ -428,22 +485,26 @@
       color: var(--muted);
     }
     .empty .e-icon { font-size: 2.8rem; margin-bottom: 0.5rem; }
+    .empty .e-icon .bm-icon { width: 2.4rem; height: 2.4rem; margin: 0 auto; stroke-width: 1.5; opacity: 0.55; }
     .empty p { font-size: 0.9rem; font-weight: 600; }
 
     /* ── ANIMATIONS ── */
     @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
     @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    @keyframes pop { 0%,100% { transform:scale(1); } 50% { transform:scale(1.06); } }
-    .popping { animation: pop 0.25s ease 2; }
 
     /* ── RESPONSIVE ── */
     @media (max-width: 580px) {
       .cards-grid { grid-template-columns: 1fr; }
-      main { padding: 1rem; }
-      .filter-toolbar .random-btn { margin-left: 0; width: 100%; justify-content: center; }
-      .filter-toggle { width: 100%; justify-content: center; }
+      .tab-btn { font-size: 0.85rem; padding: 0.7rem 0.2rem; }
+      .an-form { grid-template-columns: 1fr; }
+      main { padding: 1rem; padding-left: calc(1rem + env(safe-area-inset-left)); padding-right: calc(1rem + env(safe-area-inset-right)); }
+      .filter-toolbar .ev-seg { margin-left: auto; margin-right: auto; width: auto; }
+      .filter-toggle { margin-left: auto; margin-right: auto; }
     }
   </style>
+<script src="/vendor/fuzzy-plain.js"></script>
+<script src="/vendor/clearx.js" defer></script>
+<style>@media (pointer:coarse){input,select,textarea{font-size:16px !important}}</style>
 </head>
 <body>
 
@@ -451,12 +512,23 @@
   <div class="header-inner">
     <div class="title-row">
       <div class="app-title">Dad <span class="highlight">HQ</span></div>
-      <button class="loc-btn" id="loc-btn" onclick="openLocModal()">📍 Macclesfield</button>
+      <div class="header-actions">
+        <button class="loc-btn" id="loc-btn" title="Macclesfield" aria-label="Home location: Macclesfield" onclick="openLocModal()">📍</button>
+        <button class="nav-icon-btn" id="nav-add-btn" title="Add new" aria-label="Add new" onclick="openAddNew()">
+          <svg class="plus-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          <span class="nav-add-count" id="nav-add-count" style="display:none;">0</span>
+        </button>
+        <button class="nav-wish-btn" id="nav-wish-btn" title="Wishlist" aria-label="Wishlist" onclick="selectTab('wishlist')">
+          <svg class="bm-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3h11a1.5 1.5 0 0 1 1.5 1.5v16.2a.8.8 0 0 1-1.25.66L12 17.4l-5.75 3.96A.8.8 0 0 1 5 20.7V4.5A1.5 1.5 0 0 1 6.5 3z"/></svg>
+          <span class="nav-wish-count" id="nav-wish-count" style="display:none;">0</span>
+        </button>
+      </div>
     </div>
     <div class="tab-bar">
-      <button class="tab-btn active" data-tab="activities">🗺️ Activities</button>
-      <button class="tab-btn" data-tab="meals">🍽️ Meals</button>
-      <button class="tab-btn" data-tab="crafts">🎨 Crafts</button>
+      <button class="tab-btn active" data-tab="activities">Activities</button>
+      <button class="tab-btn" data-tab="meals">Meals</button>
+      <button class="tab-btn" data-tab="crafts">Crafts</button>
+      <button class="tab-btn" data-tab="events">Events</button>
     </div>
   </div>
 </header>
@@ -467,11 +539,13 @@
   <div class="tab-view active" id="tab-activities">
     <div class="filter-toolbar">
       <button class="filter-toggle" id="filter-toggle">
-        <span>🔎 Filters</span>
+        <span>Filters</span>
         <span class="filter-badge" id="filter-badge" style="display:none;">0</span>
         <span class="filter-caret" id="filter-caret">▾</span>
       </button>
-      <button class="random-btn btn-act small" id="rand-act">🎲 Pick for me</button>
+      <div class="search-box t-act">
+        <input id="act-search" type="search" placeholder="Search places…" oninput="setActQuery(this.value)">
+      </div>
     </div>
 
     <div class="filter-panel" id="filter-panel">
@@ -502,11 +576,12 @@
         <button class="clear-filters-btn" id="clear-filters-btn">Clear all filters</button>
       </div>
     </div>
-
-    <div class="random-banner act-theme" id="rb-act"></div>
     <div class="section-header">
       <span class="section-count" id="act-count"></span>
-      <button class="add-btn" id="add-act-btn">+ Add place</button>
+      <div style="display:flex;gap:0.5rem;">
+        <button class="add-btn" id="ideas-act-btn" onclick="openUpdateModal('act')">Get ideas</button>
+        <button class="add-btn" id="add-act-btn">+ Add place</button>
+      </div>
     </div>
     <div class="cards-grid" id="act-grid"></div>
   </div>
@@ -515,11 +590,13 @@
   <div class="tab-view" id="tab-meals">
     <div class="filter-toolbar">
       <button class="filter-toggle t-meal" id="meal-filter-toggle">
-        <span>🔎 Filters</span>
+        <span>Filters</span>
         <span class="filter-badge t-meal" id="meal-filter-badge" style="display:none;">0</span>
         <span class="filter-caret">▾</span>
       </button>
-      <button class="random-btn btn-meal small" id="rand-meal">🎲 Pick for me</button>
+      <div class="search-box t-meal">
+        <input id="meal-search" type="search" placeholder="Search meals…" oninput="setMealQuery(this.value)">
+      </div>
     </div>
 
     <div class="filter-panel" id="meal-filter-panel">
@@ -548,11 +625,12 @@
         <button class="clear-filters-btn" id="meal-clear-btn">Clear all filters</button>
       </div>
     </div>
-
-    <div class="random-banner meal-theme" id="rb-meal"></div>
     <div class="section-header">
       <span class="section-count" id="meal-count"></span>
-      <button class="add-btn" id="add-meal-btn">+ Add meal</button>
+      <div style="display:flex;gap:0.5rem;">
+        <button class="add-btn" id="ideas-meal-btn" onclick="openUpdateModal('meal')">Get ideas</button>
+        <button class="add-btn" id="add-meal-btn">+ Add meal</button>
+      </div>
     </div>
     <div class="cards-grid" id="meal-grid"></div>
   </div>
@@ -561,11 +639,13 @@
   <div class="tab-view" id="tab-crafts">
     <div class="filter-toolbar">
       <button class="filter-toggle t-craft" id="craft-filter-toggle">
-        <span>🔎 Filters</span>
+        <span>Filters</span>
         <span class="filter-badge t-craft" id="craft-filter-badge" style="display:none;">0</span>
         <span class="filter-caret">▾</span>
       </button>
-      <button class="random-btn btn-craft small" id="rand-craft">🎲 Pick for me</button>
+      <div class="search-box t-craft">
+        <input id="craft-search" type="search" placeholder="Search crafts…" oninput="setCraftQuery(this.value)">
+      </div>
     </div>
 
     <div class="filter-panel" id="craft-filter-panel">
@@ -594,13 +674,151 @@
         <button class="clear-filters-btn" id="craft-clear-btn">Clear all filters</button>
       </div>
     </div>
-
-    <div class="random-banner craft-theme" id="rb-craft"></div>
     <div class="section-header">
       <span class="section-count" id="craft-count"></span>
-      <button class="add-btn" id="add-craft-btn">+ Add craft</button>
+      <div style="display:flex;gap:0.5rem;">
+        <button class="add-btn" id="ideas-craft-btn" onclick="openUpdateModal('craft')">Get ideas</button>
+        <button class="add-btn" id="add-craft-btn">+ Add craft</button>
+      </div>
     </div>
     <div class="cards-grid" id="craft-grid"></div>
+  </div>
+
+  <!-- ── EVENTS ── -->
+  <div class="tab-view" id="tab-events">
+    <div class="filter-toolbar">
+      <button class="filter-toggle t-event" id="ev-filter-toggle">
+        <span>Filters</span>
+        <span class="filter-badge t-event" id="ev-filter-badge" style="display:none;">0</span>
+        <span class="filter-caret">▾</span>
+      </button>
+      <div class="search-box t-event">
+        <input id="ev-search" type="search" placeholder="Search events…" oninput="setEvQuery(this.value)">
+      </div>
+    </div>
+
+    <div class="filter-panel" id="ev-filter-panel">
+      <div class="filter-group">
+        <div class="filter-group-label">Category</div>
+        <div class="chip-row" id="ev-cat-row"></div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-group-label">Area</div>
+        <div class="chip-row" id="ev-region-row"></div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-group-label">Month</div>
+        <div class="chip-row" id="ev-month-row"></div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-group-label">Other</div>
+        <div class="toggle-list">
+          <label class="toggle-row">
+            <span>Saved to wishlist only</span>
+            <span class="switch"><input type="checkbox" id="ev-fav-toggle" onchange="evToggleFavFilter()"><span class="track"></span></span>
+          </label>
+        </div>
+      </div>
+      <div class="filter-panel-footer">
+        <button class="clear-filters-btn" id="ev-clear-btn" onclick="clearEvFilters()">Clear all filters</button>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <span class="section-count" id="ev-count"></span>
+      <button class="add-btn" id="ev-update-btn" onclick="openUpdateModal('event')">Update events</button>
+    </div>
+    <div id="ev-body"></div>
+  </div>
+
+  <!-- ── WISHLIST ── -->
+  <div class="tab-view" id="tab-wishlist">
+    <div class="filter-toolbar">
+      <button class="filter-toggle t-wish" id="wl-filter-toggle">
+        <span>Filters</span>
+        <span class="filter-badge t-wish" id="wl-filter-badge" style="display:none;">0</span>
+        <span class="filter-caret">▾</span>
+      </button>
+      <div class="search-box t-wish">
+        <input id="wl-search" type="search" placeholder="Search your wishlist…" oninput="setWlQuery(this.value)">
+      </div>
+    </div>
+
+    <div class="filter-panel" id="wl-filter-panel">
+      <div class="filter-group">
+        <div class="filter-group-label">Type</div>
+        <div class="chip-row" id="wl-type-row"></div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-group-label">Other</div>
+        <div class="toggle-list">
+          <label class="toggle-row">
+            <span>Favourites only</span>
+            <span class="switch"><input type="checkbox" id="wl-fav-toggle" onchange="toggleWlFavOnly()"><span class="track"></span></span>
+          </label>
+        </div>
+      </div>
+      <div class="filter-panel-footer">
+        <button class="clear-filters-btn" id="wl-clear-btn" onclick="clearWlFilters()">Clear all filters</button>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <span class="section-count" id="wl-count"></span>
+    </div>
+    <div id="wl-body"></div>
+  </div>
+
+  <!-- ── ADD NEW ── -->
+  <div class="tab-view" id="tab-addnew">
+    <div class="an-intro">
+      <h2>Add something new</h2>
+      <p>Jot down anything you want in the app — a place, a meal, a craft or an event. Just the name is enough.
+         When you've got a few, copy the prompt at the bottom into ChatGPT, then paste its reply back here and
+         everything gets filled in and added properly.</p>
+    </div>
+
+    <div class="an-card">
+      <div class="an-form">
+        <div class="form-group">
+          <label for="an-kind">What is it?</label>
+          <select id="an-kind">
+            <option value="act">Place</option>
+            <option value="meal">Meal</option>
+            <option value="craft">Craft</option>
+            <option value="event">Event</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="an-name">Name</label>
+          <input id="an-name" placeholder="e.g. Bents Garden &amp; Home" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="an-note">Note <span class="an-opt">(optional)</span></label>
+          <input id="an-note" placeholder="e.g. near Glazebury, do the dinosaur trail" autocomplete="off">
+        </div>
+        <button class="btn btn-act" id="an-add">Add to list</button>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <span class="section-count" id="an-count"></span>
+      <button class="add-btn" id="an-clear" onclick="clearDrafts()">Clear list</button>
+    </div>
+    <div id="an-list"></div>
+
+    <div class="an-card an-research" id="an-research">
+      <h3>Fill in the details</h3>
+      <p>Copy this prompt into ChatGPT (or any AI chat with web search), then paste its whole reply below.</p>
+      <p id="an-hint" style="display:none;">Add something to the list first and the prompt will cover everything on it.</p>
+      <div class="an-actions">
+        <button class="btn btn-act" id="an-copy" onclick="copyDraftPrompt()">Copy prompt</button>
+      </div>
+      <textarea id="an-paste" placeholder="Paste the AI's reply here…"></textarea>
+      <div class="an-actions">
+        <button class="btn btn-act" id="an-import" onclick="importDrafts()">Import</button>
+      </div>
+    </div>
   </div>
 
 </main>
@@ -610,21 +828,72 @@
   <div class="spotlight" id="spotlight-inner"></div>
 </div>
 
-<!-- ADD MODAL -->
-<div class="modal-overlay" id="modal-overlay" style="display:none;">
+<!-- EDIT CARD -->
+<div class="modal-overlay" id="edit-overlay" style="display:none;" onclick="if(event.target===this)closeEditModal()">
   <div class="modal">
-    <h3 id="modal-title"></h3>
-    <div id="modal-body"></div>
+    <button class="sp-close" onclick="closeEditModal()" aria-label="Close">✕</button>
+    <h3>Edit this card</h3>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">Change the wording yourself, or tell ChatGPT what you want and paste its reply back.</p>
+
+    <div class="form-row" id="ed-row" style="grid-template-columns:80px 1fr;">
+      <div class="form-group" id="ed-icon-wrap"><label for="ed-icon">Icon</label><input id="ed-icon" maxlength="4"></div>
+      <div class="form-group"><label for="ed-name">Name <span class="an-opt" id="ed-name-count"></span></label><input id="ed-name"></div>
+    </div>
+    <div class="form-group">
+      <label for="ed-desc">Description <span class="an-opt" id="ed-desc-count"></span></label>
+      <textarea id="ed-desc" rows="3"></textarea>
+    </div>
+    <div class="modal-actions" style="margin-bottom:1.25rem;">
+      <button class="btn btn-act" id="ed-save" onclick="saveCardEdit()">Save changes</button>
+      <button class="btn btn-outline" id="ed-reset" onclick="resetCardEdit()">Reset to original</button>
+    </div>
+
+    <button class="ed-toggle" id="ed-ai-toggle" onclick="toggleEditAI()">
+      <span>Ask ChatGPT to rewrite it</span><span class="filter-caret">▾</span>
+    </button>
+    <div class="an-card" id="ed-ai" style="margin-bottom:0;display:none;">
+      <p>Say what you want changed, copy the prompt, then paste the reply back here.</p>
+      <div class="form-group">
+        <label for="ed-instruction">What should change?</label>
+        <textarea id="ed-instruction" rows="2" placeholder="e.g. mention the new play area and that parking is free"></textarea>
+      </div>
+      <div class="an-actions">
+        <button class="btn btn-act" id="ed-copy" onclick="copyEditPrompt()">Copy prompt</button>
+      </div>
+      <textarea id="ed-paste" placeholder="Paste the AI's reply here…"></textarea>
+      <div class="an-actions" style="margin-bottom:0;">
+        <button class="btn btn-act" id="ed-apply" onclick="applyEditReply()">Apply</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="update-overlay" style="display:none;" onclick="if(event.target===this)closeUpdateModal()">
+  <div class="modal">
+    <button class="sp-close" onclick="closeUpdateModal()" aria-label="Close">✕</button>
+    <h3 id="update-title"></h3>
+    <p id="update-intro" style="font-size:0.85rem;color:var(--muted);margin-bottom:0.9rem;"></p>
+    <div style="display:flex;gap:0.9rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:0.9rem;">
+      <label id="update-age-wrap" style="font-size:0.8rem;font-weight:800;display:flex;flex-direction:column;gap:0.25rem;">Harry's age
+        <select id="update-age" onchange="evSetAge(this.value)" style="font-family:'Nunito',sans-serif;font-weight:700;font-size:0.9rem;padding:0.4rem 0.5rem;border:1px solid #ccc;border-radius:var(--r-sm);"></select>
+      </label>
+      <label style="font-size:0.8rem;font-weight:800;display:flex;flex-direction:column;gap:0.25rem;">How many
+        <select id="update-count" onchange="updSetCount(this.value)" style="font-family:'Nunito',sans-serif;font-weight:700;font-size:0.9rem;padding:0.4rem 0.5rem;border:1px solid #ccc;border-radius:var(--r-sm);"></select>
+      </label>
+      <button class="ev-refresh" id="update-copy" onclick="updCopyPrompt()">📋 Copy prompt</button>
+    </div>
+    <textarea id="update-text" rows="6" placeholder="Paste the AI's reply here (the JSON list)…" style="width:100%;font-family:monospace;font-size:0.8rem;border:1px solid #ccc;border-radius:var(--r-sm);padding:0.5rem;resize:vertical;box-sizing:border-box;"></textarea>
     <div class="modal-actions">
-      <button class="btn btn-act" id="modal-save">Save</button>
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-act" id="update-import" onclick="updImport()">⬆️ Import</button>
+      <button class="btn btn-outline" onclick="closeUpdateModal()">Close</button>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay" id="loc-overlay" style="display:none;" onclick="if(event.target===this)closeLocModal()">
   <div class="modal">
-    <h3>📍 Set Home Location</h3>
+    <button class="sp-close" onclick="closeLocModal()" aria-label="Close">✕</button>
+    <h3>Set home location</h3>
     <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">Distances will be recalculated from your location. Default is Macclesfield.</p>
     <div class="form-group">
       <label>Town or postcode</label>
@@ -632,9 +901,9 @@
     </div>
     <div id="loc-status" style="font-size:0.8rem;min-height:1.2rem;margin-bottom:0.5rem;"></div>
     <div class="modal-actions">
-      <button class="btn btn-act" onclick="setLocation()">📍 Set location</button>
-      <button class="btn btn-outline" onclick="useGPS()">📡 Use GPS</button>
-      <button class="btn btn-outline" onclick="resetLocation()">↩ Reset</button>
+      <button class="btn btn-act" onclick="setLocation()">Set location</button>
+      <button class="btn btn-outline" onclick="useGPS()">Use GPS</button>
+      <button class="btn btn-outline" onclick="resetLocation()">Reset</button>
     </div>
   </div>
 </div>
@@ -821,7 +1090,7 @@ const ACTIVITIES = [
     desc:"The story of Macclesfield's silk weaving heritage told across two sites — a real working Jacquard loom at Paradise Mill is the highlight.",
     cat:"museum", weather:"indoor", dist:1, price:1, priceLabel:"£", tags:["history","silk","local","indoor"] },
 
-  { id:'a45', name:"Middlewood Way (Cycling / Walking)", icon:"🚴",
+  { id:'a45', name:"Middlewood Way, Bollington", icon:"🚴",
     desc:"12-mile former railway line converted into a traffic-free trail from Macclesfield to Marple. Perfect for bikes with kids — flat, safe, and scenic.",
     cat:"outdoor", weather:"outdoor", dist:0, price:0, priceLabel:"Free", tags:["cycling","walking","railway","flat"] },
 
@@ -1442,7 +1711,7 @@ const ACTIVITIES = [
     desc:"Ten-pin bowling with bumpers and lightweight balls for little ones, plus a buzzing arcade and pool tables. Easy, reliable family fun.",
     cat:"sport", weather:"indoor", dist:11, price:2, priceLabel:"££", region:"manchester", tags:["bowling","arcade","Stockport"] },
 
-  { id:'a197', name:"Laserzone / Laser Tag, Stockport", icon:"🔫",
+  { id:'a197', name:"Laserzone, Stockport", icon:"🔫",
     desc:"Multi-level laser tag arena with smoke, neon and atmospheric music — high-energy team fun that older kids absolutely love.",
     cat:"sport", weather:"indoor", dist:11, price:2, priceLabel:"££", region:"manchester", tags:["laser tag","team","older kids","indoor"] },
 
@@ -1641,10 +1910,6 @@ const ACTIVITIES = [
     cat:"sport", weather:"indoor", dist:7, price:1, priceLabel:"£", region:"local", tags:["swimming","toddler","lessons","local"] },
 
   // ════════ THEME PARKS & BIG ATTRACTIONS ════════
-  { id:'a245', name:"Gulliver's Land of Wonders / Splash Zone", icon:"🎢",
-    desc:"Gulliver's parks are purpose-built for under-13s — gentle rides, themed lands and splash areas at a scale that's perfect for 4–7 year olds.",
-    cat:"theme_park", weather:"both", dist:28, price:3, priceLabel:"£££", region:"manchester", tags:["theme park","young kids","rides","splash"] },
-
   { id:'a246', name:"BeWILDerwood Cheshire, Knutsford", icon:"🌳",
     desc:"A magical outdoor adventure park of treehouses, wobbly bridges, zip wires, marsh walks and a boat trip, woven around storybook characters. Pure imaginative play.",
     cat:"theme_park", weather:"outdoor", dist:14, price:2, priceLabel:"££", region:"local", tags:["treehouses","zip wire","adventure","outdoor","imaginative"] },
@@ -1657,18 +1922,14 @@ const ACTIVITIES = [
     desc:"Outdoor adventure play with climbing, slides and obstacle courses set among the trees — a great half-day of fresh-air fun.",
     cat:"theme_park", weather:"outdoor", dist:25, price:2, priceLabel:"££", region:"chester", tags:["adventure park","climbing","outdoor","obstacle"] },
 
-  { id:'a249', name:"Camelot / Park in the Past area", icon:"🏰",
-    desc:"Living-history and outdoor adventure attractions around the region recreate the past with hands-on play, archery and den-building. Check current openings.",
-    cat:"theme_park", weather:"outdoor", dist:36, price:2, priceLabel:"££", region:"chester", tags:["history","archery","den building","outdoor"] },
+  { id:'a249', name:"Park in the Past, Hope", icon:"🏰",
+    desc:"Roman-themed heritage and outdoor adventure park in a flooded quarry near Wrexham — hands-on history, den building and archery. Check what's on before you go.",
+    cat:"theme_park", weather:"outdoor", dist:40, price:2, priceLabel:"££", region:"wales", tags:["history","archery","den building","outdoor"] },
 
   // ════════ ZOOS, WILDLIFE & AQUARIUMS ════════
   { id:'a250', name:"Lower Moss Wood Nature Reserve & Owl Sanctuary, Knutsford", icon:"🦉",
     desc:"A small wildlife hospital and education reserve with owls, hedgehogs and woodland trails — gentle, free-spirited and great for animal-loving kids.",
     cat:"farm", weather:"both", dist:14, price:1, priceLabel:"£", region:"local", tags:["owls","wildlife","hedgehogs","woodland"] },
-
-  { id:'a251', name:"Stockport Aquarium / SEA LIFE area", icon:"🐠",
-    desc:"Smaller-scale aquarium experiences around Greater Manchester with tunnels, touch pools and feeding talks — captivating for little ones and weatherproof.",
-    cat:"museum", weather:"indoor", dist:18, price:2, priceLabel:"££", region:"manchester", tags:["aquarium","fish","touch pool","indoor"] },
 
   { id:'a252', name:"Reddish Vale & Wildlife, Stockport", icon:"🦆",
     desc:"River valley reserve with mill ponds, a viaduct and abundant birdlife — easy circular walks and a real sense of countryside close to the city.",
@@ -1720,8 +1981,8 @@ const ACTIVITIES = [
     desc:"Romantic lakeside gardens with ornamental water, a temple, rare-breed animals and parkland — plus jousting and family events in summer.",
     cat:"outdoor", weather:"outdoor", dist:30, price:2, priceLabel:"££", region:"chester", tags:["gardens","castle","lake","animals","jousting"] },
 
-  { id:'a264', name:"Bridgemere / Wildlife Gardens area, Cheshire", icon:"🌻",
-    desc:"Big garden-and-nature destinations in south Cheshire with trails, planting and play space — a calm, green family wander with a café.",
+  { id:'a264', name:"Bridgemere Garden Centre, Nantwich", icon:"🌻",
+    desc:"One of the country's biggest garden centres, with show gardens, trails and space to wander in south Cheshire. A calm, green stop with a good café.",
     cat:"outdoor", weather:"both", dist:30, price:1, priceLabel:"£", region:"chester", tags:["gardens","nature","trails","café"] },
 
   { id:'a265', name:"Dorothy Clive Garden, near Market Drayton", icon:"🌸",
@@ -1753,8 +2014,8 @@ const ACTIVITIES = [
     desc:"A flat, traffic-free former railway trail through gorgeous limestone country, with bike hire at Parsley Hay — ideal first proper bike ride for kids.",
     cat:"sport", weather:"outdoor", dist:35, price:1, priceLabel:"£ (hire)", region:"peaks", tags:["cycling","trail","flat","bike hire","Peak District"] },
 
-  { id:'a272', name:"Go Ape Buxton / Grizedale", icon:"🌲",
-    desc:"Treetop high-ropes and zip-wire courses with a junior version for younger children (age 4+) — proper outdoor adventure in the forest canopy.",
+  { id:'a272', name:"Go Ape Buxton", icon:"🌲",
+    desc:"Treetop high-ropes and zip wires in Grin Low woods above Buxton, with a Treetop Adventure course for age 4+. Proper outdoor adventure in the canopy.",
     cat:"sport", weather:"outdoor", dist:14, price:3, priceLabel:"£££", region:"peaks", tags:["Go Ape","zip wire","high ropes","forest","age 4+"] },
 
   // ════════ MANCHESTER FAMILY (SMALLER) ════════
@@ -1860,10 +2121,6 @@ const ACTIVITIES = [
     desc:"Flat, safe traffic-free cycling loops along the Mersey and old rail paths south-west of Manchester — perfect for building kids' cycling confidence.",
     cat:"sport", weather:"outdoor", dist:18, price:0, priceLabel:"Free", region:"manchester", tags:["cycling","flat","traffic-free","Mersey"] },
 
-  { id:'a298', name:"Tameside Bramall / Etherow Country Park", icon:"🦆",
-    desc:"A classic country park with lakes, woodland, a play area and ducks to feed near Marple — flat paths and a café make it an easy family favourite.",
-    cat:"outdoor", weather:"both", dist:11, price:0, priceLabel:"Free", region:"manchester", tags:["country park","lake","playground","ducks","free"] },
-
   { id:'a299', name:"Werneth Low Country Park, Hyde", icon:"⛰️",
     desc:"Breezy hilltop country park with huge views over Manchester and the Peak edge, gentle trails and kite-flying space. Free and exhilarating.",
     cat:"outdoor", weather:"outdoor", dist:13, price:0, priceLabel:"Free", region:"manchester", tags:["country park","views","kite flying","walk","free"] },
@@ -1872,17 +2129,17 @@ const ACTIVITIES = [
     desc:"Start at the visitor centre and follow the short sculpture and quarry-heritage trail — info boards, stone-cutting machinery and views, all free.",
     cat:"outdoor", weather:"outdoor", dist:4, price:0, priceLabel:"Free", region:"local", tags:["visitor centre","sculpture","quarry","trail","free"] },
 
-  { id:'a301', name:"Macclesfield RUFC / Park Run (Saturday)", icon:"🏃‍♂️",
-    desc:"Free weekly 2k junior parkrun and 5k events locally — a brilliant, sociable Saturday-morning habit that gets the whole family moving.",
+  { id:'a301', name:"Macclesfield parkrun (Saturday)", icon:"🏃‍♂️",
+    desc:"Free timed 5k every Saturday morning, with a junior 2k on Sundays — walkers and buggies welcome, so it works as a family outing rather than a race.",
     cat:"sport", weather:"outdoor", dist:1, price:0, priceLabel:"Free", region:"local", tags:["parkrun","running","free","Saturday","local"] },
 
   { id:'a302', name:"Cinema Trip — Cinemac, Macclesfield", icon:"🎬",
     desc:"The independent town cinema with regular family films and kids' clubs — an easy, cosy rainy-day treat right on the doorstep.",
     cat:"sport", weather:"indoor", dist:1, price:1, priceLabel:"£", region:"local", tags:["cinema","films","rainy day","local","indoor"] },
 
-  { id:'a303', name:"The Regal / Vue Cinema Kids' Club, Cheshire", icon:"🍿",
-    desc:"Cheap weekend morning kids' film clubs at the multiplex — recent family releases for a couple of pounds a ticket. Great-value wet-weather fallback.",
-    cat:"sport", weather:"indoor", dist:11, price:1, priceLabel:"£", region:"manchester", tags:["cinema","kids club","cheap","rainy day"] },
+  { id:'a303', name:"The Regal Cinema, Poynton", icon:"🍿",
+    desc:"Lovely independent cinema on the doorstep with cheap family screenings — a proper old-school picture house and a brilliant wet-weather fallback.",
+    cat:"sport", weather:"indoor", dist:5, price:1, priceLabel:"£", region:"local", tags:["cinema","kids club","cheap","rainy day"] },
 
   { id:'a304', name:"Knutsford & The Moor Walk", icon:"🦢",
     desc:"Browse pretty Knutsford's independent shops and tearooms, then feed the ducks on The Moor — a civilised, gentle free outing.",
@@ -1940,8 +2197,8 @@ const ACTIVITIES = [
     desc:"A huge indoor-and-outdoor discovery centre with treetop walks, a barefoot trail, science play and a train. A brilliant full-day adventure.",
     cat:"theme_park", weather:"both", dist:55, price:2, priceLabel:"££", region:"midlands", tags:["discovery","treetop","barefoot","train","indoor and outdoor"] },
 
-  { id:'a318', name:"Tatton / Dunham Easter & Half-Term Trails", icon:"🥚",
-    desc:"NT estates run brilliant Easter egg hunts and school-holiday activity trails — a cheap add-on that turns a normal visit into a proper event.",
+  { id:'a318', name:"Easter & half-term trails, Tatton Park", icon:"🥚",
+    desc:"Tatton runs egg hunts and school-holiday activity trails through the year — a cheap add-on that turns a normal visit into a proper event.",
     cat:"outdoor", weather:"both", dist:13, price:1, priceLabel:"£ (trail)", region:"local", tags:["Easter","trail","NT","half term","seasonal"] },
 
   { id:'a319', name:"Manchester Central Library & Archives+", icon:"📚",
@@ -1985,21 +2242,21 @@ const ACTIVITIES = [
     desc:"Bigger farm-adventure parks in the wider region combine animal barns, indoor and outdoor play, go-karts and rides for a full day's value.",
     cat:"farm", weather:"both", dist:35, price:2, priceLabel:"££", region:"chester", tags:["farm","play","go-karts","rides","full day"] },
 
-  { id:'a329', name:"Park Hall Farm / Country Park (regional)", icon:"🚜",
-    desc:"Working farm-park attractions with rare breeds, pony rides, indoor play and seasonal events — a wholesome, hands-on animal day.",
-    cat:"farm", weather:"both", dist:32, price:2, priceLabel:"££", region:"midlands", tags:["farm","rare breeds","pony rides","play","seasonal"] },
+  { id:'a329', name:"Park Hall Countryside Experience, Oswestry", icon:"🚜",
+    desc:"Working farm park with rare breeds, pony rides, indoor play barns and seasonal events — a wholesome, hands-on animal day out.",
+    cat:"farm", weather:"both", dist:55, price:2, priceLabel:"££", region:"midlands", tags:["farm","rare breeds","pony rides","play","seasonal"] },
 
-  { id:'a330', name:"Tweedmill / Greenfield Valley, North Wales", icon:"🏞️",
-    desc:"A free heritage park with a working farm, lakes, woodland trails and the ruins of an abbey — a lovely, low-cost day just over the border.",
+  { id:'a330', name:"Greenfield Valley Heritage Park, Holywell", icon:"🏞️",
+    desc:"Free heritage park with a working farm, lakes, woodland trails and the ruins of Basingwerk Abbey — a lovely, low-cost day just over the border.",
     cat:"farm", weather:"both", dist:48, price:0, priceLabel:"Free (farm £)", region:"wales", tags:["heritage park","farm","abbey","walk","free"] },
 
   { id:'a331', name:"Welsh Mountain Zoo, Colwyn Bay", icon:"🦁",
     desc:"A hillside zoo with sea-lion shows, snow leopards, red pandas and chimps, plus stunning sea views and a brilliant adventure playground.",
     cat:"farm", weather:"both", dist:72, price:2, priceLabel:"££", region:"wales", tags:["zoo","sea lions","snow leopards","views","playground"] },
 
-  { id:'a332', name:"GreenAcres / Fairbourne Miniature Railways, Wales", icon:"🚞",
-    desc:"Charming little narrow-gauge and miniature railways along the North Wales coast — short, scenic rides that delight train-mad toddlers.",
-    cat:"sport", weather:"both", dist:75, price:1, priceLabel:"£", region:"wales", tags:["miniature railway","narrow gauge","coast","Wales"] },
+  { id:'a332', name:"Fairbourne Railway, Gwynedd", icon:"🚞",
+    desc:"Miniature narrow-gauge railway running along the coast to the Barmouth ferry — a short, scenic ride that train-mad kids love. Worth pairing with the beach.",
+    cat:"sport", weather:"both", dist:105, price:1, priceLabel:"£", region:"wales", tags:["miniature railway","narrow gauge","coast","Wales"] },
 
   { id:'a333', name:"Gypsy Wood Park, Caernarfon", icon:"🧚",
     desc:"A magical small woodland park with a model railway, fairy doors, animals and gentle play — utterly charming for younger children.",
@@ -2058,13 +2315,9 @@ const ACTIVITIES = [
     desc:"A gorgeous, quiet hamlet beneath Shutlingsloe with a shallow brook perfect for summer paddling and stone-skimming. A hidden local gem.",
     cat:"outdoor", weather:"outdoor", dist:7, price:0, priceLabel:"Free", region:"local", tags:["paddling","brook","summer","hamlet","local"] },
 
-  { id:'a347', name:"Tegg's Nose Stargazing / Dark Skies", icon:"🌟",
+  { id:'a347', name:"Stargazing at Tegg's Nose", icon:"🌟",
     desc:"Head to the hills on a clear night for some of the best stargazing near home — the Peak edge gets surprisingly dark. Bring blankets and hot chocolate.",
     cat:"outdoor", weather:"outdoor", dist:4, price:0, priceLabel:"Free", region:"local", tags:["stargazing","night","dark skies","free","local"] },
-
-  { id:'a348', name:"Brookside / Bents Garden Centre Santa & Animals", icon:"🎅",
-    desc:"Garden centres locally run brilliant Santa's grottos, reindeer visits and trails through December — festive, gentle and easy with little ones.",
-    cat:"farm", weather:"both", dist:8, price:2, priceLabel:"££", region:"local", tags:["Santa","reindeer","Christmas","garden centre","seasonal"] },
 
   { id:'a349', name:"Forest Bathing & Den Building, Macc Forest", icon:"🌲",
     desc:"Pack a flask, head into Macclesfield Forest and just build dens, climb logs and explore — the cheapest, simplest, best kind of afternoon out.",
@@ -2111,9 +2364,9 @@ const ACTIVITIES = [
     desc:"A welcoming sensory and soft-play centre designed with additional-needs families in mind — calm, inclusive and lovely for all little ones.",
     cat:"softplay", weather:"indoor", dist:9, price:1, priceLabel:"£", region:"local", tags:["sensory","inclusive","soft play","calm","Congleton"] },
 
-  { id:'a360', name:"Wonderland / Imagine That, regional", icon:"🪄",
-    desc:"Discovery-and-play centres combining science fun, soft play and messy creative zones under one roof — engaging and weatherproof.",
-    cat:"softplay", weather:"indoor", dist:30, price:2, priceLabel:"££", region:"chester", tags:["discovery","soft play","science","messy play","indoor"] },
+  { id:'a360', name:"Wonderland, Telford", icon:"🪄",
+    desc:"Fairy-tale themed family park with woodland trails, storybook scenes and play areas — aimed squarely at younger children.",
+    cat:"softplay", weather:"indoor", dist:60, price:2, priceLabel:"££", region:"midlands", tags:["discovery","soft play","science","messy play","indoor"] },
 
   { id:'a361', name:"Diggerland (Construction Theme Park)", icon:"🚜",
     desc:"Drive real diggers and dumptrucks, ride construction-themed rides and dig for fun — a one-of-a-kind day for machine-mad kids (further afield, worth it).",
@@ -2132,8 +2385,8 @@ const ACTIVITIES = [
     desc:"A Victorian working farm where you watch heavy horses plough, butter being churned and traditional crafts — living history that captivates kids.",
     cat:"farm", weather:"both", dist:60, price:2, priceLabel:"££", region:"midlands", tags:["working farm","Victorian","heavy horses","crafts","Shropshire"] },
 
-  { id:'a365', name:"Hoo Farm / Telford Exotic Zoo, Shropshire", icon:"🦘",
-    desc:"A friendly small zoo and farm with kangaroos, meerkats, reptiles and animal-handling sessions, plus play areas. Hands-on and well-suited to young kids.",
+  { id:'a365', name:"Hoo Farm Animal Kingdom, Telford", icon:"🦘",
+    desc:"Friendly small zoo and farm with kangaroos, meerkats, reptiles and animal-handling sessions, plus play areas. Hands-on and well-suited to young kids.",
     cat:"farm", weather:"both", dist:65, price:2, priceLabel:"££", region:"midlands", tags:["zoo","kangaroos","meerkats","handling","Shropshire"] },
 
   { id:'a366', name:"Tropical Butterfly House & Falconry, Sheffield", icon:"🦋",
@@ -2143,10 +2396,6 @@ const ACTIVITIES = [
   { id:'a367', name:"Cannon Hall Farm, Barnsley", icon:"🐷",
     desc:"One of the country's best farm parks (of TV fame) — masses of animals, daily shows, indoor and outdoor play, and brilliant seasonal events. A superb full day.",
     cat:"farm", weather:"both", dist:42, price:2, priceLabel:"££", region:"yorkshire", tags:["farm park","animals","shows","play","Barnsley"] },
-
-  { id:'a368', name:"Gauntlet / Owl & Falconry Days, Cheshire", icon:"🦉",
-    desc:"Book a hands-on bird-of-prey experience locally — hold an owl, fly a hawk, and learn from expert handlers. A memorable, slightly magical outing.",
-    cat:"farm", weather:"both", dist:14, price:2, priceLabel:"££", region:"local", tags:["owls","falconry","experience","hands-on","birds"] },
 
   { id:'a369', name:"Alpaca Trekking, Peak District", icon:"🦙",
     desc:"Lead a friendly alpaca on a gentle countryside trek in the Peak edge — calm, novel and brilliant for animal-loving kids who like a walk with a twist.",
@@ -2185,7 +2434,7 @@ const ACTIVITIES = [
     desc:"Tour the gloriously restored 1930s Plaza super-cinema and the town museum — a charming, low-key dose of local heritage and Art Deco glamour.",
     cat:"museum", weather:"indoor", dist:11, price:1, priceLabel:"£", region:"manchester", tags:["cinema","Art Deco","museum","heritage","Stockport"] },
 
-  { id:'a378', name:"Tameside / Portland Basin Museum, Ashton", icon:"🛶",
+  { id:'a378', name:"Portland Basin Museum, Ashton-under-Lyne", icon:"🛶",
     desc:"A free canal-side museum with a recreated 1920s street, narrowboats and family activities at the meeting of two canals. Easy and free.",
     cat:"museum", weather:"both", dist:16, price:0, priceLabel:"Free", region:"manchester", tags:["museum","canal","1920s street","free","Ashton"] },
 
@@ -2214,7 +2463,7 @@ const ACTIVITIES = [
     desc:"Chatsworth's brilliant working farmyard and huge wooden adventure playground are a day out in themselves — milking demos, animals and water play.",
     cat:"farm", weather:"both", dist:25, price:2, priceLabel:"££", region:"peaks", tags:["farmyard","playground","animals","Chatsworth","water play"] },
 
-  { id:'a385', name:"Tramway / National Stone Centre, Wirksworth", icon:"🪨",
+  { id:'a385', name:"National Stone Centre, Wirksworth", icon:"🪨",
     desc:"Hunt for 330-million-year-old fossils, pan for 'gems' and explore the geology trails at this quirky, hands-on Peak District centre.",
     cat:"museum", weather:"both", dist:35, price:1, priceLabel:"£", region:"peaks", tags:["fossils","geology","panning","hands-on","Peak District"] },
 
@@ -2248,7 +2497,7 @@ const ACTIVITIES = [
     cat:"farm", weather:"both", dist:72, price:2, priceLabel:"££", region:"lakes", tags:["maize maze","farm","go-karts","play","Kendal"] },
 
   // ════════ MORE LOCAL MICRO-ACTIVITIES ════════
-  { id:'a393', name:"Tegg's Nose Snow Day / Sledging Spot", icon:"🛷",
+  { id:'a393', name:"Sledging at Tegg's Nose", icon:"🛷",
     desc:"When it snows, the slopes around Tegg's Nose and Macclesfield Forest become brilliant free sledging hills. Wrap up and make the most of a rare snow day.",
     cat:"outdoor", weather:"outdoor", dist:4, price:0, priceLabel:"Free", region:"local", tags:["sledging","snow","winter","free","local"] },
 
@@ -2256,8 +2505,8 @@ const ACTIVITIES = [
     desc:"In autumn, the horse-chestnut avenues at local estates drop bumper crops of conkers — a free, simple, joyful seasonal mission.",
     cat:"outdoor", weather:"outdoor", dist:6, price:0, priceLabel:"Free", region:"local", tags:["conkers","autumn","seasonal","free","local"] },
 
-  { id:'a395', name:"Pond Dipping at Danes Moss / Redesmere", icon:"🪣",
-    desc:"Take a net and a tray to a local pond and see what you can find — newts, water boatmen, tadpoles in spring. Cheap, hands-on nature at its best.",
+  { id:'a395', name:"Pond dipping at Danes Moss, Macclesfield", icon:"🪣",
+    desc:"Nature reserve on the edge of town with pools and boardwalk — take a net and a tray and see what comes up. Free, muddy and endlessly absorbing.",
     cat:"outdoor", weather:"outdoor", dist:2, price:0, priceLabel:"Free", region:"local", tags:["pond dipping","nature","spring","free","local"] },
 
   { id:'a396', name:"Blackberry Picking, Bollington Hedgerows", icon:"🫐",
@@ -2304,8 +2553,8 @@ const ACTIVITIES = [
     desc:"Lessons and family splash sessions at the local pool — building water confidence and a guaranteed energy-burner whatever the weather.",
     cat:"sport", weather:"indoor", dist:7, price:1, priceLabel:"£", region:"local", tags:["swimming","lessons","splash","local","indoor"] },
 
-  { id:'a407', name:"Indoor Trampoline — Energi / Jump, Stockport", icon:"🟪",
-    desc:"A local trampoline and inflatable centre with toddler bounce sessions and open jump — close-to-home bounce-it-out fun on a wet day.",
+  { id:'a407', name:"Energi Trampoline Park, Stockport", icon:"🟪",
+    desc:"Trampoline and inflatable park with toddler bounce sessions and open jump — close-to-home, bounce-it-out fun on a wet day.",
     cat:"sport", weather:"indoor", dist:11, price:2, priceLabel:"££", region:"manchester", tags:["trampoline","toddler","inflatables","Stockport","indoor"] },
 
   { id:'a408', name:"Crazy Golf at Reddish Vale / Bramhall", icon:"⛳",
@@ -2344,7 +2593,7 @@ const ACTIVITIES = [
     desc:"Family roller-skating and skate-disco sessions are a retro blast — skate hire included, lights down, music up. Brilliant active fun for a wet day.",
     cat:"sport", weather:"indoor", dist:11, price:1, priceLabel:"£", region:"manchester", tags:["roller skating","disco","retro","indoor","Stockport"] },
 
-  { id:'a417', name:"Indoor Ski / Snowplay Lesson, Chill Factore", icon:"⛷️",
+  { id:'a417', name:"Chill Factore, Trafford", icon:"⛷️",
     desc:"Book a kids' ski or snowboard lesson, or just play in the snow zone (age 3+) on real snow at Manchester's indoor slope — winter fun any day.",
     cat:"sport", weather:"indoor", dist:22, price:3, priceLabel:"£££", region:"manchester", tags:["skiing","snow","lesson","Chill Factore","indoor"] },
 
@@ -2352,8 +2601,8 @@ const ACTIVITIES = [
     desc:"Family-friendly escape rooms with gentler puzzles aimed at younger players — work together against the clock. Great for slightly older kids.",
     cat:"sport", weather:"indoor", dist:18, price:2, priceLabel:"££", region:"manchester", tags:["escape room","puzzles","teamwork","older kids","indoor"] },
 
-  { id:'a419', name:"Mini Golf at Heaton Park / Local Course", icon:"🏌️‍♀️",
-    desc:"Classic seaside-style crazy golf in a big park — windmills, loops and water hazards. Cheap, cheerful and easy for the whole family.",
+  { id:'a419', name:"Mini golf at Heaton Park, Manchester", icon:"🏌️‍♀️",
+    desc:"Classic pay-and-play crazy golf in one of Europe's biggest municipal parks — windmills, loops and water hazards, with boating and a tram museum alongside.",
     cat:"sport", weather:"outdoor", dist:17, price:1, priceLabel:"£", region:"manchester", tags:["crazy golf","park","cheap","family","outdoor"] },
 
   { id:'a420', name:"Build-A-Bear, Trafford Centre", icon:"🧸",
@@ -2392,12 +2641,12 @@ const ACTIVITIES = [
     desc:"An award-winning floating visitor village on a lake, with brilliant wildlife trails, a nature play area and hides. Free entry (parking charge).",
     cat:"outdoor", weather:"both", dist:40, price:0, priceLabel:"Free (parking)", region:"liverpool", tags:["nature reserve","floating village","wildlife","play","Preston"] },
 
-  { id:'a429', name:"Wigan Hall / Pennington Hall Park", icon:"🌳",
-    desc:"A pleasant municipal park with a play area, lake and gardens — an easy, free run-around stop when passing that way.",
+  { id:'a429', name:"Pennington Hall Park, Leigh", icon:"🌳",
+    desc:"Pleasant municipal park with a play area, lake and gardens — an easy, free run-around stop when you're over that way.",
     cat:"outdoor", weather:"outdoor", dist:28, price:0, priceLabel:"Free", region:"manchester", tags:["park","playground","lake","free","Wigan"] },
 
-  { id:'a430', name:"Smithills / Jumbles Reservoir Walk, Bolton", icon:"💧",
-    desc:"An easy, scenic reservoir circular on the moorland edge near Bolton with a café and play area — a gentle countryside day to the north.",
+  { id:'a430', name:"Jumbles Reservoir, Bolton", icon:"💧",
+    desc:"Easy, scenic reservoir circular on the moorland edge north of Bolton, with a café and play area at the visitor centre. A gentle countryside day.",
     cat:"outdoor", weather:"outdoor", dist:30, price:0, priceLabel:"Free", region:"manchester", tags:["reservoir","walk","café","moorland","Bolton"] },
 
   { id:'a431', name:"Dovestone Reservoir, Saddleworth", icon:"🏞️",
@@ -2460,8 +2709,8 @@ const ACTIVITIES = [
     desc:"A beautiful Victorian park in Chester with a much-loved miniature railway, play area and riverside walks — combine with the zoo or city walls.",
     cat:"outdoor", weather:"both", dist:36, price:0, priceLabel:"Free (rides £)", region:"chester", tags:["park","miniature railway","playground","river","Chester"] },
 
-  { id:'a446', name:"Tatton / Capesthorne Classic Car & Steam Rallies", icon:"🚗",
-    desc:"Summer vintage vehicle and steam rallies at local estates — gleaming cars, traction engines and funfairs make a brilliant, buzzy family day.",
+  { id:'a446', name:"Classic car & steam rally, Capesthorne Hall", icon:"🚗",
+    desc:"Capesthorne hosts big summer vintage vehicle and steam rallies — gleaming cars, traction engines and a funfair make for a buzzy family day.",
     cat:"outdoor", weather:"outdoor", dist:13, price:2, priceLabel:"££", region:"local", tags:["classic cars","steam","rally","funfair","seasonal"] },
 
   { id:'a447', name:"Sandbach Crosses & Market Town Wander", icon:"🪨",
@@ -3132,6 +3381,58 @@ const ACTIVITIES = [
   { id:'a613', name:"Billy Bob's Parlour", icon:"🎢",
     desc:"Family fun parlour with a long indoor astra-slide and play — a reliable rainy-day option to burn off some energy.",
     cat:"softplay", weather:"indoor", dist:25, price:1, priceLabel:"£", region:"manchester", tags:["indoor","slide","play","rainy day"] },
+
+  { id:'a614', name:"Xplore! Science Discovery Centre, Wrexham", icon:"🔬",
+    desc:"Over 80 hands-on interactive science exhibits plus live science shows that rotate every few weeks. Aimed squarely at 4–12s and right in the heart of Wrexham — a brilliant weatherproof half-day.",
+    cat:"museum", weather:"indoor", dist:32, price:2, priceLabel:"££", region:"wales", tags:["science","discovery","hands-on","indoor","Wrexham"] },
+
+  { id:'a615', name:"Hoo Zoo and Dinosaur World, Telford", icon:"🦖",
+    desc:"Licensed zoo with 100+ animals — meerkats, lemurs, wolves and Cinnamon the famous capybara — plus 45 animatronic dinosaurs, daily keeper talks, a huge jumping pillow and adventure play. Ranked one of the UK's best.",
+    cat:"farm", weather:"both", dist:55, price:2, priceLabel:"££", region:"uk", tags:["zoo","dinosaurs","animals","meerkats","Telford"] },
+
+  { id:'a616', name:"Manorafon Farm Park, Abergele", icon:"🐐",
+    desc:"Family farm park within the walls of Gwrych Castle with alpacas, donkeys, ponies and cuddle corners, plus go-karts, jumping pillows, the Raptor Run slide, soft play and a daily pig race. Great whatever the weather.",
+    cat:"farm", weather:"both", dist:58, price:2, priceLabel:"££", region:"wales", tags:["farm","animals","soft play","play","North Wales"] },
+
+  { id:'a617', name:"Bellis Brothers Farm Shop & Pick Your Own, Holt", icon:"🍓",
+    desc:"Farm shop, garden centre and restaurant in the Dee Valley near Chester, with a famous summer Pick Your Own — tabletop strawberries, raspberries, gooseberries and blackcurrants ready to pick when ripe.",
+    cat:"farm", weather:"both", dist:33, price:1, priceLabel:"£ (pay for fruit)", region:"chester", tags:["pick your own","strawberries","farm shop","garden centre","Holt"] },
+
+  { id:'a618', name:"The Beeches Adventure Golf, Knutsford", icon:"⛳",
+    desc:"Farm-themed adventure golf with carved wooden animals, a scarecrow, a life-size cow and a cascading waterfall winding around the holes — plus a state-of-the-art driving range and café. Takes about an hour to play.",
+    cat:"sport", weather:"outdoor", dist:12, price:1, priceLabel:"£", region:"local", tags:["adventure golf","crazy golf","driving range","Knutsford"] },
+
+  { id:'a619', name:"Edinburgh", icon:"🏰", subcat:"castle",
+    desc:"A weekend-away city break well worth the drive north — clifftop Edinburgh Castle, the Royal Mile, Camera Obscura, Dynamic Earth and Arthur's Seat to climb. Loads for curious kids across a couple of days.",
+    cat:"museum", weather:"both", dist:220, price:2, priceLabel:"££ (big trip)", region:"uk", tags:["castle","city break","Scotland","big day out"] },
+
+  { id:'a620', name:"Bates Farm, Risley", icon:"🐑", subcat:"farm",
+    desc:"A working family farm near Warrington run by two farming sisters, opening seasonally for Meet the Lambs, Pumpkin Picking and Christmas events. The Uproot Coffee farmyard café is open Fri–Sun, April to September.",
+    cat:"farm", weather:"both", dist:22, price:1, priceLabel:"£ (events vary)", region:"local", tags:["farm","lambs","pumpkin picking","seasonal","Warrington"] },
+
+  { id:'a621', name:"Manley Mere, Frodsham", icon:"🏄", subcat:"active",
+    desc:"A 40-acre lake near Frodsham with paddleboarding, kayaking, sailing and open-water swimming, plus a summer aqua park with inflatable obstacles and a 1.5-mile woodland adventure trail with 40+ obstacles. A brilliant, active day out.",
+    cat:"sport", weather:"outdoor", dist:24, price:2, priceLabel:"££", region:"chester", tags:["watersports","aqua park","paddleboarding","adventure trail","lake","Frodsham"] },
+
+  // ════════ SPLIT OUT OF SHARED CARDS ════════
+  { id:'a624', name:"Bents Garden & Home, Glazebury", icon:"🌸",
+    desc:"Huge garden centre with a play area, fish and plant houses to wander, and big seasonal events — a reliable, low-effort rainy-day stop.",
+    cat:"farm", weather:"indoor", dist:18, price:0, priceLabel:"Free entry", region:"manchester", tags:["garden centre","play area","seasonal","Christmas","indoor"] },
+  { id:'a625', name:"Exotic Zoo, Telford", icon:"🦎",
+    desc:"Small hands-on zoo built around animal encounters and keeper talks — meerkats, reptiles and other exotics up close. Best booked ahead.",
+    cat:"farm", weather:"both", dist:65, price:2, priceLabel:"££", region:"midlands", tags:["zoo","exotic animals","encounters","Shropshire"] },
+  { id:'a626', name:"Smithills Hall & Country Park, Bolton", icon:"🌳",
+    desc:"One of the oldest manor houses in the north west, with woodland trails and a country park around it on the moorland edge above Bolton.",
+    cat:"castle", weather:"both", dist:32, price:1, priceLabel:"Free park / £ hall", region:"manchester", tags:["manor house","country park","woodland","Bolton"] },
+  { id:'a627', name:"Pond dipping at Redesmere, Siddington", icon:"🪣",
+    desc:"Big, calm lake a few minutes from home with a path round part of it — good for pond dipping, feeding the swans and a very easy pushchair walk.",
+    cat:"outdoor", weather:"outdoor", dist:5, price:0, priceLabel:"Free", region:"local", tags:["lake","pond dipping","swans","walk","free"] },
+  { id:'a628', name:"Easter & half-term trails, Dunham Massey", icon:"🥚",
+    desc:"The NT estate at Dunham runs egg hunts and holiday trails alongside the deer park and mill — worth timing a visit around one.",
+    cat:"outdoor", weather:"both", dist:20, price:2, priceLabel:"NT / ££", region:"manchester", tags:["Easter","trail","NT","half term","seasonal"] },
+  { id:'a629', name:"Classic car & steam rally, Tatton Park", icon:"🚗",
+    desc:"Tatton's summer events calendar includes vintage vehicle and steam rallies across the parkland — big, loud and brilliant for engine-mad kids.",
+    cat:"outdoor", weather:"outdoor", dist:13, price:2, priceLabel:"££", region:"local", tags:["classic cars","steam","rally","seasonal"] }
 ];
 
 const MEALS = [
@@ -5880,13 +6181,28 @@ const S = {
   craftMaxTime: 999,
   craftHome: false,
   craftFiltersOpen: false,
+  evFiltersOpen: false,
+  actQuery: '',
+  mealQuery: '',
+  craftQuery: '',
   actFavs:   new Set(loadJSON('dh_actFavs')  || []),
   mealFavs:  new Set(loadJSON('dh_mealFavs') || []),
   craftFavs: new Set(loadJSON('dh_craftFavs')|| []),
+  actWish:   new Set(loadJSON('dh_actWish')  || []),
+  mealWish:  new Set(loadJSON('dh_mealWish') || []),
+  craftWish: new Set(loadJSON('dh_craftWish')|| []),
+  wlTypes: new Set(),
+  wlQuery: '',
+  wlFavOnly: false,
+  wlFiltersOpen: false,
+  drafts:       loadJSON('dh_drafts')       || [],
+  edits:        loadJSON('dh_edits')        || [],
   customActs:   loadJSON('dh_customActs')   || [],
   customMeals:  loadJSON('dh_customMeals')  || [],
   customCrafts: loadJSON('dh_customCrafts') || [],
-  modalType: null,
+  hiddenActs:   new Set(loadJSON('dh_hiddenActs')   || []),
+  hiddenMeals:  new Set(loadJSON('dh_hiddenMeals')  || []),
+  hiddenCrafts: new Set(loadJSON('dh_hiddenCrafts') || []),
 };
 
 function loadJSON(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }
@@ -6052,8 +6368,10 @@ function favKey(type) {
 function toggleFav(type, id) {
   const key = favKey(type);
   const store = type === 'act' ? 'dh_actFavs' : type === 'meal' ? 'dh_mealFavs' : 'dh_craftFavs';
-  if (S[key].has(id)) S[key].delete(id); else S[key].add(id);
+  const on = !S[key].has(id);
+  if (on) S[key].add(id); else S[key].delete(id);
   saveJSON(store, [...S[key]]);
+  saveFlagToServer('fav', type, id, on); // sync across devices
   renderTab(S.tab);
 }
 
@@ -6061,12 +6379,61 @@ function isFav(type, id) {
   return S[favKey(type)].has(id);
 }
 
+// ── Wishlist (a second, independent flag alongside favourites) ──
+function wishKey(type) {
+  return type === 'act' ? 'actWish' : type === 'meal' ? 'mealWish' : 'craftWish';
+}
+
+function toggleWish(type, id) {
+  const key = wishKey(type);
+  const store = type === 'act' ? 'dh_actWish' : type === 'meal' ? 'dh_mealWish' : 'dh_craftWish';
+  const on = !S[key].has(id);
+  if (on) S[key].add(id); else S[key].delete(id);
+  saveJSON(store, [...S[key]]);
+  saveFlagToServer('wish', type, id, on); // sync across devices
+  renderTab(S.tab);
+  updateWishCount();
+}
+
+function isWish(type, id) {
+  return S[wishKey(type)].has(id);
+}
+
+const BOOKMARK_SVG = '<svg class="bm-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3h11a1.5 1.5 0 0 1 1.5 1.5v16.2a.8.8 0 0 1-1.25.66L12 17.4l-5.75 3.96A.8.8 0 0 1 5 20.7V4.5A1.5 1.5 0 0 1 6.5 3z"/></svg>';
+const STAR_SVG = '<svg class="st-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2l2.72 5.51 6.08.89-4.4 4.29 1.04 6.06L12 17.09l-5.44 2.86 1.04-6.06-4.4-4.29 6.08-.89z"/></svg>';
+
+function wishBtn(type, id) {
+  const on = isWish(type, id);
+  return `<button class="wish-btn ${on?'on':''}" title="${on?'Remove from wishlist':'Add to wishlist'}"
+    onclick="event.stopPropagation();toggleWish('${type}','${id}')">${BOOKMARK_SVG}</button>`;
+}
+
 // ════════════════════════════════════════════
 //  FILTERING
 // ════════════════════════════════════════════
 
+// ── Card edits ──
+// An edit is { id, icon, name, desc } stored against the item's id and layered
+// on top when rendering, so built-ins keep their original data underneath and
+// an events refresh can never wipe a hand-written description.
+function editFor(id) { return S.edits.find(e => e.id === id); }
+
+function withEdit(item) {
+  const e = item && editFor(item.id);
+  if (!e) return item;
+  const out = { ...item };
+  if (e.icon) out.icon = e.icon;
+  if (e.name) { out.name = e.name; if ('title' in out) out.title = e.name; }
+  if (e.desc) { out.desc = e.desc; if ('description' in out) out.description = e.desc; }
+  return out;
+}
+
+const withEdits = list => list.map(withEdit);
+
 function filteredActs() {
-  return [...ACTIVITIES, ...S.customActs].filter(a => {
+  return withEdits([...ACTIVITIES, ...S.customActs]).filter(a => {
+    if (S.hiddenActs.has(a.id)) return false;
+    if (!matchQuery(S.actQuery, a.name, a.desc, (a.tags || []).join(' '))) return false;
     if (S.actCat.has('favs')) return isFav('act', a.id);
     if (S.actCat.size && !S.actCat.has(getSubcat(a))) return false;
     if (S.actWeather === 'outdoor' && !(a.weather === 'outdoor' || a.weather === 'both')) return false;
@@ -6110,6 +6477,8 @@ function clearActFilters() {
   S.actRegion = new Set();
   S.actMaxDist = 160;
   S.actMaxPrice = new Set();
+  S.actQuery = '';
+  const as = document.getElementById('act-search'); if (as) as.value = '';
   document.getElementById('dist-slider').value = 160;
   document.getElementById('dist-label').textContent = 'Any';
   renderChips();
@@ -6118,7 +6487,9 @@ function clearActFilters() {
 }
 
 function filteredMeals() {
-  return [...MEALS, ...S.customMeals].filter(m => {
+  return withEdits([...MEALS, ...S.customMeals]).filter(m => {
+    if (S.hiddenMeals.has(m.id)) return false;
+    if (!matchQuery(S.mealQuery, m.name, m.desc, (m.ingredients || []).join(' '))) return false;
     if (S.mealCat.has('favs')) return isFav('meal', m.id);
     if (S.mealCat.size && !S.mealCat.has(m.cat)) return false;
     if (S.mealSlot.size) { const dp = mealDayparts(m); if (![...S.mealSlot].some(s => dp.has(s))) return false; }
@@ -6149,6 +6520,8 @@ function clearMealFilters() {
   S.mealSlot = new Set();
   S.mealMaxTime = 999;
   S.mealVeg = false;
+  S.mealQuery = '';
+  const ms = document.getElementById('meal-search'); if (ms) ms.value = '';
   document.getElementById('meal-veg-toggle').checked = false;
   renderChips();
   renderMeals();
@@ -6156,7 +6529,9 @@ function clearMealFilters() {
 }
 
 function filteredCrafts() {
-  return [...CRAFTS, ...S.customCrafts].filter(c => {
+  return withEdits([...CRAFTS, ...S.customCrafts]).filter(c => {
+    if (S.hiddenCrafts.has(c.id)) return false;
+    if (!matchQuery(S.craftQuery, c.name, c.desc, (c.materials || []).join(' '))) return false;
     if (S.craftCat.has('favs')) return isFav('craft', c.id);
     if (S.craftCat.size && !S.craftCat.has(c.cat)) return false;
     if (!S.craftMessy && c.mess >= 2) return false;
@@ -6187,6 +6562,8 @@ function clearCraftFilters() {
   S.craftMaxTime = 999;
   S.craftMessy = true;
   S.craftHome = false;
+  S.craftQuery = '';
+  const cs = document.getElementById('craft-search'); if (cs) cs.value = '';
   document.getElementById('craft-messy-toggle').checked = true;
   document.getElementById('craft-home-toggle').checked = false;
   renderChips();
@@ -6243,7 +6620,7 @@ function renderChips() {
     {val:'science',label:'🔬 Science & Discovery'},
     {val:'cave',label:'💎 Caves & Caverns'},
     {val:'themepark',label:'🎡 Theme Parks'},
-    {val:'favs',label:'⭐ Favourites'},
+    {val:'favs',label:'Favourites'},
   ];
   document.getElementById('act-cat-row').innerHTML = actCats.map(c =>
     `<button class="chip ${c.val==='all' ? (!S.actCat.size?'on-act':'') : (S.actCat.has(c.val)?'on-act':'')}" onclick="setActCat('${c.val}')">${c.label}</button>`
@@ -6283,7 +6660,7 @@ function renderChips() {
     {val:'proper',label:'🍲 Proper meals'},
     {val:'weekend',label:'✨ Weekend'},
     {val:'baking',label:'🧁 Baking'},
-    {val:'favs',label:'⭐ Favourites'},
+    {val:'favs',label:'Favourites'},
   ];
   document.getElementById('meal-cat-row').innerHTML = mealCats.map(c =>
     `<button class="chip ${c.val==='all' ? (!S.mealCat.size?'on-meal':'') : (S.mealCat.has(c.val)?'on-meal':'')}" onclick="setMealCat('${c.val}')">${c.label}</button>`
@@ -6321,7 +6698,7 @@ function renderChips() {
     {val:'quiet',label:'📚 Quiet'},
     {val:'seasonal',label:'🎄 Seasonal'},
     {val:'science',label:'🔬 Science'},
-    {val:'favs',label:'⭐ Favourites'},
+    {val:'favs',label:'Favourites'},
   ];
   document.getElementById('craft-cat-row').innerHTML = craftCats.map(c =>
     `<button class="chip ${c.val==='all' ? (!S.craftCat.size?'on-craft':'') : (S.craftCat.has(c.val)?'on-craft':'')}" onclick="setCraftCat('${c.val}')">${c.label}</button>`
@@ -6343,6 +6720,1050 @@ function renderTab(tab) {
   if (tab === 'activities') renderActivities();
   if (tab === 'meals')      renderMeals();
   if (tab === 'crafts')     renderCrafts();
+  if (tab === 'events')     renderEvents();
+  if (tab === 'wishlist')   renderWishlist();
+  if (tab === 'addnew')     renderAddNew();
+  updateWishCount();
+  updateDraftCount();
+}
+
+// ════════════════════════════════════════════
+//  ADD NEW — jot things down, then let an AI fill in the details
+// ════════════════════════════════════════════
+
+const DRAFT_KINDS = {
+  act:   { label: 'Place',  into: 'Activities' },
+  meal:  { label: 'Meal',   into: 'Meals' },
+  craft: { label: 'Craft',  into: 'Crafts' },
+  event: { label: 'Event',  into: 'Events' },
+};
+
+// Open the Add-new view, optionally pre-picking what kind of thing it is.
+// No autofocus — on a phone that yanks the keyboard up before you've decided
+// what you're adding.
+function openAddNew(kind) {
+  selectTab('addnew');
+  if (kind) document.getElementById('an-kind').value = kind;
+}
+
+function saveDrafts() { saveJSON('dh_drafts', S.drafts); }
+
+function addDraft() {
+  const nameEl = document.getElementById('an-name');
+  const noteEl = document.getElementById('an-note');
+  const name = (nameEl.value || '').trim();
+  if (!name) { nameEl.style.borderColor = 'red'; nameEl.focus(); return; }
+  nameEl.style.borderColor = '';
+  const item = {
+    id: uid('draft'),
+    kind: document.getElementById('an-kind').value,
+    name,
+    note: (noteEl.value || '').trim(),
+  };
+  S.drafts.push(item);
+  saveDrafts();
+  saveCustomToServer('drafts', item); // sync across devices
+  nameEl.value = ''; noteEl.value = '';
+  renderAddNew();
+}
+
+async function removeDraft(id) {
+  S.drafts = S.drafts.filter(d => d.id !== id);
+  saveDrafts();
+  renderAddNew();
+  try { await fetch(EV_API + '/api/drafts/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (_) {}
+}
+
+async function clearDrafts() {
+  if (!S.drafts.length) return;
+  if (!confirm('Clear the whole list? This does not remove anything already imported.')) return;
+  const ids = S.drafts.map(d => d.id);
+  S.drafts = []; saveDrafts(); renderAddNew();
+  for (const id of ids) {
+    try { await fetch(EV_API + '/api/drafts/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (_) {}
+  }
+}
+
+function updateDraftCount() {
+  const b = document.getElementById('nav-add-count');
+  if (!b) return;
+  const n = S.drafts.length;
+  b.textContent = n; b.style.display = n ? 'inline-flex' : 'none';
+}
+
+function renderAddNew() {
+  updateDraftCount();
+  const list = document.getElementById('an-list');
+  if (!list) return;
+  const n = S.drafts.length;
+  document.getElementById('an-count').textContent = n
+    ? `${n} waiting to be added`
+    : 'Nothing on the list yet';
+  document.getElementById('an-clear').style.display = n ? '' : 'none';
+  document.getElementById('an-copy').disabled = !n;
+  document.getElementById('an-import').disabled = !n;
+  document.getElementById('an-hint').style.display = n ? 'none' : '';
+  list.className = n ? 'an-list' : '';
+  list.innerHTML = n ? S.drafts.map(d => `<div class="an-row">
+      <span class="an-kind">${DRAFT_KINDS[d.kind] ? DRAFT_KINDS[d.kind].label : d.kind}</span>
+      <div class="an-body">
+        <div class="an-name">${evEsc(d.name)}</div>
+        ${d.note ? `<div class="an-note">${evEsc(d.note)}</div>` : ''}
+      </div>
+      <button class="an-del" title="Remove" onclick="removeDraft('${evEsc(d.id)}')">✕</button>
+    </div>`).join('') : '';
+}
+
+// One prompt covering everything on the list, grouped by kind. The reply shape
+// matches what the existing importers already understand.
+const DRAFT_SCHEMAS = {
+  act:   '{"name": str, "icon": str (one emoji), "desc": str (1-2 sentences), "cat": "outdoor"|"museum"|"theme_park"|"farm"|"sport"|"softplay", "weather": "outdoor"|"indoor"|"both", "region": str, "dist": int (one-way miles from Macclesfield), "price": 0|1|2|3, "priceLabel": str, "tags": [str]}',
+  meal:  '{"name": str, "icon": str (one emoji), "desc": str (1-2 sentences), "cat": "quick"|"proper"|"weekend"|"baking", "time": int (minutes), "ingredients": [str]}',
+  craft: '{"name": str, "icon": str (one emoji), "desc": str (1-2 sentences), "cat": "painting"|"building"|"nature"|"quiet"|"seasonal"|"science", "time": int (minutes), "mess": 1|2|3, "materials": [str]}',
+  event: '{"title": str, "category": str, "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD", "region": str, "distance_miles": int|null, "location": str, "price": str, "url": str, "description": str (1-2 sentences), "kid_friendly": bool}',
+};
+const DRAFT_KEYS = { act: 'places', meal: 'meals', craft: 'crafts', event: 'events' };
+
+function buildDraftPrompt() {
+  const kinds = Object.keys(DRAFT_KINDS).filter(k => S.drafts.some(d => d.kind === k));
+  const listing = kinds.map(k => {
+    const rows = S.drafts.filter(d => d.kind === k)
+      .map(d => `- ${d.name}${d.note ? ` (${d.note})` : ''}`).join('\n');
+    return `${DRAFT_KINDS[k].label.toUpperCase()}S:\n${rows}`;
+  }).join('\n\n');
+  const shape = kinds.map(k => `  "${DRAFT_KEYS[k]}": [ ${DRAFT_SCHEMAS[k]} ]`).join(',\n');
+  const age = evGetAge();
+  return `You are a research assistant for Dad HQ, a family activity app. Home base is Macclesfield, Cheshire, England, and the kid is ${age} years old.
+
+Look up each item below and fill in its real details. Use web search where you can — do not invent facts, and keep descriptions to 1-2 plain sentences aimed at a dad deciding whether to bother.
+
+${listing}
+
+Rules:
+- Return one entry per item above, in the same order, keeping the name I gave (tidy it up to the official name if mine is rough).
+- If you genuinely cannot find an item, still return it with your best honest description and leave unknown fields sensible/empty rather than guessing specifics.
+- Distances are rough one-way driving miles from Macclesfield.
+- Dates must be real, upcoming dates in YYYY-MM-DD form.
+
+Reply with ONLY a JSON object (no prose, no markdown) shaped exactly like this:
+{
+${shape}
+}`;
+}
+
+async function copyDraftPrompt() {
+  const btn = document.getElementById('an-copy');
+  try {
+    await navigator.clipboard.writeText(buildDraftPrompt());
+    btn.textContent = 'Copied — paste into ChatGPT';
+    setTimeout(() => { btn.textContent = 'Copy prompt'; }, 3000);
+  } catch (e) {
+    alert('Could not copy: ' + String(e.message || e).slice(0, 120));
+  }
+}
+
+// Pull the reply object out of a paste (tolerant of fences, prose, smart quotes).
+function parseDraftReply(text) {
+  let t = (text || '').trim();
+  const fence = t.match(/\`\`\`(?:json)?\s*([\s\S]*?)\`\`\`/i);
+  if (fence) t = fence[1].trim();
+  const st = t.indexOf('{'), en = t.lastIndexOf('}');
+  if (st < 0 || en < 0 || en < st) return null;
+  const slice = t.slice(st, en + 1);
+  const norm = x => x.replace(/[\u201c\u201d\u201e\u201f]/g, '"').replace(/[\u2018\u2019\u201a\u201b]/g, "'").replace(/\u00a0/g, ' ');
+  for (const c of [slice, norm(slice)]) {
+    try { const o = JSON.parse(c); if (o && typeof o === 'object') return o; } catch (_) {}
+  }
+  return null;
+}
+
+async function importDrafts() {
+  const btn = document.getElementById('an-import');
+  const ta = document.getElementById('an-paste');
+  const text = (ta.value || '').trim();
+  if (!text) { alert('Paste the AI reply first.'); return; }
+  const obj = parseDraftReply(text);
+  if (!obj) { alert('Could not find a JSON object in that paste — copy the whole reply and try again.'); return; }
+
+  btn.disabled = true; btn.textContent = 'Importing…';
+  try {
+    let n = 0;
+    const places = Array.isArray(obj.places) ? obj.places : [];
+    const meals  = Array.isArray(obj.meals)  ? obj.meals  : [];
+    const crafts = Array.isArray(obj.crafts) ? obj.crafts : [];
+    const events = Array.isArray(obj.events) ? obj.events : [];
+
+    if (places.length) {
+      const posts = [];
+      for (const o of places) { const item = mapImportedAct(o); if (!item) continue; posts.push(savePlaceToServer(item)); n++; }
+      await Promise.all(posts);
+      await loadPlaces();
+    }
+    for (const o of meals) {
+      const item = mapImportedMeal(o); if (!item) continue;
+      S.customMeals.push(item); saveCustomToServer('meals', item); n++;
+    }
+    if (meals.length) saveJSON('dh_customMeals', S.customMeals);
+    for (const o of crafts) {
+      const item = mapImportedCraft(o); if (!item) continue;
+      S.customCrafts.push(item); saveCustomToServer('crafts', item); n++;
+    }
+    if (crafts.length) saveJSON('dh_customCrafts', S.customCrafts);
+    if (events.length) {
+      // The events endpoint wants snake_case; accept camelCase too in case the
+      // AI ignores the schema.
+      const normalised = events.map(e => ({
+        title: e.title || e.name,
+        category: e.category || e.cat,
+        start_date: e.start_date || e.startDate,
+        end_date: e.end_date || e.endDate || e.start_date || e.startDate,
+        region: e.region,
+        distance_miles: e.distance_miles ?? e.distanceMiles ?? null,
+        location: e.location, price: e.price, url: e.url,
+        description: e.description || e.desc,
+        kid_friendly: e.kid_friendly ?? e.kidFriendly ?? true,
+      }));
+      const r = await fetch(EV_API + '/api/events/manual', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ text: JSON.stringify(normalised) }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'Event import failed');
+      n += d.count || 0;
+      EV.loaded = false; await loadEvents();
+    }
+    if (!n) throw new Error('Nothing importable in that reply — check it has places / meals / crafts / events arrays.');
+
+    // Everything landed, so the jotted list has done its job.
+    const ids = S.drafts.map(d => d.id);
+    S.drafts = []; saveDrafts();
+    for (const id of ids) { try { await fetch(EV_API + '/api/drafts/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (_) {} }
+
+    ta.value = '';
+    renderChips(); renderAddNew();
+    btn.disabled = false; btn.textContent = `✓ ${n} added`;
+    setTimeout(() => { btn.textContent = 'Import'; }, 3000);
+  } catch (e) {
+    btn.disabled = false; btn.textContent = 'Import';
+    alert(String(e.message || e).slice(0, 200));
+  }
+}
+
+// ════════════════════════════════════════════
+//  EDIT A CARD — by hand, or by asking an AI to rewrite it
+// ════════════════════════════════════════════
+
+const ED_LIMITS = { name: 60, desc: 200 };
+const ED = { type: null, id: null };
+
+function editableItem(type, id) {
+  return allById(type).find(x => x.id === id);
+}
+
+// Events keep their text in title/description; everything else in name/desc.
+function editFields(item) {
+  return {
+    icon: item.icon || '',
+    name: item.name || item.title || '',
+    desc: item.desc || item.description || '',
+  };
+}
+
+function openEditModal(type, id) {
+  const item = editableItem(type, id);
+  if (!item) return;
+  ED.type = type; ED.id = id;
+  const f = editFields(item);
+  document.getElementById('ed-icon').value = f.icon;
+  document.getElementById('ed-name').value = f.name;
+  document.getElementById('ed-desc').value = f.desc;
+  document.getElementById('ed-instruction').value = '';
+  document.getElementById('ed-paste').value = '';
+  toggleEditAI(false); // opens compact; the AI half is one tap away
+  document.getElementById('ed-reset').style.display = editFor(id) ? '' : 'none';
+  // Events don't show an icon on their row, so don't offer to set one.
+  const isEvent = type === 'event';
+  document.getElementById('ed-icon-wrap').style.display = isEvent ? 'none' : '';
+  document.getElementById('ed-row').style.gridTemplateColumns = isEvent ? '1fr' : '80px 1fr';
+  edCounts();
+  closeSpotlight();
+  document.getElementById('edit-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function toggleEditAI(open) {
+  const panel = document.getElementById('ed-ai');
+  const btn = document.getElementById('ed-ai-toggle');
+  const show = open === undefined ? panel.style.display === 'none' : open;
+  panel.style.display = show ? '' : 'none';
+  btn.classList.toggle('open', show);
+}
+
+function closeEditModal() {
+  document.getElementById('edit-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+  ED.type = null; ED.id = null;
+}
+
+function edCounts() {
+  const n = document.getElementById('ed-name').value.length;
+  const d = document.getElementById('ed-desc').value.length;
+  document.getElementById('ed-name-count').textContent = `(${n}/${ED_LIMITS.name})`;
+  document.getElementById('ed-desc-count').textContent = `(${d}/${ED_LIMITS.desc})`;
+}
+
+// Store the override and re-render everywhere it shows.
+async function storeEdit(edit) {
+  const i = S.edits.findIndex(e => e.id === edit.id);
+  if (i >= 0) S.edits[i] = edit; else S.edits.push(edit);
+  saveJSON('dh_edits', S.edits);
+  await saveCustomToServer('edits', edit);
+  EV.events = withEdits(EV.events || []);
+  renderTab(S.tab);
+}
+
+async function saveCardEdit() {
+  const name = document.getElementById('ed-name').value.trim();
+  const desc = document.getElementById('ed-desc').value.trim();
+  const icon = document.getElementById('ed-icon').value.trim();
+  if (!name) { document.getElementById('ed-name').style.borderColor = 'red'; return; }
+  const btn = document.getElementById('ed-save');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  await storeEdit({ id: ED.id, kind: ED.type, icon, name, desc });
+  btn.disabled = false; btn.textContent = 'Save changes';
+  closeEditModal();
+}
+
+async function resetCardEdit() {
+  const id = ED.id;
+  if (!editFor(id)) return;
+  if (!confirm('Put this card back to its original wording?')) return;
+  S.edits = S.edits.filter(e => e.id !== id);
+  saveJSON('dh_edits', S.edits);
+  try { await fetch(EV_API + '/api/edits/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (_) {}
+  EV.events = withEdits(EV.events || []);
+  renderTab(S.tab);
+  closeEditModal();
+}
+
+function buildEditPrompt() {
+  const item = editableItem(ED.type, ED.id);
+  if (!item) return '';
+  const f = editFields(item);
+  const kind = { act: 'place to visit', meal: 'meal', craft: 'craft activity', event: 'event' }[ED.type] || 'item';
+  const instruction = document.getElementById('ed-instruction').value.trim();
+  return `You are helping edit a card in Dad HQ, a family activity app. Home base is Macclesfield, Cheshire, England.
+
+This card is a ${kind}. Here is exactly what it says now:
+
+Icon: ${f.icon}
+Name: ${f.name}
+Description: ${f.desc}
+
+What I want changed:
+${instruction || '(tighten the wording — keep all the facts)'}
+
+Rules:
+- Keep the same voice: plain, warm, written for a dad deciding whether to bother. No marketing fluff.
+- Name: max ${ED_LIMITS.name} characters. Description: max ${ED_LIMITS.desc} characters, 1-2 sentences.
+- Keep every fact that is still true, and do not invent new facts. Look it up if you need to check something.
+- Icon must be a single emoji that suits the card.
+
+Reply with ONLY a JSON object (no prose, no markdown):
+{"icon": str, "name": str, "desc": str}`;
+}
+
+async function copyEditPrompt() {
+  const btn = document.getElementById('ed-copy');
+  try {
+    await navigator.clipboard.writeText(buildEditPrompt());
+    btn.textContent = 'Copied — paste into ChatGPT';
+    setTimeout(() => { btn.textContent = 'Copy prompt'; }, 3000);
+  } catch (e) {
+    alert('Could not copy: ' + String(e.message || e).slice(0, 120));
+  }
+}
+
+async function applyEditReply() {
+  const ta = document.getElementById('ed-paste');
+  const obj = parseDraftReply(ta.value || '');
+  if (!obj) { alert('Could not find a JSON object in that paste — copy the whole reply and try again.'); return; }
+  const name = String(obj.name || '').trim().slice(0, ED_LIMITS.name);
+  const desc = String(obj.desc || obj.description || '').trim().slice(0, ED_LIMITS.desc);
+  const icon = String(obj.icon || '').trim();
+  if (!name && !desc) { alert('That reply had no name or description in it.'); return; }
+  // Drop it into the fields so the change is visible before it is saved.
+  if (icon) document.getElementById('ed-icon').value = icon;
+  if (name) document.getElementById('ed-name').value = name;
+  if (desc) document.getElementById('ed-desc').value = desc;
+  ta.value = '';
+  edCounts();
+  const btn = document.getElementById('ed-apply');
+  btn.textContent = '✓ Applied — check it, then Save';
+  setTimeout(() => { btn.textContent = 'Apply'; }, 4000);
+}
+
+// ════════════════════════════════════════════
+//  WISHLIST — every 🔖 item from all four tabs
+// ════════════════════════════════════════════
+
+const WL_TYPES = [
+  { val:'act',   label:'Places', title:'Places to go' },
+  { val:'meal',  label:'Meals',  title:'Meals to cook' },
+  { val:'craft', label:'Crafts', title:'Crafts to make' },
+  { val:'event', label:'Events', title:'Events to go to' },
+];
+
+function setWlQuery(v)    { S.wlQuery = v; renderWishlist(); }
+function setWlType(val) {
+  if (val === 'all') S.wlTypes.clear();
+  else { toggleSet(S.wlTypes, val); S.wlTypes.delete('all'); }
+  renderWlChips(); renderWishlist(); updateWlFilterBadge();
+}
+function toggleWlFavOnly(){ S.wlFavOnly = document.getElementById('wl-fav-toggle').checked; renderWishlist(); updateWlFilterBadge(); }
+
+function clearWlFilters() {
+  S.wlTypes.clear(); S.wlQuery = ''; S.wlFavOnly = false;
+  const s = document.getElementById('wl-search'); if (s) s.value = '';
+  const t = document.getElementById('wl-fav-toggle'); if (t) t.checked = false;
+  renderWlChips(); renderWishlist(); updateWlFilterBadge();
+}
+
+function updateWlFilterBadge() {
+  const n = S.wlTypes.size + (S.wlFavOnly ? 1 : 0);
+  const b = document.getElementById('wl-filter-badge');
+  if (!b) return;
+  b.textContent = n; b.style.display = n ? 'inline-flex' : 'none';
+}
+
+function renderWlChips() {
+  const row = document.getElementById('wl-type-row');
+  if (!row) return;
+  const chips = [{ val:'all', label:'All' }, ...WL_TYPES];
+  row.innerHTML = chips.map(c =>
+    `<button class="chip ${c.val==='all' ? (!S.wlTypes.size?'on-wish':'') : (S.wlTypes.has(c.val)?'on-wish':'')}" onclick="setWlType('${c.val}')">${c.label}</button>`
+  ).join('');
+}
+
+// Items on the wishlist, grouped by type. Events use their existing 📌 flag.
+function wishlistItems(type) {
+  if (type === 'event') return (EV.events || []).filter(e => e.inPlans);
+  return allById(type).filter(x => isWish(type, x.id));
+}
+
+// Total saved items, shown as a badge on the header bookmark button.
+function wishTotal() {
+  return S.actWish.size + S.mealWish.size + S.craftWish.size +
+    (EV.events || []).filter(e => e.inPlans).length;
+}
+
+function updateWishCount() {
+  const b = document.getElementById('nav-wish-count');
+  if (!b) return;
+  const n = wishTotal();
+  b.textContent = n; b.style.display = n ? 'inline-flex' : 'none';
+}
+
+function renderWishlist() {
+  renderWlChips();
+  if (!EV.loaded) loadEvents(); // events fill in as soon as they arrive
+  const body = document.getElementById('wl-body');
+  if (!body) return;
+  const wanted = WL_TYPES.filter(t => !S.wlTypes.size || S.wlTypes.has(t.val));
+
+  let total = 0;
+  const html = wanted.map(t => {
+    let items = wishlistItems(t.val);
+    if (t.val === 'event') {
+      if (S.wlFavOnly) items = []; // events can't be favourited
+      items = items.filter(e => matchQuery(S.wlQuery, e.title, e.description, e.location));
+      items.sort((a, b) => String(a.startDate||'').localeCompare(String(b.startDate||'')));
+    } else {
+      if (S.wlFavOnly) items = items.filter(x => isFav(t.val, x.id));
+      items = items.filter(x => matchQuery(S.wlQuery, x.name, x.desc, (x.tags || []).join(' ')));
+      items.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    if (!items.length) return '';
+    total += items.length;
+    const cards = t.val === 'event'
+      ? evListHTML(items)
+      : `<div class="cards-grid">${items.map(x =>
+          t.val === 'act' ? actCard(x) : t.val === 'meal' ? mealCard(x) : craftCard(x)
+        ).join('')}</div>`;
+    return `<div class="wl-group">
+      <div class="wl-group-head"><h2>${t.title}</h2><span>${items.length}</span></div>
+      ${cards}
+    </div>`;
+  }).join('');
+
+  document.getElementById('wl-count').textContent = `${total} item${total!==1?'s':''} on the wishlist`;
+  updateWishCount();
+  body.innerHTML = total ? html : `<div class="empty"><div class="e-icon">${BOOKMARK_SVG}</div>
+    <p>Nothing here yet — tap the bookmark on any place, meal, craft or event to add it.</p></div>`;
+}
+
+// ════════════════════════════════════════════
+//  EVENTS — auto-updating, kid/family-friendly
+// ════════════════════════════════════════════
+const EV_API = '';
+const EVENT_CATS = [
+  {key:'family',label:'Family',icon:'🧸'},
+  {key:'fair',label:'Fairs',icon:'🎡'},
+  {key:'festival',label:'Festivals',icon:'🎪'},
+  {key:'car_show',label:'Car shows',icon:'🚗'},
+  {key:'seasonal',label:'Seasonal',icon:'🎄'},
+  {key:'celebration',label:'Celebrations',icon:'🎉'},
+  {key:'music',label:'Music',icon:'🎵'},
+  {key:'food_drink',label:'Food & drink',icon:'🍓'},
+  {key:'market',label:'Markets',icon:'🧺'},
+  {key:'sport',label:'Sport',icon:'🏟'},
+  {key:'comedy',label:'Comedy',icon:'🎤'},
+  {key:'other',label:'Other',icon:'📌'},
+];
+const evCatFor = k => EVENT_CATS.find(c => c.key === k) || {label:k, icon:'📌'};
+const EV_REGION_LABEL = {local:'Local', manchester:'Manchester', chester:'Chester', liverpool:'Liverpool', peaks:'Peak District', uk:'UK-wide'};
+const EV_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const evEsc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const evParseDate = s => { const d = new Date((s||'') + 'T00:00:00'); return isNaN(d) ? null : d; };
+
+const EV = {
+  events: [], loaded: false,
+  cat: 'all', region: 'all', favOnly: false, month: null, query: '',
+};
+
+// Forgiving (typo-tolerant), multi-term (AND) match across the given text fields.
+function matchQuery(q, ...fields) {
+  q = (q || '').trim().toLowerCase();
+  if (!q) return true;
+  return fuzzyMatch(q, ...fields);
+}
+
+async function loadEvents() {
+  try {
+    const r = await fetch(EV_API + '/api/events');
+    if (!r.ok) throw 0;
+    EV.events = await r.json();
+    const c = loadJSON('dh_evState') || {};
+    EV.events.forEach(e => { if (c[e.id]) { e.favourite = !!c[e.id].favourite; e.inPlans = !!c[e.id].inPlans; } });
+  } catch (e) {
+    const c = loadJSON('dh_evState') || {};
+    EV.events = (c._cache || []).map(e => ({ ...e, ...(c[e.id] || {}) }));
+  }
+  EV.events = withEdits(EV.events);
+  EV.loaded = true;
+  if (S.tab === 'events') renderEvents();
+  if (S.tab === 'wishlist') renderWishlist();
+}
+
+// ── Custom places (cross-device via D1) ──
+// ── Cross-device sync ──
+// Everything the user creates or flags lives in D1 so it syncs across devices.
+// The load pattern is the same everywhere: fetch the server copy, and the FIRST
+// time a device runs (no "migrated" marker) push any pre-existing localStorage
+// data up so nothing is lost. After that the server is the source of truth —
+// which is what makes deletes / un-favourites propagate to every device. We
+// still cache to localStorage for instant paint and offline reads.
+
+async function savePlaceToServer(item) {
+  try {
+    await fetch(EV_API + '/api/places', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        id: item.id, name: item.name, icon: item.icon, desc: item.desc,
+        cat: item.cat, subcat: item.subcat, weather: item.weather,
+        region: item.region, dist: item.dist, price: item.price,
+        priceLabel: item.priceLabel, tags: item.tags,
+      }),
+    });
+  } catch (_) { /* offline — the local cache still has it */ }
+}
+
+// Generic POST for JSON-blob collections (meals, crafts).
+async function saveCustomToServer(kind, item) {
+  try {
+    await fetch(EV_API + '/api/' + kind, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(item),
+    });
+  } catch (_) { /* offline — the local cache still has it */ }
+}
+
+async function loadCollection(kind, stateKey, storeKey, markerKey, saveOne, rerender) {
+  let server = null;
+  try {
+    const r = await fetch(EV_API + '/api/' + kind);
+    if (r.ok) server = await r.json();
+  } catch (_) { /* offline — keep the local cache */ }
+  if (!Array.isArray(server)) return;
+
+  if (!loadJSON(markerKey)) {
+    const serverIds = new Set(server.map(x => x.id));
+    const localOnly = (S[stateKey] || []).filter(x => x && x.id && !serverIds.has(x.id));
+    localOnly.forEach(x => saveOne(x));
+    S[stateKey] = [...server, ...localOnly];
+    saveJSON(markerKey, true);
+  } else {
+    S[stateKey] = server; // server is the source of truth once migrated
+  }
+  saveJSON(storeKey, S[stateKey]);
+  rerender();
+}
+
+const loadPlaces = () => loadCollection('places', 'customActs', 'dh_customActs', 'dh_placesMigrated',
+  savePlaceToServer, () => { if (S.tab === 'activities') renderActivities(); });
+const loadMeals = () => loadCollection('meals', 'customMeals', 'dh_customMeals', 'dh_mealsMigrated',
+  it => saveCustomToServer('meals', it), () => { if (S.tab === 'meals') renderMeals(); });
+const loadCrafts = () => loadCollection('crafts', 'customCrafts', 'dh_customCrafts', 'dh_craftsMigrated',
+  it => saveCustomToServer('crafts', it), () => { if (S.tab === 'crafts') renderCrafts(); });
+const loadDrafts = () => loadCollection('drafts', 'drafts', 'dh_drafts', 'dh_draftsMigrated',
+  it => saveCustomToServer('drafts', it), renderAddNew);
+const loadEdits = () => loadCollection('edits', 'edits', 'dh_edits', 'dh_editsMigrated',
+  it => saveCustomToServer('edits', it), () => { EV.events = withEdits(EV.events || []); renderTab(S.tab); });
+
+// Favourites + hidden built-ins (sets of ids) for act/meal/craft.
+async function saveFlagToServer(scope, kind, id, on) {
+  try {
+    await fetch(EV_API + '/api/flags', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ scope, kind, item_id: id, on: !!on }),
+    });
+  } catch (_) { /* offline — the local cache still has it */ }
+}
+
+const FLAG_MAP = [
+  ['fav', 'act', 'actFavs', 'dh_actFavs'],
+  ['fav', 'meal', 'mealFavs', 'dh_mealFavs'],
+  ['fav', 'craft', 'craftFavs', 'dh_craftFavs'],
+  ['wish', 'act', 'actWish', 'dh_actWish'],
+  ['wish', 'meal', 'mealWish', 'dh_mealWish'],
+  ['wish', 'craft', 'craftWish', 'dh_craftWish'],
+  ['hidden', 'act', 'hiddenActs', 'dh_hiddenActs'],
+  ['hidden', 'meal', 'hiddenMeals', 'dh_hiddenMeals'],
+  ['hidden', 'craft', 'hiddenCrafts', 'dh_hiddenCrafts'],
+];
+
+async function loadFlags() {
+  let f = null;
+  try {
+    const r = await fetch(EV_API + '/api/flags');
+    if (r.ok) f = await r.json();
+  } catch (_) { /* offline — keep the local cache */ }
+  if (!f || typeof f !== 'object') return;
+
+  const migrated = loadJSON('dh_flagsMigrated');
+  for (const [scope, kind, stateKey, storeKey] of FLAG_MAP) {
+    const serverIds = (f[scope] && f[scope][kind]) || [];
+    if (!migrated) {
+      const serverSet = new Set(serverIds);
+      for (const id of S[stateKey]) if (!serverSet.has(id)) saveFlagToServer(scope, kind, id, true);
+      S[stateKey] = new Set([...serverIds, ...S[stateKey]]);
+    } else {
+      S[stateKey] = new Set(serverIds); // server is the source of truth
+    }
+    saveJSON(storeKey, [...S[stateKey]]);
+  }
+  if (!migrated) saveJSON('dh_flagsMigrated', true);
+  renderTab(S.tab);
+}
+
+// A multi-day event counts as being in every month it runs through.
+function evRunsInMonth(e, month) {
+  const start = (e.startDate || '').slice(0, 7);
+  const end = (e.endDate || e.startDate || '').slice(0, 7);
+  return !!start && month >= start && month <= (end || start);
+}
+
+function evVisible() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  return EV.events.filter(e => {
+    const d = evParseDate(e.endDate || e.startDate); if (d && d < today) return false;
+    if (EV.cat !== 'all' && e.category !== EV.cat) return false;
+    if (EV.region !== 'all' && e.region !== EV.region) return false;
+    if (EV.month && !evRunsInMonth(e, EV.month)) return false;
+    if (EV.favOnly && !e.inPlans) return false;
+    if (!matchQuery(EV.query, e.title, e.description, e.location)) return false;
+    return true;
+  }).sort((a,b) => (a.startDate||'').localeCompare(b.startDate||''));
+}
+
+function renderEvents() {
+  const body = document.getElementById('ev-body');
+  if (!body) return;
+  if (!EV.loaded) { loadEvents(); body.innerHTML = `<div class="empty"><div class="e-icon">📅</div><p>Loading events…</p></div>`; return; }
+
+  const counts = {}; EV.events.forEach(e => counts[e.category] = (counts[e.category]||0) + 1);
+  const cats = EVENT_CATS.filter(c => counts[c.key]);
+  const regions = [...new Set(EV.events.map(e => e.region))].filter(Boolean);
+
+  // Category chips (collapsed inside Filters, like the other tabs).
+  const catRow = document.getElementById('ev-cat-row');
+  if (catRow) catRow.innerHTML =
+    `<button class="chip ${EV.cat==='all'?'on-event':''}" onclick="evSetCat('all')">All</button>` +
+    cats.map(c => `<button class="chip ${EV.cat===c.key?'on-event':''}" onclick="evSetCat('${c.key}')">${c.icon} ${c.label} ${counts[c.key]}</button>`).join('');
+
+  // Area chips.
+  const regionRow = document.getElementById('ev-region-row');
+  if (regionRow) regionRow.innerHTML =
+    `<button class="chip ${EV.region==='all'?'on-event':''}" onclick="evSetRegion('all')">📍 All areas</button>` +
+    regions.map(r => `<button class="chip ${EV.region===r?'on-event':''}" onclick="evSetRegion('${r}')">${EV_REGION_LABEL[r]||r}</button>`).join('');
+
+  // Month chips — only the months something actually runs in.
+  const monthRow = document.getElementById('ev-month-row');
+  if (monthRow) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const months = [...new Set(EV.events
+      .filter(e => { const d = evParseDate(e.endDate || e.startDate); return !d || d >= today; })
+      .map(e => (e.startDate || '').slice(0, 7)))].filter(Boolean).sort();
+    monthRow.innerHTML =
+      `<button class="chip ${!EV.month?'on-event':''}" onclick="evSetMonth(null)">Any month</button>` +
+      months.map(m => {
+        const [y, mm] = m.split('-').map(Number);
+        return `<button class="chip ${EV.month===m?'on-event':''}" onclick="evSetMonth('${m}')">${EV_MONTHS[mm-1]} ${y}</button>`;
+      }).join('');
+  }
+
+  const favToggle = document.getElementById('ev-fav-toggle'); if (favToggle) favToggle.checked = EV.favOnly;
+
+  const list = evVisible();
+  const cnt = document.getElementById('ev-count');
+  if (cnt) cnt.textContent = `${list.length} event${list.length!==1?'s':''}`;
+  updateEvFilterBadge();
+
+  body.innerHTML = list.length ? evListHTML(list)
+    : `<div class="empty"><div class="e-icon">🗓️</div><p>${EV.events.length ? 'No events match these filters.' : 'No events yet — tap Update events to pull in what’s coming up.'}</p></div>`;
+}
+
+function activeEvFilterCount() {
+  let n = 0;
+  if (EV.cat !== 'all') n++;
+  if (EV.region !== 'all') n++;
+  if (EV.favOnly) n++;
+  if (EV.month) n++;
+  return n;
+}
+
+function updateEvFilterBadge() {
+  const badge = document.getElementById('ev-filter-badge');
+  if (!badge) return;
+  const n = activeEvFilterCount();
+  if (n > 0) { badge.textContent = n; badge.style.display = 'inline-flex'; }
+  else { badge.style.display = 'none'; }
+}
+
+function clearEvFilters() {
+  EV.cat = 'all'; EV.region = 'all'; EV.favOnly = false; EV.month = null; EV.query = '';
+  const es = document.getElementById('ev-search'); if (es) es.value = '';
+  renderEvents();
+}
+
+function evDateBadge(e) {
+  const sd = evParseDate(e.startDate), ed = evParseDate(e.endDate);
+  if (!sd) return '';
+  const fmt = d => `${d.getDate()} ${EV_MONTHS[d.getMonth()].slice(0,3)}`;
+  const multi = e.endDate && e.endDate !== e.startDate && ed;
+  return `<span class="badge b-date">${fmt(sd)}${multi ? ` → ${fmt(ed)}` : ''}</span>`;
+}
+
+function evBadges(e) {
+  const cat = evCatFor(e.category);
+  return [
+    evDateBadge(e),
+    `<span class="badge b-cat">${cat.icon} ${cat.label}</span>`,
+    e.region ? `<span class="badge b-dist">📍 ${EV_REGION_LABEL[e.region] || e.region}${e.distanceMiles ? ` · ${e.distanceMiles}mi` : ''}</span>` : '',
+    e.price ? `<span class="badge ${/free/i.test(e.price) ? 'b-free' : 'b-paid'}">${evEsc(e.price)}</span>` : '',
+    e.kidFriendly ? '<span class="badge b-sun">👶 Kid-friendly</span>' : '',
+  ].join('');
+}
+
+function eventCard(e) {
+  const id = evEsc(e.id);
+  return `<div class="card" onclick="openSpotlight('event','${id}')">
+    <div class="card-top">
+      <span class="card-icon">${evCatFor(e.category).icon}</span>
+      <span class="card-name">${evEsc(e.title)}</span>
+      <span class="card-flags">
+        <button class="wish-btn ${e.inPlans?'on':''}" title="${e.inPlans?'Remove from wishlist':'Add to wishlist'}" onclick="event.stopPropagation();evTogglePlan('${id}')">${BOOKMARK_SVG}</button>
+      </span>
+    </div>
+    ${e.location ? `<div class="card-where">📍 ${evEsc(e.location)}</div>` : ''}
+    ${e.description ? `<div class="card-desc">${evEsc(e.description)}</div>` : ''}
+    <div class="card-badges">${evBadges(e)}</div>
+  </div>`;
+}
+
+function evListHTML(list) {
+  return `<div class="cards-grid">${list.map(eventCard).join('')}</div>`;
+}
+
+function evSetCat(k)  { EV.cat = k; renderEvents(); }
+function evSetRegion(r){ EV.region = r; renderEvents(); }
+function evToggleFavFilter() { EV.favOnly = !EV.favOnly; renderEvents(); }
+function evSetMonth(m) { EV.month = EV.month === m ? null : m; renderEvents(); }
+
+async function evSave(id, body) {
+  const e = EV.events.find(x => x.id === id); if (!e) return;
+  Object.assign(e, body);
+  const c = loadJSON('dh_evState') || {};
+  c[id] = { favourite: e.favourite, inPlans: e.inPlans }; c._cache = EV.events;
+  saveJSON('dh_evState', c);
+  try { await fetch(`${EV_API}/api/events/${encodeURIComponent(id)}`, { method:'PATCH', headers:{'content-type':'application/json'}, body: JSON.stringify(body) }); } catch (_) {}
+}
+async function evTogglePlan(id) { const e = EV.events.find(x => x.id === id); if (!e) return; await evSave(id, { inPlans: !e.inPlans }); renderTab(S.tab); }
+
+// ════════════════════════════════════════════
+//  UPDATE-VIA-CHATGPT MODAL (events, places, meals, crafts)
+// ════════════════════════════════════════════
+
+const EV_AGE_MIN = 2, EV_AGE_MAX = 14, EV_AGE_DEFAULT = 5;
+function evGetAge() { const a = parseInt(loadJSON('dh_kidAge'), 10); return Number.isFinite(a) ? a : EV_AGE_DEFAULT; }
+function evSetAge(v) { const a = parseInt(v, 10); if (Number.isFinite(a)) saveJSON('dh_kidAge', a); }
+
+const UPD_COUNTS = [5, 10, 15, 20, 25, 30];
+function updGetCount() { const c = parseInt(loadJSON('dh_updCount'), 10); return UPD_COUNTS.includes(c) ? c : 10; }
+function updSetCount(v) { const c = parseInt(v, 10); if (UPD_COUNTS.includes(c)) saveJSON('dh_updCount', c); }
+
+const UPD_META = {
+  event: { title: 'Update events',  unit: 'events', into: 'the Events list' },
+  act:   { title: 'Get activity ideas', unit: 'places', into: 'Activities' },
+  meal:  { title: 'Get meal ideas',  unit: 'meals',  into: 'Meals' },
+  craft: { title: 'Get craft ideas', unit: 'crafts', into: 'Crafts' },
+};
+const UPD = { type: null };
+
+function updFillSelect(sel, values, current) {
+  sel.innerHTML = '';
+  values.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v; if (String(v) === String(current)) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+function openUpdateModal(type) {
+  UPD.type = type;
+  const m = UPD_META[type];
+  document.getElementById('update-title').textContent = m.title;
+  document.getElementById('update-intro').textContent =
+    `Copy the prompt, paste it into ChatGPT (or any AI chat with web search), then paste its whole reply back here and import into ${m.into}.`;
+  document.getElementById('update-text').value = '';
+  const ageRange = [];
+  for (let a = EV_AGE_MIN; a <= EV_AGE_MAX; a++) ageRange.push(a);
+  updFillSelect(document.getElementById('update-age'), ageRange, evGetAge());
+  updFillSelect(document.getElementById('update-count'), UPD_COUNTS, updGetCount());
+  document.getElementById('update-copy').textContent = 'Copy prompt';
+  document.getElementById('update-import').textContent = 'Import';
+  document.getElementById('update-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeUpdateModal() {
+  document.getElementById('update-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+  UPD.type = null;
+}
+
+async function updCopyPrompt() {
+  const btn = document.getElementById('update-copy');
+  try {
+    let prompt;
+    if (UPD.type === 'event') {
+      const r = await fetch(`${EV_API}/api/events/prompt?age=${evGetAge()}&count=${updGetCount()}`);
+      const d = await r.json();
+      if (!r.ok || !d.prompt) throw new Error(d.error || 'Could not fetch prompt');
+      prompt = d.prompt;
+    } else {
+      prompt = buildClientPrompt(UPD.type, evGetAge(), updGetCount());
+    }
+    await navigator.clipboard.writeText(prompt);
+    btn.textContent = '✓ Copied — paste into ChatGPT';
+    setTimeout(() => { btn.textContent = 'Copy prompt'; }, 3000);
+  } catch (e) {
+    alert(String(e.message || e).slice(0, 160));
+  }
+}
+
+async function updImport() {
+  const btn = document.getElementById('update-import');
+  const ta = document.getElementById('update-text');
+  const text = (ta.value || '').trim();
+  if (!text) { alert('Paste the AI reply first.'); return; }
+  btn.disabled = true; btn.innerHTML = 'Importing…';
+  const reset = () => { btn.disabled = false; btn.textContent = 'Import'; };
+  try {
+    if (UPD.type === 'event') {
+      const r = await fetch(EV_API + '/api/events/manual', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'Import failed');
+      ta.value = ''; EV.loaded = false; await loadEvents();
+      btn.disabled = false; btn.textContent = `✓ ${d.count} imported`;
+      setTimeout(closeUpdateModal, 900);
+      return;
+    }
+    const arr = parseClientJSON(text);
+    if (!arr.length) throw new Error('Could not find a JSON array in that paste — copy the whole reply and try again.');
+    let n = 0;
+    if (UPD.type === 'act') {
+      const posts = [];
+      for (const o of arr) { const item = mapImportedAct(o); if (!item) continue; posts.push(savePlaceToServer(item)); n++; }
+      await Promise.all(posts);
+      await loadPlaces(); renderActivities();
+    } else if (UPD.type === 'meal') {
+      for (const o of arr) { const item = mapImportedMeal(o); if (!item) continue; S.customMeals.push(item); saveCustomToServer('meals', item); n++; }
+      saveJSON('dh_customMeals', S.customMeals); renderMeals();
+    } else if (UPD.type === 'craft') {
+      for (const o of arr) { const item = mapImportedCraft(o); if (!item) continue; S.customCrafts.push(item); saveCustomToServer('crafts', item); n++; }
+      saveJSON('dh_customCrafts', S.customCrafts); renderCrafts();
+    }
+    ta.value = ''; renderChips();
+    btn.disabled = false; btn.textContent = `✓ ${n} imported`;
+    setTimeout(closeUpdateModal, 900);
+  } catch (e) {
+    reset();
+    alert(String(e.message || e).slice(0, 180));
+  }
+}
+
+// Tolerant JSON extractor for pasted replies (mirrors the server's — handles
+// stray prose, code fences and smart quotes).
+function parseClientJSON(text) {
+  let t = (text || '').trim();
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) t = fence[1].trim();
+  const s = t.indexOf('['), e = t.lastIndexOf(']');
+  if (s < 0 || e < 0 || e < s) return [];
+  const slice = t.slice(s, e + 1);
+  const norm = x => x
+    .replace(/[“”„‟″‶]/g, '"')
+    .replace(/[‘’‚‛′‵]/g, "'")
+    .replace(/ /g, ' ');
+  for (const c of [slice, norm(slice)]) {
+    try { const a = JSON.parse(c); if (Array.isArray(a)) return a; } catch (_) {}
+  }
+  return [];
+}
+
+const uid = p => `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+const oneOf = (v, allowed, dflt) => allowed.includes(v) ? v : dflt;
+
+function mapImportedAct(o) {
+  if (!o || !o.name) return null;
+  const price = Math.max(0, Math.min(3, parseInt(o.price) || 0));
+  return {
+    id: uid('custom-act'), name: String(o.name).trim(),
+    icon: (o.icon && String(o.icon).trim()) || '📌',
+    desc: String(o.desc || o.description || ''),
+    cat: oneOf(o.cat, ['outdoor','museum','theme_park','farm','sport','softplay'], 'outdoor'),
+    weather: oneOf(o.weather, ['outdoor','indoor','both'], 'both'),
+    region: String(o.region || 'local'),
+    dist: Number.isFinite(+o.dist) ? +o.dist : 10,
+    price, priceLabel: ['Free','£','££','£££'][price],
+    tags: Array.isArray(o.tags) ? o.tags.filter(t => typeof t === 'string').slice(0, 10) : [],
+  };
+}
+
+function mapImportedMeal(o) {
+  if (!o || !o.name) return null;
+  return {
+    id: uid('custom-meal'), name: String(o.name).trim(),
+    icon: (o.icon && String(o.icon).trim()) || '🍽️',
+    desc: String(o.desc || o.description || ''),
+    cat: oneOf(o.cat, ['quick','proper','weekend','baking'], 'quick'),
+    time: Number.isFinite(+o.time) ? +o.time : 20,
+    kidRating: 2, helpRating: 2,
+    ingredients: Array.isArray(o.ingredients) ? o.ingredients.filter(x => typeof x === 'string') : [],
+  };
+}
+
+function mapImportedCraft(o) {
+  if (!o || !o.name) return null;
+  return {
+    id: uid('custom-craft'), name: String(o.name).trim(),
+    icon: (o.icon && String(o.icon).trim()) || '✂️',
+    desc: String(o.desc || o.description || ''),
+    cat: oneOf(o.cat, ['painting','building','nature','messy','quiet','seasonal','science'], 'building'),
+    time: Number.isFinite(+o.time) ? +o.time : 30,
+    mess: [1,2,3].includes(+o.mess) ? +o.mess : 1,
+    materials: Array.isArray(o.materials) ? o.materials.filter(x => typeof x === 'string') : [],
+  };
+}
+
+// Client-side prompt builders for places / meals / crafts (events uses the
+// server's prompt so it can dedupe against the D1 events table).
+function existingNamesList(type) {
+  const list = type === 'act' ? [...ACTIVITIES, ...S.customActs]
+             : type === 'meal' ? [...MEALS, ...S.customMeals]
+             : [...CRAFTS, ...S.customCrafts];
+  return list.map(x => `- ${x.name}`).join('\n');
+}
+
+function buildClientPrompt(type, age, count) {
+  if (type === 'act')  return buildActPrompt(age, count);
+  if (type === 'meal') return buildMealPrompt(age, count);
+  return buildCraftPrompt(age, count);
+}
+
+function buildActPrompt(age, count) {
+  return `You are a family days-out researcher for Dad HQ. Suggest real, specific places to visit that suit a dad with a ${age}-year-old son.
+
+Home base is Macclesfield, central Cheshire, England. Tag each place with a region and rough one-way driving distance in miles:
+- "local": within ~20 miles (Knutsford, Wilmslow, Macclesfield, Northwich, Altrincham, Stockport)
+- "manchester": Greater Manchester (~20mi)
+- "peaks": Peak District & Derbyshire (~20-30mi)
+- "chester": Chester & west Cheshire / Ellesmere Port (~33mi)
+- "liverpool": Liverpool & Merseyside (~40mi)
+- "wales" (North Wales), "lakes" (Lake District), "yorkshire", "midlands", or "uk" for anywhere else worth the trip
+
+Rules:
+- Suggest about ${count} places, spread across the regions.
+- Real, specific, currently-open attractions — do not invent places or guess.
+- "cat" must be one of: outdoor, museum, theme_park, farm, sport, softplay.
+- "weather" must be one of: outdoor, indoor, both.
+- "price" is 0 (free), 1 (£), 2 (££) or 3 (£££) per person.
+- Do NOT suggest any place already in the app (listed at the end) — only new, additional places.
+
+Reply with ONLY a JSON array (no prose, no markdown) where each item is:
+{"name": str, "icon": str (one emoji), "desc": str (1-2 sentences), "cat": str, "weather": str, "region": str, "dist": int, "price": int, "tags": [str]}
+
+Already in the app — do NOT repeat any of these:
+${existingNamesList('act')}`;
+}
+
+function buildMealPrompt(age, count) {
+  return `You are a family meal-ideas helper for Dad HQ. Suggest kid-friendly meals a dad could cook that a ${age}-year-old would happily eat.
+
+Rules:
+- Suggest about ${count} meals.
+- Realistic, kid-approved home cooking — not fancy or cheffy.
+- "cat" must be one of: quick (under ~20 min), proper (a proper weeknight dinner), weekend (a bigger weekend cook), baking.
+- "time" is the rough total prep + cook time in minutes (integer).
+- Do NOT suggest any meal already in the app (listed at the end) — only new, additional meals.
+
+Reply with ONLY a JSON array (no prose, no markdown) where each item is:
+{"name": str, "icon": str (one emoji), "desc": str (1-2 sentences), "cat": str, "time": int, "ingredients": [str]}
+
+Already in the app — do NOT repeat any of these:
+${existingNamesList('meal')}`;
+}
+
+function buildCraftPrompt(age, count) {
+  return `You are a kids' craft-ideas helper for Dad HQ. Suggest craft and making activities to do at home with a ${age}-year-old.
+
+Rules:
+- Suggest about ${count} crafts.
+- Cheap, common household or easily-bought materials.
+- "cat" must be one of: painting, building, nature, messy, quiet, seasonal, science.
+- "time" is the rough time in minutes (integer). "mess" is 1 (tidy), 2 (messy) or 3 (very messy).
+- Do NOT suggest any craft already in the app (listed at the end) — only new, additional crafts.
+
+Reply with ONLY a JSON array (no prose, no markdown) where each item is:
+{"name": str, "icon": str (one emoji), "desc": str (1-2 sentences), "cat": str, "time": int, "mess": int, "materials": [str]}
+
+Already in the app — do NOT repeat any of these:
+${existingNamesList('craft')}`;
 }
 
 function renderActivities() {
@@ -6388,7 +7809,10 @@ function actCard(a) {
     <div class="card-top">
       <span class="card-icon">${a.icon}</span>
       <span class="card-name">${a.name}</span>
-      <button class="fav-btn" onclick="event.stopPropagation();toggleFav('act','${a.id}')">${fav?'⭐':'☆'}</button>
+      <span class="card-flags">
+        <button class="fav-btn ${fav?'on':''}" title="${fav?'Remove favourite':'Add to favourites'}" onclick="event.stopPropagation();toggleFav('act','${a.id}')">${STAR_SVG}</button>
+        ${wishBtn('act', a.id)}
+      </span>
     </div>
     <div class="card-desc">${a.desc}</div>
     <div class="card-badges">
@@ -6396,10 +7820,6 @@ function actCard(a) {
       ${priceBadge(a.price, a.priceLabel)}
       ${weatherBadge(a.weather)}
       ${subcatBadge(a)}
-    </div>
-    <div class="card-links">
-      <a href="${mapsUrl(a.name)}" target="_blank" onclick="event.stopPropagation()">📍 Directions</a>
-      ${a.url ? `<a href="${a.url}" target="_blank" onclick="event.stopPropagation()">🌐 Website</a>` : ''}
     </div>
   </div>`;
 }
@@ -6410,7 +7830,10 @@ function mealCard(m) {
     <div class="card-top">
       <span class="card-icon">${m.icon}</span>
       <span class="card-name">${m.name}</span>
-      <button class="fav-btn" onclick="event.stopPropagation();toggleFav('meal','${m.id}')">${fav?'⭐':'☆'}</button>
+      <span class="card-flags">
+        <button class="fav-btn ${fav?'on':''}" title="${fav?'Remove favourite':'Add to favourites'}" onclick="event.stopPropagation();toggleFav('meal','${m.id}')">${STAR_SVG}</button>
+        ${wishBtn('meal', m.id)}
+      </span>
     </div>
     <div class="card-desc">${m.desc}</div>
     <div class="card-badges">
@@ -6427,7 +7850,10 @@ function craftCard(c) {
     <div class="card-top">
       <span class="card-icon">${c.icon}</span>
       <span class="card-name">${c.name}</span>
-      <button class="fav-btn" onclick="event.stopPropagation();toggleFav('craft','${c.id}')">${fav?'⭐':'☆'}</button>
+      <span class="card-flags">
+        <button class="fav-btn ${fav?'on':''}" title="${fav?'Remove favourite':'Add to favourites'}" onclick="event.stopPropagation();toggleFav('craft','${c.id}')">${STAR_SVG}</button>
+        ${wishBtn('craft', c.id)}
+      </span>
     </div>
     <div class="card-desc">${c.desc}</div>
     <div class="card-badges">
@@ -6444,28 +7870,58 @@ function craftCard(c) {
 // ════════════════════════════════════════════
 
 function allById(type) {
-  if (type === 'act')   return [...ACTIVITIES, ...S.customActs];
-  if (type === 'meal')  return [...MEALS, ...S.customMeals];
-  if (type === 'craft') return [...CRAFTS, ...S.customCrafts];
+  if (type === 'act')   return withEdits([...ACTIVITIES, ...S.customActs]);
+  if (type === 'meal')  return withEdits([...MEALS, ...S.customMeals]);
+  if (type === 'craft') return withEdits([...CRAFTS, ...S.customCrafts]);
+  if (type === 'event') return withEdits(EV.events || []);
+  return [];
+}
+
+// The popup is the same for all four types: a card-style header (icon, name,
+// star + bookmark), the details, then Directions / Website / Edit / Remove.
+const SP = { type: null, id: null };
+
+function spFav(type, id, item) {
+  return type === 'event' ? false : isFav(type, id); // events aren't favouritable
+}
+function spWish(type, id, item) {
+  return type === 'event' ? !!item.inPlans : isWish(type, id);
+}
+
+// Toggling from inside the popup keeps it open and just redraws it.
+function spToggleFav() {
+  const { type, id } = SP;
+  if (type === 'event') return; // events aren't favouritable
+  toggleFav(type, id);
+  setTimeout(() => openSpotlight(type, id), 0);
+}
+function spToggleWish() {
+  const { type, id } = SP;
+  if (type === 'event') evTogglePlan(id); else toggleWish(type, id);
+  setTimeout(() => openSpotlight(type, id), 0);
 }
 
 function openSpotlight(type, id) {
   const item = allById(type).find(x => x.id === id);
   if (!item) return;
+  SP.type = type; SP.id = id;
   const inner = document.getElementById('spotlight-inner');
-  const fav = isFav(type, id);
+  const fav = spFav(type, id, item);
+  const wish = spWish(type, id, item);
+  const name = item.name || item.title || '';
+  const desc = item.desc || item.description || '';
+  const icon = type === 'event' ? evCatFor(item.category).icon : item.icon;
+  const theme = type === 'meal' ? 'meal' : type === 'craft' ? 'craft' : 'act';
 
-  let extra = '';
+  let badges = '', extra = '';
   if (type === 'act') {
+    badges = distBadge(getEffectiveDist(item)) + priceBadge(item.price, item.priceLabel) + weatherBadge(item.weather) + subcatBadge(item);
     extra = `
       <div class="sp-section">Tags</div>
       <div class="rb-badges">${(item.tags||[]).map(t=>`<span class="badge b-cat">${t}</span>`).join('')}</div>
-      <div class="sp-links">
-        <a href="${mapsUrl(item.name)}" target="_blank" class="btn btn-act">📍 Directions</a>
-        ${item.url ? `<a href="${item.url}" target="_blank" class="btn btn-outline">🌐 Website</a>` : ''}
-      </div>
     `;
   } else if (type === 'meal') {
+    badges = timeBadge(item.time) + `<span class="badge b-cat">${catIcon(item.cat)} ${catLabel(item.cat)}</span>`;
     extra = `
       <div class="sp-section">Key Ingredients</div>
       <ul class="sp-list">${(item.ingredients||[]).map(i=>`<li>${i}</li>`).join('')}</ul>
@@ -6476,28 +7932,37 @@ function openSpotlight(type, id) {
       </div>
     `;
   } else if (type === 'craft') {
+    badges = timeBadge(item.time) + messBadge(item.mess) + `<span class="badge b-cat">${catIcon(item.cat)} ${catLabel(item.cat)}</span>`;
     extra = `
       <div class="sp-section">You'll need</div>
       <ul class="sp-list">${(item.materials||[]).map(m=>`<li>${m}</li>`).join('')}</ul>
     `;
+  } else if (type === 'event') {
+    badges = evBadges(item);
+    extra = item.location ? `<div class="sp-section">Where</div><div class="sp-where">📍 ${evEsc(item.location)}</div>` : '';
   }
+
+  // Directions: places go by name, events by their venue.
+  const mapsTarget = type === 'act' ? item.name : type === 'event' ? (item.location || item.title) : null;
 
   inner.innerHTML = `
     <button class="sp-close" onclick="closeSpotlight()">✕</button>
-    <div class="sp-icon">${item.icon}</div>
-    <div class="sp-title">${item.name}</div>
-    <div class="sp-badges">
-      ${type==='act' ? distBadge(getEffectiveDist(item))+priceBadge(item.price,item.priceLabel)+weatherBadge(item.weather)+subcatBadge(item) : ''}
-      ${type==='meal' ? timeBadge(item.time)+`<span class="badge b-cat">${catIcon(item.cat)} ${catLabel(item.cat)}</span>` : ''}
-      ${type==='craft' ? timeBadge(item.time)+messBadge(item.mess)+`<span class="badge b-cat">${catIcon(item.cat)} ${catLabel(item.cat)}</span>` : ''}
+    <div class="sp-head">
+      <span class="sp-icon">${icon}</span>
+      <span class="card-flags sp-flags">
+        ${type === 'event' ? '' : `<button class="fav-btn ${fav?'on':''}" title="${fav?'Remove favourite':'Add to favourites'}" onclick="spToggleFav()">${STAR_SVG}</button>`}
+        <button class="wish-btn ${wish?'on':''}" title="${wish?'Remove from wishlist':'Add to wishlist'}" onclick="spToggleWish()">${BOOKMARK_SVG}</button>
+      </span>
     </div>
-    <div class="sp-desc">${item.desc}</div>
+    <div class="sp-title">${type === 'event' ? evEsc(name) : name}</div>
+    <div class="sp-badges">${badges}</div>
+    <div class="sp-desc">${type === 'event' ? evEsc(desc) : desc}</div>
     ${extra}
     <div class="sp-actions">
-      <button class="btn btn-${type==='act'?'act':type==='meal'?'meal':'craft'}" onclick="toggleFav('${type}','${id}');closeSpotlight()">
-        ${fav ? '✕ Remove favourite' : '⭐ Save as favourite'}
-      </button>
-      <button class="btn btn-outline" onclick="closeSpotlight()">Close</button>
+      ${mapsTarget ? `<a href="${mapsUrl(mapsTarget)}" target="_blank" class="btn btn-${theme}">Directions</a>` : ''}
+      ${item.url ? `<a href="${item.url}" target="_blank" rel="noopener" class="btn btn-outline">Website</a>` : ''}
+      <button class="btn btn-outline" onclick="openEditModal('${type}','${evEsc(id)}')">Edit</button>
+      <button class="btn btn-outline" onclick="${type === 'event' ? `removeEvent('${evEsc(id)}')` : `removeItem('${type}','${id}')`}">Remove</button>
     </div>
   `;
 
@@ -6510,6 +7975,61 @@ function closeSpotlight() {
   document.body.style.overflow = '';
 }
 
+// Remove an item — everything syncs across devices. Custom (user-added) items
+// are deleted for real; built-in items are hidden via a synced flag (we can't
+// edit the shipped list itself, so we remember to hide it everywhere).
+async function removeItem(type, id) {
+  const isCustom = String(id).startsWith('custom-');
+  if (type === 'act') {
+    if (isCustom) {
+      if (!confirm('Delete this place? This removes it on all your devices.')) return;
+      S.customActs = S.customActs.filter(a => a.id !== id);
+      saveJSON('dh_customActs', S.customActs);
+      try { await fetch(EV_API + '/api/places/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (_) {}
+    } else {
+      if (!confirm('Hide this place? It will be hidden on all your devices.')) return;
+      S.hiddenActs.add(id); saveJSON('dh_hiddenActs', [...S.hiddenActs]);
+      saveFlagToServer('hidden', 'act', id, true);
+    }
+    closeSpotlight(); renderActivities();
+  } else if (type === 'meal') {
+    if (isCustom) {
+      if (!confirm('Delete this meal? This removes it on all your devices.')) return;
+      S.customMeals = S.customMeals.filter(m => m.id !== id);
+      saveJSON('dh_customMeals', S.customMeals);
+      try { await fetch(EV_API + '/api/meals/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (_) {}
+    } else {
+      if (!confirm('Hide this meal? It will be hidden on all your devices.')) return;
+      S.hiddenMeals.add(id); saveJSON('dh_hiddenMeals', [...S.hiddenMeals]);
+      saveFlagToServer('hidden', 'meal', id, true);
+    }
+    closeSpotlight(); renderMeals();
+  } else if (type === 'craft') {
+    if (isCustom) {
+      if (!confirm('Delete this craft? This removes it on all your devices.')) return;
+      S.customCrafts = S.customCrafts.filter(c => c.id !== id);
+      saveJSON('dh_customCrafts', S.customCrafts);
+      try { await fetch(EV_API + '/api/crafts/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (_) {}
+    } else {
+      if (!confirm('Hide this craft? It will be hidden on all your devices.')) return;
+      S.hiddenCrafts.add(id); saveJSON('dh_hiddenCrafts', [...S.hiddenCrafts]);
+      saveFlagToServer('hidden', 'craft', id, true);
+    }
+    closeSpotlight(); renderCrafts();
+  }
+}
+
+// Events live only in D1, so a delete is a real delete (across all devices).
+async function removeEvent(id) {
+  if (!confirm('Delete this event? This removes it on all your devices.')) return;
+  closeSpotlight();
+  const i = EV.events.findIndex(e => e.id === id);
+  if (i >= 0) EV.events.splice(i, 1);
+  const c = loadJSON('dh_evState') || {}; delete c[id]; c._cache = EV.events; saveJSON('dh_evState', c);
+  try { await fetch(`${EV_API}/api/events/${encodeURIComponent(id)}`, { method: 'DELETE' }); } catch (_) {}
+  renderEvents();
+}
+
 function onOverlayClick(e, id) {
   if (e.target === document.getElementById(id)) closeSpotlight();
 }
@@ -6517,176 +8037,6 @@ function onOverlayClick(e, id) {
 // ════════════════════════════════════════════
 //  RANDOM PICKERS
 // ════════════════════════════════════════════
-
-function showRandom(type) {
-  const pools = { act: filteredActs, meal: filteredMeals, craft: filteredCrafts };
-  const items = pools[type]();
-  if (!items.length) return;
-
-  const item = items[Math.floor(Math.random() * items.length)];
-  const rb = document.getElementById(`rb-${type}`);
-
-  let badges = '';
-  if (type === 'act')   badges = distBadge(item.dist) + priceBadge(item.price, item.priceLabel) + weatherBadge(item.weather);
-  if (type === 'meal')  badges = timeBadge(item.time) + `<span class="badge b-cat">${catIcon(item.cat)} ${catLabel(item.cat)}</span>`;
-  if (type === 'craft') badges = timeBadge(item.time) + messBadge(item.mess);
-
-  rb.innerHTML = `
-    <button class="rb-close" onclick="this.parentElement.classList.remove('show')">✕</button>
-    <div class="rb-label">${type==='act'?'How about…':type==='meal'?'Tonight, make…':"Let's make…"}</div>
-    <div class="rb-name">${item.icon} ${item.name}</div>
-    <div class="rb-desc">${item.desc}</div>
-    <div class="rb-badges">${badges}</div>
-  `;
-  rb.classList.add('show');
-
-  // Bounce the button
-  const btn = document.getElementById(`rand-${type}`);
-  btn.classList.add('popping');
-  btn.addEventListener('animationend', () => btn.classList.remove('popping'), {once:true});
-}
-
-// ════════════════════════════════════════════
-//  ADD CUSTOM ITEMS
-// ════════════════════════════════════════════
-
-const MODAL_FORMS = {
-  act: () => `
-    <div class="form-group"><label>Name *</label><input id="f-name" placeholder="e.g. Sutton Park"></div>
-    <div class="form-group"><label>Description</label><textarea id="f-desc" placeholder="What's it like? What will the kids enjoy?"></textarea></div>
-    <div class="form-row">
-      <div class="form-group"><label>Category</label>
-        <select id="f-cat">
-          <option value="outdoor">Outdoor</option>
-          <option value="softplay">Soft Play</option>
-          <option value="farm">Farm & PYO</option>
-          <option value="sport">Active & Sport</option>
-          <option value="museum">Museum / Attraction</option>
-          <option value="theme_park">Theme Park</option>
-        </select>
-      </div>
-      <div class="form-group"><label>Distance (miles)</label><input id="f-dist" type="number" min="1" max="200" placeholder="e.g. 8"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Price</label>
-        <select id="f-price">
-          <option value="0">Free</option>
-          <option value="1">£</option>
-          <option value="2">££</option>
-          <option value="3">£££</option>
-        </select>
-      </div>
-      <div class="form-group"><label>Weather</label>
-        <select id="f-weather">
-          <option value="both">Any weather</option>
-          <option value="outdoor">Outdoors only</option>
-          <option value="indoor">Rainy day</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-group"><label>Emoji icon</label><input id="f-icon" placeholder="📍" maxlength="2" style="width:70px;"></div>
-  `,
-
-  meal: () => `
-    <div class="form-group"><label>Name *</label><input id="f-name" placeholder="e.g. Chicken Katsu Curry"></div>
-    <div class="form-group"><label>Description</label><textarea id="f-desc" placeholder="A brief description..."></textarea></div>
-    <div class="form-row">
-      <div class="form-group"><label>Category</label>
-        <select id="f-cat">
-          <option value="quick">Quick win</option>
-          <option value="proper">Proper meal</option>
-          <option value="weekend">Weekend special</option>
-        </select>
-      </div>
-      <div class="form-group"><label>Time (mins)</label><input id="f-time" type="number" min="5" max="180" placeholder="e.g. 25"></div>
-    </div>
-    <div class="form-group"><label>Key ingredients (comma-separated)</label><input id="f-ingredients" placeholder="e.g. chicken, rice, curry sauce"></div>
-    <div class="form-group"><label>Emoji icon</label><input id="f-icon" placeholder="🍲" maxlength="2" style="width:70px;"></div>
-  `,
-
-  craft: () => `
-    <div class="form-group"><label>Name *</label><input id="f-name" placeholder="e.g. Pasta Jewellery"></div>
-    <div class="form-group"><label>Description</label><textarea id="f-desc" placeholder="What do you make? What's fun about it?"></textarea></div>
-    <div class="form-row">
-      <div class="form-group"><label>Category</label>
-        <select id="f-cat">
-          <option value="painting">Painting</option>
-          <option value="building">Building</option>
-          <option value="nature">Nature</option>
-          <option value="messy">Messy</option>
-          <option value="quiet">Quiet</option>
-        </select>
-      </div>
-      <div class="form-group"><label>Time (mins)</label><input id="f-time" type="number" min="5" max="180" placeholder="e.g. 30"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Mess level</label>
-        <select id="f-mess">
-          <option value="1">1 — Tidy</option>
-          <option value="2">2 — Messy</option>
-          <option value="3">3 — Very messy</option>
-        </select>
-      </div>
-      <div class="form-group"><label>Emoji icon</label><input id="f-icon" placeholder="✂️" maxlength="2" style="width:70px;"></div>
-    </div>
-    <div class="form-group"><label>Materials (comma-separated)</label><input id="f-materials" placeholder="e.g. pasta, paint, string"></div>
-  `,
-};
-
-function openModal(type) {
-  S.modalType = type;
-  const titles = { act: 'Add a place', meal: 'Add a meal', craft: 'Add a craft idea' };
-  document.getElementById('modal-title').textContent = titles[type];
-  document.getElementById('modal-body').innerHTML = MODAL_FORMS[type]();
-  document.getElementById('modal-overlay').style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-}
-
-function closeModal() {
-  document.getElementById('modal-overlay').style.display = 'none';
-  document.body.style.overflow = '';
-  S.modalType = null;
-}
-
-function saveCustomItem() {
-  const type = S.modalType;
-  const name = document.getElementById('f-name')?.value?.trim();
-  if (!name) { document.getElementById('f-name').style.borderColor='red'; return; }
-
-  const id = `custom-${type}-${Date.now()}`;
-  const icon = document.getElementById('f-icon')?.value?.trim() || '📌';
-  const desc = document.getElementById('f-desc')?.value?.trim() || '';
-  const cat  = document.getElementById('f-cat')?.value || 'outdoor';
-
-  let item = { id, name, icon, desc, cat };
-
-  if (type === 'act') {
-    item.dist     = parseInt(document.getElementById('f-dist')?.value) || 10;
-    item.price    = parseInt(document.getElementById('f-price')?.value) || 0;
-    item.priceLabel = ['Free','£','££','£££'][item.price];
-    item.weather  = document.getElementById('f-weather')?.value || 'both';
-    item.tags     = [];
-    S.customActs.push(item);
-    saveJSON('dh_customActs', S.customActs);
-  } else if (type === 'meal') {
-    item.time    = parseInt(document.getElementById('f-time')?.value) || 20;
-    item.kidRating = 2;
-    item.helpRating = 2;
-    item.ingredients = (document.getElementById('f-ingredients')?.value||'').split(',').map(s=>s.trim()).filter(Boolean);
-    S.customMeals.push(item);
-    saveJSON('dh_customMeals', S.customMeals);
-  } else if (type === 'craft') {
-    item.time      = parseInt(document.getElementById('f-time')?.value) || 30;
-    item.mess      = parseInt(document.getElementById('f-mess')?.value) || 1;
-    item.materials = (document.getElementById('f-materials')?.value||'').split(',').map(s=>s.trim()).filter(Boolean);
-    S.customCrafts.push(item);
-    saveJSON('dh_customCrafts', S.customCrafts);
-  }
-
-  closeModal();
-  renderChips();
-  renderTab(type === 'act' ? 'activities' : type === 'meal' ? 'meals' : 'crafts');
-}
 
 // ════════════════════════════════════════════
 //  LOCATION / GUEST MODE
@@ -6737,15 +8087,18 @@ function getEffectiveDist(a) {
   return Math.round(haversineMi(homeLoc, coord));
 }
 
+// The location button is icon-only now — the place name lives in its tooltip.
+function setLocBtn(btn) {
+  if (!btn) return;
+  const name = homeLoc ? (homeLoc.name || 'Custom') : 'Macclesfield';
+  btn.title = name;
+  btn.setAttribute('aria-label', 'Home location: ' + name);
+  btn.classList.toggle('guest', !!homeLoc);
+}
+
 function recalcDistances() {
   const btn = document.getElementById('loc-btn');
-  if (homeLoc) {
-    btn.textContent = '📍 ' + (homeLoc.name || 'Custom');
-    btn.classList.add('guest');
-  } else {
-    btn.textContent = '📍 Macclesfield';
-    btn.classList.remove('guest');
-  }
+  setLocBtn(btn);
   renderAll();
 }
 
@@ -6807,7 +8160,7 @@ function useGPS() {
 function resetLocation() {
   homeLoc = null;
   localStorage.removeItem('dh_homeLoc');
-  document.getElementById('loc-status').textContent = '↩ Reset to Macclesfield';
+  document.getElementById('loc-status').textContent = 'Reset to Macclesfield';
   document.getElementById('loc-status').style.color = '#27ae60';
   recalcDistances();
   setTimeout(closeLocModal, 800);
@@ -6901,6 +8254,11 @@ function toggleSet(set, val) {
     if (set.has(val)) set.delete(val); else set.add(val);
   }
 }
+function setActQuery(v)   { S.actQuery = v;   renderActivities(); }
+function setMealQuery(v)  { S.mealQuery = v;  renderMeals(); }
+function setCraftQuery(v) { S.craftQuery = v; renderCrafts(); }
+function setEvQuery(v)    { EV.query = v;     renderEvents(); }
+
 function setActCat(val) { toggleSet(S.actCat, val); renderChips(); renderActivities(); updateFilterBadge(); }
 function setActWeather(val) { S.actWeather = S.actWeather === val ? 'all' : val; renderChips(); renderActivities(); updateFilterBadge(); }
 function setActRegion(val) { toggleSet(S.actRegion, val); renderChips(); renderActivities(); updateFilterBadge(); }
@@ -6908,19 +8266,21 @@ function setMealCat(val) { toggleSet(S.mealCat, val); renderChips(); renderMeals
 function setCraftCat(val) { toggleSet(S.craftCat, val); renderChips(); renderCrafts(); updateCraftFilterBadge(); }
 function setPrice(val) { if (val === 'all') { S.actMaxPrice.clear(); } else { toggleSet(S.actMaxPrice, parseInt(val)); } renderChips(); renderActivities(); updateFilterBadge(); }
 
+// Switch view. `tab` is either a tab-bar tab or 'wishlist' (reached from the
+// bookmark button in the header).
+function selectTab(tab) {
+  S.tab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  document.getElementById('nav-wish-btn').classList.toggle('active', tab === 'wishlist');
+  document.getElementById('nav-add-btn').classList.toggle('active', tab === 'addnew');
+  renderChips();
+  renderTab(tab);
+}
+
 document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const tab = btn.dataset.tab;
-    S.tab = tab;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(`tab-${tab}`).classList.add('active');
-    renderChips();
-    renderTab(tab);
-    // Hide any random banners when switching tabs
-    document.querySelectorAll('.random-banner').forEach(rb => rb.classList.remove('show'));
-  });
+  btn.addEventListener('click', () => selectTab(btn.dataset.tab));
 });
 
 document.getElementById('dist-slider').addEventListener('input', function() {
@@ -6952,27 +8312,43 @@ document.getElementById('craft-filter-toggle').addEventListener('click', () => {
 });
 document.getElementById('craft-clear-btn').addEventListener('click', clearCraftFilters);
 
-document.getElementById('rand-act').addEventListener('click', () => showRandom('act'));
-document.getElementById('rand-meal').addEventListener('click', () => showRandom('meal'));
-document.getElementById('rand-craft').addEventListener('click', () => showRandom('craft'));
+document.getElementById('ev-filter-toggle').addEventListener('click', () => {
+  S.evFiltersOpen = !S.evFiltersOpen;
+  document.getElementById('ev-filter-panel').classList.toggle('open', S.evFiltersOpen);
+  document.getElementById('ev-filter-toggle').classList.toggle('open', S.evFiltersOpen);
+});
 
-document.getElementById('add-act-btn').addEventListener('click', () => openModal('act'));
-document.getElementById('add-meal-btn').addEventListener('click', () => openModal('meal'));
-document.getElementById('add-craft-btn').addEventListener('click', () => openModal('craft'));
+document.getElementById('wl-filter-toggle').addEventListener('click', () => {
+  S.wlFiltersOpen = !S.wlFiltersOpen;
+  document.getElementById('wl-filter-panel').classList.toggle('open', S.wlFiltersOpen);
+  document.getElementById('wl-filter-toggle').classList.toggle('open', S.wlFiltersOpen);
+});
 
-document.getElementById('modal-save').addEventListener('click', saveCustomItem);
+
+document.getElementById('add-act-btn').addEventListener('click', () => openAddNew('act'));
+document.getElementById('add-meal-btn').addEventListener('click', () => openAddNew('meal'));
+document.getElementById('add-craft-btn').addEventListener('click', () => openAddNew('craft'));
+document.getElementById('an-add').addEventListener('click', addDraft);
+document.getElementById('ed-name').addEventListener('input', edCounts);
+document.getElementById('ed-desc').addEventListener('input', edCounts);
+document.getElementById('an-name').addEventListener('keydown', e => { if (e.key === 'Enter') addDraft(); });
+document.getElementById('an-note').addEventListener('keydown', e => { if (e.key === 'Enter') addDraft(); });
+
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeSpotlight(); closeModal(); }
+  if (e.key === 'Escape') { closeSpotlight(); closeUpdateModal(); closeEditModal(); }
 });
 
 // Init
-if (homeLoc) {
-  const btn = document.getElementById('loc-btn');
-  btn.textContent = '📍 ' + (homeLoc.name || 'Custom');
-  btn.classList.add('guest');
-}
+setLocBtn(document.getElementById('loc-btn'));
 renderAll();
+// Sync everything cross-device (custom places/meals/crafts, favourites, hides).
+loadPlaces();
+loadMeals();
+loadCrafts();
+loadDrafts();
+loadEdits();
+loadFlags();
 </script>
 <script>
 if ('serviceWorker' in navigator) {

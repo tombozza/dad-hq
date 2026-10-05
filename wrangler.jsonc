@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dad-hq",
+  "main": "src/index.js",
+  "compatibility_date": "2025-01-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "dad-hq",
+      "database_id": "0b8664c8-bdab-4c09-a06e-02f0dea76a04",
+      "preview_database_id": "dad-hq-local"
+    }
+  ],
+  "observability": { "enabled": true }
+}
