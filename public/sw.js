@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dadhq-v6';
+const CACHE_NAME = 'dadhq-v7';
 const ASSETS = ['./', './index.html'];
 
 self.addEventListener('install', e => {
