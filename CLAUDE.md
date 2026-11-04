@@ -65,8 +65,13 @@ There is **no server-side Claude call** in the events engine any more: an earlie
 refreshed events from the Worker; now both routes go through the sheet and end in the same
 upsert. Starred events and in-plans flags **survive** an import — upsert, never wipe the table.
 
-`ANTHROPIC_API_KEY` is optional. Without it `/api/status` says `ai: false`, the sheet shows
-only the Free route, and everything works.
+**Keys.** The site has no `ANTHROPIC_API_KEY` secret (checked 4 Nov 2026) and doesn't need one.
+Tom's call: Run it is always offered; the first tap asks for his own Anthropic key, which is
+saved in that browser only (`localStorage` `anthropic-key`, so once per device) and sent with
+each run in `x-user-key`; `src/ai.js` uses it for that call and never stores it. "Change key"
+under the Run it button changes or removes it. This is the shared sheet's `key` option
+(`userKey` in `public/lib/claude.js`). If a site secret is ever set, it wins and nobody is asked.
+With no key anywhere, the Free route works as before.
 
 There is a `GET /api/dad-hq` export on the Bozza HQ side that pushes kid-friendly places
 here — the two apps are linked in that one direction.

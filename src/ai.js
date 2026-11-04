@@ -10,7 +10,10 @@
 // prompt, and calls from other sites are refused. The one extra over the starter is
 // `search: true`, which turns on Anthropic's web search tool with a hard cap on searches —
 // Dad HQ's jobs are about real places and dated events, and Haiku would guess dates without it.
-// Without a key it says so plainly — the Free route in the sheet still works.
+// The key is the site's secret if it has one; otherwise the person's own key, which the
+// page keeps on their device and sends in `x-user-key` (the sheet asks for it on first use).
+// The person's key is used for that one call and never stored here.
+// Without either it says so plainly — the Free route in the sheet still works.
 
 const MODELS = new Set(['claude-haiku-4-5-20251001', 'claude-haiku-4-5']);
 const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
@@ -33,7 +36,9 @@ export async function handleAI(request, env, url) {
   if (request.method !== 'POST') return err('Use POST.', 405);
   const origin = request.headers.get('origin');
   if (origin && origin !== url.origin) return err('Not allowed from another site.', 403);
-  if (!env.ANTHROPIC_API_KEY) return err('One-tap isn’t set up on this site — use the Free route.', 503);
+  const userKey = (request.headers.get('x-user-key') || '').trim();
+  const apiKey = env.ANTHROPIC_API_KEY || (/^sk-ant-\S{20,}$/.test(userKey) ? userKey : '');
+  if (!apiKey) return err('No API key yet — add yours in the sheet, or use the Free route.', 401);
 
   let body;
   try { body = await request.json(); } catch { return err('Invalid request body.', 400); }
@@ -49,7 +54,7 @@ export async function handleAI(request, env, url) {
   try {
     res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+      headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify(payload),
     });
   } catch (e) {

@@ -525,8 +525,8 @@
      The app script is a classic script, so the module hands what it needs to window. -->
 <script type="module">
   import { openMagic } from '/vendor/magic/magic.js';
-  import { aiAvailable, askClaude } from '/lib/claude.js';
-  Object.assign(window, { openMagic, aiAvailable, askClaude });
+  import { aiAvailable, askClaude, userKey } from '/lib/claude.js';
+  Object.assign(window, { openMagic, aiAvailable, askClaude, userKey });
 </script>
 <script src="/vendor/clearx.js" defer></script>
 <style>@media (pointer:coarse){input,select,textarea{font-size:16px !important}}</style>
@@ -6870,7 +6870,8 @@ ${shape}
 // saved until apply() runs.
 function magicSheet(o) {
   if (!window.openMagic) { alert('Still loading — try again in a second.'); return Promise.resolve(null); }
-  return window.openMagic({ canRun: window.aiAvailable, ...o });
+  // key: Run it is always offered; with no site key it asks for the person's own, kept on this device.
+  return window.openMagic({ canRun: window.aiAvailable, key: window.userKey, ...o });
 }
 const RUN_NOTE = { plain: 'Claude · about 1p', search: 'Claude + web search · about 5p' };
 const askMagic = (prompt, opts) => window.askClaude(prompt, opts);

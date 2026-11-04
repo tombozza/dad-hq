@@ -36,11 +36,20 @@ const setRoute = v => { try { localStorage.setItem(ROUTE_KEY, v); } catch { /* p
  * @param {boolean|(() => Promise<boolean>)} [o.canRun]  Is the paid route available (the site has a key)?
  * @param {(status:(s:string)=>void) => Promise<string>} [o.run]  Paid route: returns the reply text.
  * @param {string} [o.runNote]        e.g. "Claude · about 1p".
+ * @param {{has:()=>boolean, save:(key:string)=>void, clear:()=>void}} [o.key]
+ *                                    Bring your own key (opt-in). With it, Run it shows even when the site has no
+ *                                    key: tapping it asks for the person's Anthropic API key, which the app keeps on
+ *                                    this device (save/clear) and sends with run(). "Change key" edits it later.
+ *                                    The site's own key, when canRun says there is one, still wins.
  * @param {(prepared?:string) => string} o.prompt  Free route: the full prompt to copy (synchronous — the copy
  *                                    must happen inside the tap, or iOS refuses it).
- * @param {{label:string, note?:string, run:(status:(s:string)=>void)=>Promise<string>}} [o.prepare]
+ * @param {{label:string, note?:string, check?:boolean, again?:string, run:(status:(s:string)=>void)=>Promise<string>}} [o.prepare]
  *                                    Free route, optional first step done on the device (e.g. read a photo's
  *                                    text). Its text is shown for checking, then passed to prompt().
+ *                                    With check: false its result is a one-line note, not text to check — for a
+ *                                    step like "Share the photos" (Finance Centre's receipts); `again` relabels its
+ *                                    button once done ("Share again"). run() starts inside the tap, so it can open
+ *                                    a share sheet — have the files ready before the sheet opens.
  * @param {string} [o.freeNote]       One line under the Free steps.
  * @param {(text:string) => any} o.parse  Turns a reply into a result; throw an Error with a helpful message.
  * @param {(result:any) => string} [o.preview]  HTML to check before applying. Without it, apply() runs straight away.
@@ -51,7 +60,7 @@ const setRoute = v => { try { localStorage.setItem(ROUTE_KEY, v); } catch { /* p
 export function openMagic(o) {
   return new Promise(resolve => {
     const opener = document.activeElement;
-    const st = { route: null, canRun: false, busy: false, status: '', error: '', copied: false, prepared: null, preparing: false, result: undefined, reply: '' };
+    const st = { route: null, canRun: false, offer: false, editingKey: false, busy: false, status: '', error: '', copied: false, prepared: null, preparing: false, result: undefined, reply: '' };
 
     const wrap = document.createElement('div');
     wrap.className = 'mg-scrim';
@@ -75,11 +84,24 @@ export function openMagic(o) {
 
     const setStatus = s => { st.status = s; const el = body.querySelector('.mg-status-text'); if (el) el.textContent = s; };
 
+    // Paid route usable right now: the site has a key, or this device has one saved.
+    const paid = () => st.canRun || !!o.key?.has();
+    function keyForm() {
+      const has = !!o.key.has();
+      return `<div class="mg-stack">
+        <p class="mg-note">${has ? 'Change the API key this device uses.' : 'Run it needs an Anthropic API key — a one-off setup.'}
+          Make one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com ↗</a>
+          and add a little credit. It’s saved on this device only.</p>
+        <label class="mg-stack" for="mg-key">Your API key<input id="mg-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="sk-ant-…"></label>
+        <div class="mg-actions">${has ? `<button type="button" class="mg-ghost" data-mg="key-clear">Remove key</button><button type="button" class="mg-ghost" data-mg="key-cancel">Cancel</button>` : ''}
+          <button type="button" class="mg-go" data-mg="key-save">Save key</button></div></div>`;
+    }
+
     function routes() {
-      if (!st.canRun) return `<p class="mg-note">Free route: copy the prompt into ChatGPT or claude.ai. (One-tap isn’t set up on this site.)</p>`;
+      if (!st.offer) return `<p class="mg-note">Free route: copy the prompt into ChatGPT or claude.ai. (One-tap isn’t set up on this site.)</p>`;
       const on = r => st.route === r ? 'true' : 'false';
       return `<div class="mg-seg" role="group" aria-label="How to do it">
-        <button type="button" data-mg="route" data-r="run" aria-pressed="${on('run')}">Run it<small>${esc(o.runNote ?? 'Claude · about 1p')}</small></button>
+        <button type="button" data-mg="route" data-r="run" aria-pressed="${on('run')}">Run it<small>${paid() ? esc(o.runNote ?? 'Claude · about 1p') : 'Needs an API key'}</small></button>
         <button type="button" data-mg="route" data-r="free" aria-pressed="${on('free')}">Free<small>In ChatGPT or claude.ai</small></button></div>`;
     }
 
@@ -90,7 +112,9 @@ export function openMagic(o) {
       return `<ol class="mg-steps">
         ${o.prepare ? step(st.prepared == null
           ? `<div class="mg-stack">${esc(o.prepare.note ?? '')}<div><button type="button" class="mg-ghost" data-mg="prepare" ${st.preparing ? 'disabled' : ''}>${esc(o.prepare.label)}</button></div></div>`
-          : `<label class="mg-stack" for="mg-prep">Check the text, fix anything wrong<textarea id="mg-prep" rows="5">${esc(st.prepared)}</textarea></label>`, st.prepared != null) : ''}
+          : o.prepare.check === false
+            ? `<div class="mg-stack">${esc(st.prepared)}<div><button type="button" class="mg-ghost" data-mg="prepare" ${st.preparing ? 'disabled' : ''}>${esc(o.prepare.again ?? o.prepare.label)}</button></div></div>`
+            : `<label class="mg-stack" for="mg-prep">Check the text, fix anything wrong<textarea id="mg-prep" rows="5">${esc(st.prepared)}</textarea></label>`, st.prepared != null) : ''}
         ${step(`<div class="mg-stack">Copy the prompt<div><button type="button" class="${needPrep ? 'mg-ghost' : 'mg-go'}" data-mg="copy" ${needPrep ? 'disabled' : ''}>${st.copied ? 'Copied ✓' : 'Copy prompt'}</button></div></div>`, st.copied)}
         ${step(`Paste it into <a href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT ↗</a> or <a href="https://claude.ai/new" target="_blank" rel="noopener">claude.ai ↗</a> and send it.`)}
         ${step(`<label class="mg-stack" for="mg-reply">Paste the whole reply here<textarea id="mg-reply" rows="5" placeholder="The reply goes here…">${esc(st.reply)}</textarea></label>`)}
@@ -110,7 +134,9 @@ export function openMagic(o) {
       const working = st.busy || st.preparing;
       body.innerHTML = `${routes()}
         ${st.route === 'run'
-          ? `<div class="mg-actions mg-split"><span class="mg-note">Nothing is saved until you check it.</span><button type="button" class="mg-go" data-mg="run" ${working ? 'disabled' : ''}>Run it</button></div>`
+          ? (o.key && (st.editingKey || !paid())) ? keyForm()
+          : `<div class="mg-actions mg-split"><span class="mg-note">Nothing is saved until you check it.</span><button type="button" class="mg-go" data-mg="run" ${working ? 'disabled' : ''}>Run it</button></div>
+             ${o.key && !st.canRun ? `<p class="mg-note">Using your API key on this device · <button type="button" class="mg-link" data-mg="key-edit">Change key</button></p>` : ''}`
           : freeSteps()}
         ${working ? `<p class="mg-status" role="status"><i></i><span class="mg-status-text">${esc(st.status || 'Working…')}</span></p>` : ''}
         ${st.error ? `<p class="mg-error" role="alert">${esc(st.error)}</p>` : ''}`;
@@ -136,6 +162,16 @@ export function openMagic(o) {
       const b = e.target.closest('[data-mg]'); if (!b || b.disabled) return;
       const a = b.dataset.mg;
       if (a === 'close') return close();
+      if (a === 'key-save') {
+        const v = (body.querySelector('#mg-key')?.value ?? '').trim();
+        if (!/^sk-ant-\S{20,}$/.test(v)) { st.error = 'That doesn’t look like an Anthropic API key — they start sk-ant-.'; return render(); }
+        try { o.key.save(v); } catch (err) { st.error = err?.message ?? String(err); return render(); }
+        st.editingKey = false; st.error = ''; setRoute('run'); render();
+        return body.querySelector('[data-mg="run"]')?.focus({ preventScroll: true });
+      }
+      if (a === 'key-clear') { o.key.clear(); st.editingKey = false; st.error = ''; return render(); }
+      if (a === 'key-edit') { st.editingKey = true; st.error = ''; render(); return body.querySelector('#mg-key')?.focus({ preventScroll: true }); }
+      if (a === 'key-cancel') { st.editingKey = false; st.error = ''; return render(); }
       if (a === 'route') { st.route = b.dataset.r; setRoute(st.route); st.error = ''; return render(); }
       if (a === 'copy') {
         const prep = body.querySelector('#mg-prep'); if (prep) st.prepared = prep.value;
@@ -173,8 +209,10 @@ export function openMagic(o) {
     // first paint, then find out whether the paid route exists
     const decide = can => {
       st.canRun = !!can && typeof o.run === 'function';
+      st.offer = typeof o.run === 'function' && (st.canRun || !!o.key);
       const saved = getRoute();
-      st.route = st.canRun ? (saved === 'free' ? 'free' : 'run') : 'free';
+      // With no key anywhere, start on Free; Run it is one tap away and asks for a key.
+      st.route = paid() ? (saved === 'free' ? 'free' : 'run') : 'free';
       render();
       body.querySelector('[aria-pressed="true"], .mg-go:not([disabled]), .mg-ghost:not([disabled])')?.focus({ preventScroll: true });
     };
