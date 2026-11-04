@@ -4,6 +4,7 @@
 import { handleEvents } from './events.js';
 import { handlePlaces } from './places.js';
 import { handleSync } from './sync.js';
+import { handleAI } from './ai.js';
 
 // What kind of events Dad HQ pulls in — days out with a young child.
 // `focus` is a function of the child's age so the prompt can be tuned from the
@@ -26,6 +27,15 @@ const json = (data, status = 200) =>
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+
+    // ---- The magic sheet's paid route (Claude, locked proxy) + /api/status ----
+    // Before the open CORS preflight below: the proxy must not be callable from other sites.
+    try {
+      const ai = await handleAI(request, env, url);
+      if (ai) return ai;
+    } catch (err) {
+      return json({ type: 'error', error: { message: String((err && err.message) || err) } }, 500);
+    }
 
     if (request.method === 'OPTIONS') {
       return new Response(null, {

@@ -13,6 +13,7 @@
   <title>Dad HQ</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/vendor/magic/magic.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -46,7 +47,26 @@
       --r-sm: 8px;
       --shadow: 0 2px 12px rgba(99,102,241,0.08);
       --shadow-lg: 0 8px 30px rgba(99,102,241,0.15);
+
+      /* Shared chassis names (sites/_shared/chassis/tokens.css, vendored in vendor/chassis but
+         not loaded) mapped onto Dad HQ's own, so shared pieces like the magic sheet
+         (vendor/magic) match. Amber is Dad HQ's identity colour. --r-sm already matches (8px). */
+      --accent: var(--act); --surface: var(--card); --surface-2: var(--faint);
+      --border-strong: #D4CEF5; --text-2: var(--muted); --text-3: #9CA3AF; --text-on-accent: #fff;
+      --success: var(--meal); --warning: var(--act); --danger: #DC2626;
+      --r-md: 12px; --r-lg: var(--r);
+      --overlay: rgba(26,21,35,0.55);
     }
+
+    /* Pick lists inside the magic sheet's check step, and the little "added" toast. */
+    .dh-picks { display: flex; flex-direction: column; gap: 0.4rem; max-height: 50vh; overflow-y: auto; margin-top: 0.5rem; }
+    .dh-pick { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.55rem 0.7rem; border: 2px solid var(--border); border-radius: 12px; cursor: pointer; font-size: 0.88rem; line-height: 1.35; }
+    .dh-pick input { margin-top: 0.2rem; width: 18px; height: 18px; flex: none; accent-color: var(--act); }
+    .dh-pick small { display: block; color: var(--muted); font-size: 0.78rem; }
+    .dh-rewrite { border: 2px solid var(--border); border-radius: 12px; padding: 0.7rem 0.85rem; font-size: 0.88rem; line-height: 1.45; }
+    .dh-rewrite b { display: block; margin-bottom: 0.25rem; }
+    .add-btn magic-mark, .ed-toggle magic-mark { color: var(--act); }
+    .dh-toast { position: fixed; left: 50%; bottom: calc(1.25rem + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 1100; background: var(--text); color: #fff; padding: 0.6rem 1rem; border-radius: 12px; font-weight: 700; font-size: 0.88rem; box-shadow: var(--shadow-lg); animation: fadeIn 0.15s ease; }
 
     body {
       font-family: 'Nunito', sans-serif;
@@ -134,8 +154,6 @@
     .an-opt { font-weight: 600; text-transform: none; opacity: 0.8; }
     .an-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
     .btn:disabled { opacity: 0.45; cursor: default; }
-    .an-research textarea, #edit-overlay .an-card textarea#ed-paste { width: 100%; box-sizing: border-box; min-height: 110px; resize: vertical; border: 2px solid var(--border); border-radius: var(--r-sm); padding: 0.7rem 0.85rem; font-family: 'Nunito', sans-serif; font-size: 0.85rem; color: var(--text); outline: none; margin-bottom: 0.75rem; }
-    .an-research textarea:focus, #edit-overlay textarea#ed-paste:focus { border-color: var(--act); }
     .an-list { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.25rem; }
     .an-row { display: flex; align-items: center; gap: 0.75rem; background: var(--card); border: 2px solid var(--border); border-radius: var(--r); padding: 0.7rem 0.9rem; box-shadow: var(--shadow); }
     .an-row .an-kind { font-size: 0.68rem; font-weight: 800; padding: 0.2rem 0.55rem; border-radius: 999px; background: var(--faint); border: 1px solid var(--border); color: var(--muted); flex: none; }
@@ -503,6 +521,13 @@
     }
   </style>
 <script src="/vendor/fuzzy-plain.js"></script>
+<!-- The magic button (sites/_shared/magic, synced copy in vendor/magic) and the paid route.
+     The app script is a classic script, so the module hands what it needs to window. -->
+<script type="module">
+  import { openMagic } from '/vendor/magic/magic.js';
+  import { aiAvailable, askClaude } from '/lib/claude.js';
+  Object.assign(window, { openMagic, aiAvailable, askClaude });
+</script>
 <script src="/vendor/clearx.js" defer></script>
 <style>@media (pointer:coarse){input,select,textarea{font-size:16px !important}}</style>
 </head>
@@ -579,7 +604,7 @@
     <div class="section-header">
       <span class="section-count" id="act-count"></span>
       <div style="display:flex;gap:0.5rem;">
-        <button class="add-btn" id="ideas-act-btn" onclick="openUpdateModal('act')">Get ideas</button>
+        <button class="add-btn" id="ideas-act-btn" onclick="openUpdateModal('act')"><magic-mark></magic-mark> Get ideas</button>
         <button class="add-btn" id="add-act-btn">+ Add place</button>
       </div>
     </div>
@@ -628,7 +653,7 @@
     <div class="section-header">
       <span class="section-count" id="meal-count"></span>
       <div style="display:flex;gap:0.5rem;">
-        <button class="add-btn" id="ideas-meal-btn" onclick="openUpdateModal('meal')">Get ideas</button>
+        <button class="add-btn" id="ideas-meal-btn" onclick="openUpdateModal('meal')"><magic-mark></magic-mark> Get ideas</button>
         <button class="add-btn" id="add-meal-btn">+ Add meal</button>
       </div>
     </div>
@@ -677,7 +702,7 @@
     <div class="section-header">
       <span class="section-count" id="craft-count"></span>
       <div style="display:flex;gap:0.5rem;">
-        <button class="add-btn" id="ideas-craft-btn" onclick="openUpdateModal('craft')">Get ideas</button>
+        <button class="add-btn" id="ideas-craft-btn" onclick="openUpdateModal('craft')"><magic-mark></magic-mark> Get ideas</button>
         <button class="add-btn" id="add-craft-btn">+ Add craft</button>
       </div>
     </div>
@@ -726,7 +751,7 @@
 
     <div class="section-header">
       <span class="section-count" id="ev-count"></span>
-      <button class="add-btn" id="ev-update-btn" onclick="openUpdateModal('event')">Update events</button>
+      <button class="add-btn" id="ev-update-btn" onclick="openUpdateModal('event')"><magic-mark></magic-mark> Find events</button>
     </div>
     <div id="ev-body"></div>
   </div>
@@ -774,8 +799,8 @@
     <div class="an-intro">
       <h2>Add something new</h2>
       <p>Jot down anything you want in the app — a place, a meal, a craft or an event. Just the name is enough.
-         When you've got a few, copy the prompt at the bottom into ChatGPT, then paste its reply back here and
-         everything gets filled in and added properly.</p>
+         When you've got a few, tap Fill in the details at the bottom and everything gets looked up and
+         added properly — you check it first.</p>
     </div>
 
     <div class="an-card">
@@ -809,14 +834,10 @@
 
     <div class="an-card an-research" id="an-research">
       <h3>Fill in the details</h3>
-      <p>Copy this prompt into ChatGPT (or any AI chat with web search), then paste its whole reply below.</p>
-      <p id="an-hint" style="display:none;">Add something to the list first and the prompt will cover everything on it.</p>
-      <div class="an-actions">
-        <button class="btn btn-act" id="an-copy" onclick="copyDraftPrompt()">Copy prompt</button>
-      </div>
-      <textarea id="an-paste" placeholder="Paste the AI's reply here…"></textarea>
-      <div class="an-actions">
-        <button class="btn btn-act" id="an-import" onclick="importDrafts()">Import</button>
+      <p>Looks up the real details for everything on the list, then you tick what to add.</p>
+      <p id="an-hint" style="display:none;">Add something to the list first and it will cover everything on it.</p>
+      <div class="an-actions" style="margin-bottom:0;">
+        <button class="btn btn-act" id="an-fill" onclick="fillDrafts()"><magic-mark></magic-mark> Fill in the details</button>
       </div>
     </div>
   </div>
@@ -833,7 +854,7 @@
   <div class="modal">
     <button class="sp-close" onclick="closeEditModal()" aria-label="Close">✕</button>
     <h3>Edit this card</h3>
-    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">Change the wording yourself, or tell ChatGPT what you want and paste its reply back.</p>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">Change the wording yourself, or say what you want and have it rewritten.</p>
 
     <div class="form-row" id="ed-row" style="grid-template-columns:80px 1fr;">
       <div class="form-group" id="ed-icon-wrap"><label for="ed-icon">Icon</label><input id="ed-icon" maxlength="4"></div>
@@ -849,20 +870,15 @@
     </div>
 
     <button class="ed-toggle" id="ed-ai-toggle" onclick="toggleEditAI()">
-      <span>Ask ChatGPT to rewrite it</span><span class="filter-caret">▾</span>
+      <span><magic-mark></magic-mark> Rewrite it</span><span class="filter-caret">▾</span>
     </button>
     <div class="an-card" id="ed-ai" style="margin-bottom:0;display:none;">
-      <p>Say what you want changed, copy the prompt, then paste the reply back here.</p>
       <div class="form-group">
-        <label for="ed-instruction">What should change?</label>
+        <label for="ed-instruction">What should change? <span class="an-opt">(optional)</span></label>
         <textarea id="ed-instruction" rows="2" placeholder="e.g. mention the new play area and that parking is free"></textarea>
       </div>
-      <div class="an-actions">
-        <button class="btn btn-act" id="ed-copy" onclick="copyEditPrompt()">Copy prompt</button>
-      </div>
-      <textarea id="ed-paste" placeholder="Paste the AI's reply here…"></textarea>
       <div class="an-actions" style="margin-bottom:0;">
-        <button class="btn btn-act" id="ed-apply" onclick="applyEditReply()">Apply</button>
+        <button class="btn btn-act" id="ed-rewrite" onclick="rewriteCard()"><magic-mark></magic-mark> Rewrite it</button>
       </div>
     </div>
   </div>
@@ -878,13 +894,11 @@
         <select id="update-age" onchange="evSetAge(this.value)" style="font-family:'Nunito',sans-serif;font-weight:700;font-size:0.9rem;padding:0.4rem 0.5rem;border:1px solid #ccc;border-radius:var(--r-sm);"></select>
       </label>
       <label style="font-size:0.8rem;font-weight:800;display:flex;flex-direction:column;gap:0.25rem;">How many
-        <select id="update-count" onchange="updSetCount(this.value)" style="font-family:'Nunito',sans-serif;font-weight:700;font-size:0.9rem;padding:0.4rem 0.5rem;border:1px solid #ccc;border-radius:var(--r-sm);"></select>
+        <select id="update-count" onchange="updSetCount(this.value);updGoLabel()" style="font-family:'Nunito',sans-serif;font-weight:700;font-size:0.9rem;padding:0.4rem 0.5rem;border:1px solid #ccc;border-radius:var(--r-sm);"></select>
       </label>
-      <button class="ev-refresh" id="update-copy" onclick="updCopyPrompt()">📋 Copy prompt</button>
     </div>
-    <textarea id="update-text" rows="6" placeholder="Paste the AI's reply here (the JSON list)…" style="width:100%;font-family:monospace;font-size:0.8rem;border:1px solid #ccc;border-radius:var(--r-sm);padding:0.5rem;resize:vertical;box-sizing:border-box;"></textarea>
     <div class="modal-actions">
-      <button class="btn btn-act" id="update-import" onclick="updImport()">⬆️ Import</button>
+      <button class="btn btn-act" id="update-go" onclick="updGo()"><magic-mark></magic-mark> <span id="update-go-label">Get ideas</span></button>
       <button class="btn btn-outline" onclick="closeUpdateModal()">Close</button>
     </div>
   </div>
@@ -6800,8 +6814,7 @@ function renderAddNew() {
     ? `${n} waiting to be added`
     : 'Nothing on the list yet';
   document.getElementById('an-clear').style.display = n ? '' : 'none';
-  document.getElementById('an-copy').disabled = !n;
-  document.getElementById('an-import').disabled = !n;
+  document.getElementById('an-fill').disabled = !n;
   document.getElementById('an-hint').style.display = n ? 'none' : '';
   list.className = n ? 'an-list' : '';
   list.innerHTML = n ? S.drafts.map(d => `<div class="an-row">
@@ -6851,15 +6864,131 @@ ${shape}
 }`;
 }
 
-async function copyDraftPrompt() {
-  const btn = document.getElementById('an-copy');
-  try {
-    await navigator.clipboard.writeText(buildDraftPrompt());
-    btn.textContent = 'Copied — paste into ChatGPT';
-    setTimeout(() => { btn.textContent = 'Copy prompt'; }, 3000);
-  } catch (e) {
-    alert('Could not copy: ' + String(e.message || e).slice(0, 120));
+// ── The magic sheet, shared by every AI job in this file ──
+// openMagic comes from vendor/magic (loaded as a module in <head>); the paid route is
+// lib/claude.js → /api/anthropic (src/ai.js). Both routes end in parse(), and nothing is
+// saved until apply() runs.
+function magicSheet(o) {
+  if (!window.openMagic) { alert('Still loading — try again in a second.'); return Promise.resolve(null); }
+  return window.openMagic({ canRun: window.aiAvailable, ...o });
+}
+const RUN_NOTE = { plain: 'Claude · about 1p', search: 'Claude + web search · about 5p' };
+const askMagic = (prompt, opts) => window.askClaude(prompt, opts);
+
+// A tickable list for the sheet's check step. Rows already in the app start unticked.
+function pickPreview(rows, note) {
+  return `<p class="mg-note">${note || 'Untick anything you don’t want.'}</p><div class="dh-picks">${rows.map((r, i) => `<label class="dh-pick">
+    <input type="checkbox" data-pick="${i}" ${r.dup ? '' : 'checked'}>
+    <span><b>${evEsc(r.label)}</b>${r.sub || r.dup ? `<small>${evEsc([r.sub, r.dup ? 'already in the app' : ''].filter(Boolean).join(' · '))}</small>` : ''}</span></label>`).join('')}</div>`;
+}
+function pickedRows(rows) {
+  const on = new Set([...document.querySelectorAll('.mg-preview [data-pick]')].filter(x => x.checked).map(x => +x.dataset.pick));
+  const picked = rows.filter((_, i) => on.has(i));
+  if (!picked.length) throw new Error('Nothing ticked — tick at least one, or close the sheet.');
+  return picked;
+}
+
+function dhToast(msg) {
+  document.querySelectorAll('.dh-toast').forEach(t => t.remove());
+  const t = document.createElement('div');
+  t.className = 'dh-toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+  document.body.append(t);
+  setTimeout(() => t.remove(), 2600);
+}
+
+const lower = x => String(x || '').trim().toLowerCase();
+function knownNames(type) {
+  const list = type === 'act' ? [...ACTIVITIES, ...S.customActs]
+             : type === 'meal' ? [...MEALS, ...S.customMeals]
+             : type === 'craft' ? [...CRAFTS, ...S.customCrafts]
+             : (EV.events || []).map(e => ({ name: e.title }));
+  return new Set(list.map(x => lower(x.name)));
+}
+
+// Save mapped items into the app. Shared by Get ideas and Fill in the details.
+async function saveImported(type, items) {
+  if (!items.length) return 0;
+  if (type === 'act') {
+    await Promise.all(items.map(item => savePlaceToServer(item)));
+    await loadPlaces(); renderActivities();
+  } else if (type === 'meal') {
+    for (const item of items) { S.customMeals.push(item); saveCustomToServer('meals', item); }
+    saveJSON('dh_customMeals', S.customMeals); renderMeals();
+  } else if (type === 'craft') {
+    for (const item of items) { S.customCrafts.push(item); saveCustomToServer('crafts', item); }
+    saveJSON('dh_customCrafts', S.customCrafts); renderCrafts();
+  } else if (type === 'event') {
+    const r = await fetch(EV_API + '/api/events/manual', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ text: JSON.stringify(items) }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || 'Event import failed');
+    EV.loaded = false; await loadEvents();
+    return d.count || 0;
   }
+  return items.length;
+}
+
+// Events go to the server in snake_case; accept camelCase too in case the AI ignores the schema.
+function normaliseEvent(e) {
+  if (!e) return null;
+  const title = e.title || e.name, start = e.start_date || e.startDate;
+  if (!title || !start) return null;
+  return {
+    title, category: e.category || e.cat, start_date: start,
+    end_date: e.end_date || e.endDate || start,
+    region: e.region, distance_miles: e.distance_miles ?? e.distanceMiles ?? null,
+    location: e.location, price: e.price, url: e.url,
+    description: e.description || e.desc,
+    kid_friendly: e.kid_friendly ?? e.kidFriendly ?? true,
+  };
+}
+const MAPPERS = { act: mapImportedAct, meal: mapImportedMeal, craft: mapImportedCraft, event: normaliseEvent };
+const rowLabel = (type, it) => type === 'event'
+  ? { label: it.title, sub: [it.start_date, it.location].filter(Boolean).join(' · ') }
+  : { label: `${it.icon || ''} ${it.name}`.trim(), sub: it.desc };
+
+function fillDrafts() {
+  if (!S.drafts.length) return;
+  const prompt = buildDraftPrompt();
+  const counts = Object.keys(DRAFT_KINDS).map(k => [k, S.drafts.filter(d => d.kind === k).length]).filter(([, n]) => n);
+  magicSheet({
+    title: `Fill in ${S.drafts.length} thing${S.drafts.length === 1 ? '' : 's'}`,
+    using: [...counts.map(([k, n]) => `${n} ${DRAFT_KINDS[k].label.toLowerCase()}${n === 1 ? '' : 's'}`), 'Looks things up on the web'],
+    runNote: RUN_NOTE.search,
+    run: () => askMagic(prompt, { maxTokens: Math.min(8000, 800 + S.drafts.length * 350), search: true }),
+    prompt: () => prompt,
+    freeNote: 'Use a chat with web search on, so the details are real.',
+    parse: text => {
+      const obj = parseDraftReply(text);
+      if (!obj) throw new Error('Couldn’t find the answer in that reply — paste the whole thing.');
+      const rows = [];
+      for (const [type, key] of Object.entries(DRAFT_KEYS)) {
+        const known = knownNames(type);
+        for (const o of (Array.isArray(obj[key]) ? obj[key] : [])) {
+          const it = MAPPERS[type](o); if (!it) continue;
+          const l = rowLabel(type, it);
+          rows.push({ type, it, label: `${DRAFT_KINDS[type].label}: ${l.label}`, sub: l.sub, dup: known.has(lower(it.name || it.title)) });
+        }
+      }
+      if (!rows.length) throw new Error('Nothing to add in that reply — check it has places, meals, crafts or events in it.');
+      return rows;
+    },
+    preview: rows => pickPreview(rows),
+    applyLabel: 'Add the ticked ones',
+    apply: async rows => {
+      const picked = pickedRows(rows);
+      let n = 0;
+      for (const type of Object.keys(DRAFT_KEYS)) n += await saveImported(type, picked.filter(r => r.type === type).map(r => r.it));
+      // Everything was looked up, so the jotted list has done its job.
+      const ids = S.drafts.map(d => d.id);
+      S.drafts = []; saveDrafts();
+      for (const id of ids) { try { await fetch(EV_API + '/api/drafts/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (_) {} }
+      renderChips(); renderAddNew();
+      dhToast(`${n} added`);
+    },
+  });
 }
 
 // Pull the reply object out of a paste (tolerant of fences, prose, smart quotes).
@@ -6875,78 +7004,6 @@ function parseDraftReply(text) {
     try { const o = JSON.parse(c); if (o && typeof o === 'object') return o; } catch (_) {}
   }
   return null;
-}
-
-async function importDrafts() {
-  const btn = document.getElementById('an-import');
-  const ta = document.getElementById('an-paste');
-  const text = (ta.value || '').trim();
-  if (!text) { alert('Paste the AI reply first.'); return; }
-  const obj = parseDraftReply(text);
-  if (!obj) { alert('Could not find a JSON object in that paste — copy the whole reply and try again.'); return; }
-
-  btn.disabled = true; btn.textContent = 'Importing…';
-  try {
-    let n = 0;
-    const places = Array.isArray(obj.places) ? obj.places : [];
-    const meals  = Array.isArray(obj.meals)  ? obj.meals  : [];
-    const crafts = Array.isArray(obj.crafts) ? obj.crafts : [];
-    const events = Array.isArray(obj.events) ? obj.events : [];
-
-    if (places.length) {
-      const posts = [];
-      for (const o of places) { const item = mapImportedAct(o); if (!item) continue; posts.push(savePlaceToServer(item)); n++; }
-      await Promise.all(posts);
-      await loadPlaces();
-    }
-    for (const o of meals) {
-      const item = mapImportedMeal(o); if (!item) continue;
-      S.customMeals.push(item); saveCustomToServer('meals', item); n++;
-    }
-    if (meals.length) saveJSON('dh_customMeals', S.customMeals);
-    for (const o of crafts) {
-      const item = mapImportedCraft(o); if (!item) continue;
-      S.customCrafts.push(item); saveCustomToServer('crafts', item); n++;
-    }
-    if (crafts.length) saveJSON('dh_customCrafts', S.customCrafts);
-    if (events.length) {
-      // The events endpoint wants snake_case; accept camelCase too in case the
-      // AI ignores the schema.
-      const normalised = events.map(e => ({
-        title: e.title || e.name,
-        category: e.category || e.cat,
-        start_date: e.start_date || e.startDate,
-        end_date: e.end_date || e.endDate || e.start_date || e.startDate,
-        region: e.region,
-        distance_miles: e.distance_miles ?? e.distanceMiles ?? null,
-        location: e.location, price: e.price, url: e.url,
-        description: e.description || e.desc,
-        kid_friendly: e.kid_friendly ?? e.kidFriendly ?? true,
-      }));
-      const r = await fetch(EV_API + '/api/events/manual', {
-        method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ text: JSON.stringify(normalised) }),
-      });
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || 'Event import failed');
-      n += d.count || 0;
-      EV.loaded = false; await loadEvents();
-    }
-    if (!n) throw new Error('Nothing importable in that reply — check it has places / meals / crafts / events arrays.');
-
-    // Everything landed, so the jotted list has done its job.
-    const ids = S.drafts.map(d => d.id);
-    S.drafts = []; saveDrafts();
-    for (const id of ids) { try { await fetch(EV_API + '/api/drafts/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (_) {} }
-
-    ta.value = '';
-    renderChips(); renderAddNew();
-    btn.disabled = false; btn.textContent = `✓ ${n} added`;
-    setTimeout(() => { btn.textContent = 'Import'; }, 3000);
-  } catch (e) {
-    btn.disabled = false; btn.textContent = 'Import';
-    alert(String(e.message || e).slice(0, 200));
-  }
 }
 
 // ════════════════════════════════════════════
@@ -6978,7 +7035,6 @@ function openEditModal(type, id) {
   document.getElementById('ed-name').value = f.name;
   document.getElementById('ed-desc').value = f.desc;
   document.getElementById('ed-instruction').value = '';
-  document.getElementById('ed-paste').value = '';
   toggleEditAI(false); // opens compact; the AI half is one tap away
   document.getElementById('ed-reset').style.display = editFor(id) ? '' : 'none';
   // Events don't show an icon on their row, so don't offer to set one.
@@ -7073,34 +7129,39 @@ Reply with ONLY a JSON object (no prose, no markdown):
 {"icon": str, "name": str, "desc": str}`;
 }
 
-async function copyEditPrompt() {
-  const btn = document.getElementById('ed-copy');
-  try {
-    await navigator.clipboard.writeText(buildEditPrompt());
-    btn.textContent = 'Copied — paste into ChatGPT';
-    setTimeout(() => { btn.textContent = 'Copy prompt'; }, 3000);
-  } catch (e) {
-    alert('Could not copy: ' + String(e.message || e).slice(0, 120));
-  }
-}
-
-async function applyEditReply() {
-  const ta = document.getElementById('ed-paste');
-  const obj = parseDraftReply(ta.value || '');
-  if (!obj) { alert('Could not find a JSON object in that paste — copy the whole reply and try again.'); return; }
-  const name = String(obj.name || '').trim().slice(0, ED_LIMITS.name);
-  const desc = String(obj.desc || obj.description || '').trim().slice(0, ED_LIMITS.desc);
-  const icon = String(obj.icon || '').trim();
-  if (!name && !desc) { alert('That reply had no name or description in it.'); return; }
-  // Drop it into the fields so the change is visible before it is saved.
-  if (icon) document.getElementById('ed-icon').value = icon;
-  if (name) document.getElementById('ed-name').value = name;
-  if (desc) document.getElementById('ed-desc').value = desc;
-  ta.value = '';
-  edCounts();
-  const btn = document.getElementById('ed-apply');
-  btn.textContent = '✓ Applied — check it, then Save';
-  setTimeout(() => { btn.textContent = 'Apply'; }, 4000);
+// The card's text goes into the fields for checking — it's only kept when Save changes is tapped.
+function rewriteCard() {
+  const item = editableItem(ED.type, ED.id);
+  if (!item) return;
+  const prompt = buildEditPrompt();
+  const instruction = document.getElementById('ed-instruction').value.trim();
+  magicSheet({
+    title: 'Rewrite this card',
+    using: [editFields(item).name, instruction ? (instruction.length > 40 ? instruction.slice(0, 40) + '…' : instruction) : 'Tighten the wording'],
+    runNote: RUN_NOTE.plain,
+    run: () => askMagic(prompt, { maxTokens: 600 }),
+    prompt: () => prompt,
+    parse: text => {
+      const obj = parseDraftReply(text);
+      if (!obj) throw new Error('Couldn’t find the answer in that reply — paste the whole thing.');
+      const out = {
+        name: String(obj.name || '').trim().slice(0, ED_LIMITS.name),
+        desc: String(obj.desc || obj.description || '').trim().slice(0, ED_LIMITS.desc),
+        icon: String(obj.icon || '').trim(),
+      };
+      if (!out.name && !out.desc) throw new Error('That reply had no name or description in it.');
+      return out;
+    },
+    preview: r => `<div class="dh-rewrite"><b>${evEsc([ED.type === 'event' ? '' : r.icon, r.name].filter(Boolean).join(' '))}</b>${evEsc(r.desc)}</div>
+      <p class="mg-note">It goes into the fields — tap Save changes to keep it.</p>`,
+    applyLabel: 'Use this wording',
+    apply: r => {
+      if (r.icon) document.getElementById('ed-icon').value = r.icon;
+      if (r.name) document.getElementById('ed-name').value = r.name;
+      if (r.desc) document.getElementById('ed-desc').value = r.desc;
+      edCounts();
+    },
+  });
 }
 
 // ════════════════════════════════════════════
@@ -7512,7 +7573,7 @@ async function evSave(id, body) {
 async function evTogglePlan(id) { const e = EV.events.find(x => x.id === id); if (!e) return; await evSave(id, { inPlans: !e.inPlans }); renderTab(S.tab); }
 
 // ════════════════════════════════════════════
-//  UPDATE-VIA-CHATGPT MODAL (events, places, meals, crafts)
+//  GET IDEAS / FIND EVENTS — pick age and how many, then the magic sheet
 // ════════════════════════════════════════════
 
 const EV_AGE_MIN = 2, EV_AGE_MAX = 14, EV_AGE_DEFAULT = 5;
@@ -7524,10 +7585,10 @@ function updGetCount() { const c = parseInt(loadJSON('dh_updCount'), 10); return
 function updSetCount(v) { const c = parseInt(v, 10); if (UPD_COUNTS.includes(c)) saveJSON('dh_updCount', c); }
 
 const UPD_META = {
-  event: { title: 'Update events',  unit: 'events', into: 'the Events list' },
-  act:   { title: 'Get activity ideas', unit: 'places', into: 'Activities' },
-  meal:  { title: 'Get meal ideas',  unit: 'meals',  into: 'Meals' },
-  craft: { title: 'Get craft ideas', unit: 'crafts', into: 'Crafts' },
+  event: { title: 'Find events',  unit: 'events', one: 'event', into: 'the Events list' },
+  act:   { title: 'Get activity ideas', unit: 'places', one: 'place', into: 'Activities' },
+  meal:  { title: 'Get meal ideas',  unit: 'meals',  one: 'meal',  into: 'Meals' },
+  craft: { title: 'Get craft ideas', unit: 'crafts', one: 'craft', into: 'Crafts' },
 };
 const UPD = { type: null };
 
@@ -7545,14 +7606,12 @@ function openUpdateModal(type) {
   const m = UPD_META[type];
   document.getElementById('update-title').textContent = m.title;
   document.getElementById('update-intro').textContent =
-    `Copy the prompt, paste it into ChatGPT (or any AI chat with web search), then paste its whole reply back here and import into ${m.into}.`;
-  document.getElementById('update-text').value = '';
+    `New ${m.unit} for ${m.into}, skipping the ones you already have. You tick which to add.`;
   const ageRange = [];
   for (let a = EV_AGE_MIN; a <= EV_AGE_MAX; a++) ageRange.push(a);
   updFillSelect(document.getElementById('update-age'), ageRange, evGetAge());
   updFillSelect(document.getElementById('update-count'), UPD_COUNTS, updGetCount());
-  document.getElementById('update-copy').textContent = 'Copy prompt';
-  document.getElementById('update-import').textContent = 'Import';
+  updGoLabel();
   document.getElementById('update-overlay').style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
@@ -7563,68 +7622,57 @@ function closeUpdateModal() {
   UPD.type = null;
 }
 
-async function updCopyPrompt() {
-  const btn = document.getElementById('update-copy');
-  try {
-    let prompt;
-    if (UPD.type === 'event') {
-      const r = await fetch(`${EV_API}/api/events/prompt?age=${evGetAge()}&count=${updGetCount()}`);
-      const d = await r.json();
-      if (!r.ok || !d.prompt) throw new Error(d.error || 'Could not fetch prompt');
-      prompt = d.prompt;
-    } else {
-      prompt = buildClientPrompt(UPD.type, evGetAge(), updGetCount());
-    }
-    await navigator.clipboard.writeText(prompt);
-    btn.textContent = '✓ Copied — paste into ChatGPT';
-    setTimeout(() => { btn.textContent = 'Copy prompt'; }, 3000);
-  } catch (e) {
-    alert(String(e.message || e).slice(0, 160));
-  }
+function updGoLabel() {
+  if (!UPD.type) return;
+  const n = updGetCount(), m = UPD_META[UPD.type];
+  document.getElementById('update-go-label').textContent = UPD.type === 'event' ? `Find ${n} events` : `Get ${n} ${m.unit}`;
 }
 
-async function updImport() {
-  const btn = document.getElementById('update-import');
-  const ta = document.getElementById('update-text');
-  const text = (ta.value || '').trim();
-  if (!text) { alert('Paste the AI reply first.'); return; }
-  btn.disabled = true; btn.innerHTML = 'Importing…';
-  const reset = () => { btn.disabled = false; btn.textContent = 'Import'; };
+async function updGo() {
+  const type = UPD.type, age = evGetAge(), count = updGetCount(), m = UPD_META[type];
+  const btn = document.getElementById('update-go');
+  let prompt;
   try {
-    if (UPD.type === 'event') {
-      const r = await fetch(EV_API + '/api/events/manual', {
-        method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ text }),
-      });
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || 'Import failed');
-      ta.value = ''; EV.loaded = false; await loadEvents();
-      btn.disabled = false; btn.textContent = `✓ ${d.count} imported`;
-      setTimeout(closeUpdateModal, 900);
-      return;
+    if (type === 'event') {
+      // The events prompt comes from the server, which knows what's already in D1.
+      btn.disabled = true;
+      const r = await fetch(`${EV_API}/api/events/prompt?age=${age}&count=${count}`);
+      const d = await r.json();
+      if (!r.ok || !d.prompt) throw new Error(d.error || 'Could not get the events prompt');
+      prompt = d.prompt;
+    } else {
+      prompt = buildClientPrompt(type, age, count);
     }
-    const arr = parseClientJSON(text);
-    if (!arr.length) throw new Error('Could not find a JSON array in that paste — copy the whole reply and try again.');
-    let n = 0;
-    if (UPD.type === 'act') {
-      const posts = [];
-      for (const o of arr) { const item = mapImportedAct(o); if (!item) continue; posts.push(savePlaceToServer(item)); n++; }
-      await Promise.all(posts);
-      await loadPlaces(); renderActivities();
-    } else if (UPD.type === 'meal') {
-      for (const o of arr) { const item = mapImportedMeal(o); if (!item) continue; S.customMeals.push(item); saveCustomToServer('meals', item); n++; }
-      saveJSON('dh_customMeals', S.customMeals); renderMeals();
-    } else if (UPD.type === 'craft') {
-      for (const o of arr) { const item = mapImportedCraft(o); if (!item) continue; S.customCrafts.push(item); saveCustomToServer('crafts', item); n++; }
-      saveJSON('dh_customCrafts', S.customCrafts); renderCrafts();
-    }
-    ta.value = ''; renderChips();
-    btn.disabled = false; btn.textContent = `✓ ${n} imported`;
-    setTimeout(closeUpdateModal, 900);
   } catch (e) {
-    reset();
-    alert(String(e.message || e).slice(0, 180));
-  }
+    alert(String(e.message || e).slice(0, 160)); return;
+  } finally { btn.disabled = false; }
+  closeUpdateModal();
+
+  const search = type === 'event' || type === 'act'; // real places and dates need looking up
+  const known = knownNames(type);
+  magicSheet({
+    title: type === 'event' ? `Find ${count} new events` : `Get ${count} ${m.one} ideas`,
+    using: [`Harry, ${age}`, `${count} ${m.unit}`, `Skips the ${known.size} you have`],
+    runNote: search ? RUN_NOTE.search : RUN_NOTE.plain,
+    run: () => askMagic(prompt, { maxTokens: Math.min(8000, 800 + count * 260), search }),
+    prompt: () => prompt,
+    freeNote: search ? 'Use a chat with web search on, so the places and dates are real.' : undefined,
+    parse: text => {
+      const arr = parseClientJSON(text);
+      if (!arr.length) throw new Error('Couldn’t find a list in that reply — paste the whole thing.');
+      const rows = arr.map(o => MAPPERS[type](o)).filter(Boolean)
+        .map(it => ({ it, ...rowLabel(type, it), dup: known.has(lower(it.name || it.title)) }));
+      if (!rows.length) throw new Error(`No ${m.unit} in that reply — paste the whole thing.`);
+      return rows;
+    },
+    preview: rows => pickPreview(rows),
+    applyLabel: 'Add the ticked ones',
+    apply: async rows => {
+      const n = await saveImported(type, pickedRows(rows).map(r => r.it));
+      renderChips();
+      dhToast(`${n} ${n === 1 ? m.one : m.unit} added`);
+    },
+  });
 }
 
 // Tolerant JSON extractor for pasted replies (mirrors the server's — handles
