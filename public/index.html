@@ -604,7 +604,7 @@
     <div class="section-header">
       <span class="section-count" id="act-count"></span>
       <div style="display:flex;gap:0.5rem;">
-        <button class="add-btn" id="ideas-act-btn" onclick="openUpdateModal('act')"><magic-mark></magic-mark> Get ideas</button>
+        <button class="add-btn" id="ideas-act-btn" onclick="getIdeas('act')"><magic-mark></magic-mark> Get ideas</button>
         <button class="add-btn" id="add-act-btn">+ Add place</button>
       </div>
     </div>
@@ -653,7 +653,7 @@
     <div class="section-header">
       <span class="section-count" id="meal-count"></span>
       <div style="display:flex;gap:0.5rem;">
-        <button class="add-btn" id="ideas-meal-btn" onclick="openUpdateModal('meal')"><magic-mark></magic-mark> Get ideas</button>
+        <button class="add-btn" id="ideas-meal-btn" onclick="getIdeas('meal')"><magic-mark></magic-mark> Get ideas</button>
         <button class="add-btn" id="add-meal-btn">+ Add meal</button>
       </div>
     </div>
@@ -702,7 +702,7 @@
     <div class="section-header">
       <span class="section-count" id="craft-count"></span>
       <div style="display:flex;gap:0.5rem;">
-        <button class="add-btn" id="ideas-craft-btn" onclick="openUpdateModal('craft')"><magic-mark></magic-mark> Get ideas</button>
+        <button class="add-btn" id="ideas-craft-btn" onclick="getIdeas('craft')"><magic-mark></magic-mark> Get ideas</button>
         <button class="add-btn" id="add-craft-btn">+ Add craft</button>
       </div>
     </div>
@@ -751,7 +751,7 @@
 
     <div class="section-header">
       <span class="section-count" id="ev-count"></span>
-      <button class="add-btn" id="ev-update-btn" onclick="openUpdateModal('event')"><magic-mark></magic-mark> Find events</button>
+      <button class="add-btn" id="ev-update-btn" onclick="getIdeas('event')"><magic-mark></magic-mark> Find events</button>
     </div>
     <div id="ev-body"></div>
   </div>
@@ -880,26 +880,6 @@
       <div class="an-actions" style="margin-bottom:0;">
         <button class="btn btn-act" id="ed-rewrite" onclick="rewriteCard()"><magic-mark></magic-mark> Rewrite it</button>
       </div>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="update-overlay" style="display:none;" onclick="if(event.target===this)closeUpdateModal()">
-  <div class="modal">
-    <button class="sp-close" onclick="closeUpdateModal()" aria-label="Close">✕</button>
-    <h3 id="update-title"></h3>
-    <p id="update-intro" style="font-size:0.85rem;color:var(--muted);margin-bottom:0.9rem;"></p>
-    <div style="display:flex;gap:0.9rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:0.9rem;">
-      <label id="update-age-wrap" style="font-size:0.8rem;font-weight:800;display:flex;flex-direction:column;gap:0.25rem;">Harry's age
-        <select id="update-age" onchange="evSetAge(this.value)" style="font-family:'Nunito',sans-serif;font-weight:700;font-size:0.9rem;padding:0.4rem 0.5rem;border:1px solid #ccc;border-radius:var(--r-sm);"></select>
-      </label>
-      <label style="font-size:0.8rem;font-weight:800;display:flex;flex-direction:column;gap:0.25rem;">How many
-        <select id="update-count" onchange="updSetCount(this.value);updGoLabel()" style="font-family:'Nunito',sans-serif;font-weight:700;font-size:0.9rem;padding:0.4rem 0.5rem;border:1px solid #ccc;border-radius:var(--r-sm);"></select>
-      </label>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-act" id="update-go" onclick="updGo()"><magic-mark></magic-mark> <span id="update-go-label">Get ideas</span></button>
-      <button class="btn btn-outline" onclick="closeUpdateModal()">Close</button>
     </div>
   </div>
 </div>
@@ -7574,7 +7554,7 @@ async function evSave(id, body) {
 async function evTogglePlan(id) { const e = EV.events.find(x => x.id === id); if (!e) return; await evSave(id, { inPlans: !e.inPlans }); renderTab(S.tab); }
 
 // ════════════════════════════════════════════
-//  GET IDEAS / FIND EVENTS — pick age and how many, then the magic sheet
+//  GET IDEAS / FIND EVENTS — straight into the magic sheet, with age and how many on it
 // ════════════════════════════════════════════
 
 const EV_AGE_MIN = 2, EV_AGE_MAX = 14, EV_AGE_DEFAULT = 5;
@@ -7591,72 +7571,39 @@ const UPD_META = {
   meal:  { title: 'Get meal ideas',  unit: 'meals',  one: 'meal',  into: 'Meals' },
   craft: { title: 'Get craft ideas', unit: 'crafts', one: 'craft', into: 'Crafts' },
 };
-const UPD = { type: null };
-
-function updFillSelect(sel, values, current) {
-  sel.innerHTML = '';
-  values.forEach(v => {
-    const o = document.createElement('option');
-    o.value = v; o.textContent = v; if (String(v) === String(current)) o.selected = true;
-    sel.appendChild(o);
-  });
-}
-
-function openUpdateModal(type) {
-  UPD.type = type;
+// One sheet, straight from the sparkle: Harry's age and how many are dropdowns at the top
+// of the magic sheet (its `choices`), so there's no form in front of it.
+async function getIdeas(type) {
   const m = UPD_META[type];
-  document.getElementById('update-title').textContent = m.title;
-  document.getElementById('update-intro').textContent =
-    `New ${m.unit} for ${m.into}, skipping the ones you already have. You tick which to add.`;
-  const ageRange = [];
-  for (let a = EV_AGE_MIN; a <= EV_AGE_MAX; a++) ageRange.push(a);
-  updFillSelect(document.getElementById('update-age'), ageRange, evGetAge());
-  updFillSelect(document.getElementById('update-count'), UPD_COUNTS, updGetCount());
-  updGoLabel();
-  document.getElementById('update-overlay').style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-}
-
-function closeUpdateModal() {
-  document.getElementById('update-overlay').style.display = 'none';
-  document.body.style.overflow = '';
-  UPD.type = null;
-}
-
-function updGoLabel() {
-  if (!UPD.type) return;
-  const n = updGetCount(), m = UPD_META[UPD.type];
-  document.getElementById('update-go-label').textContent = UPD.type === 'event' ? `Find ${n} events` : `Get ${n} ${m.unit}`;
-}
-
-async function updGo() {
-  const type = UPD.type, age = evGetAge(), count = updGetCount(), m = UPD_META[type];
-  const btn = document.getElementById('update-go');
-  let prompt;
-  try {
-    if (type === 'event') {
-      // The events prompt comes from the server, which knows what's already in D1.
-      btn.disabled = true;
-      const r = await fetch(`${EV_API}/api/events/prompt?age=${age}&count=${count}`);
-      const d = await r.json();
-      if (!r.ok || !d.prompt) throw new Error(d.error || 'Could not get the events prompt');
-      prompt = d.prompt;
-    } else {
-      prompt = buildClientPrompt(type, age, count);
-    }
-  } catch (e) {
-    alert(String(e.message || e).slice(0, 160)); return;
-  } finally { btn.disabled = false; }
-  closeUpdateModal();
+  const q = { age: evGetAge(), count: updGetCount(), prompt: '' };
+  // The events prompt comes from the server, which knows what's already in D1.
+  const makePrompt = async () => {
+    if (type !== 'event') { q.prompt = buildClientPrompt(type, q.age, q.count); return; }
+    const r = await fetch(`${EV_API}/api/events/prompt?age=${q.age}&count=${q.count}`);
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.prompt) throw new Error(d.error || 'Couldn’t get the events prompt — try again.');
+    q.prompt = d.prompt;
+  };
+  try { await makePrompt(); } catch (e) { alert(String(e.message || e).slice(0, 160)); return; }
 
   const search = type === 'event' || type === 'act'; // real places and dates need looking up
   const known = knownNames(type);
+  const ages = []; for (let a = EV_AGE_MIN; a <= EV_AGE_MAX; a++) ages.push(a);
   magicSheet({
-    title: type === 'event' ? `Find ${count} new events` : `Get ${count} ${m.one} ideas`,
-    using: [`Harry, ${age}`, `${count} ${m.unit}`, `Skips the ${known.size} you have`],
+    title: () => type === 'event' ? `Find ${q.count} new events` : `Get ${q.count} ${m.one} ideas`,
+    using: () => [known.size ? `Skips the ${known.size} you have` : `Skips what you have`],
+    choices: [
+      { key: 'age', label: "Harry's age", value: q.age, choices: ages },
+      { key: 'count', label: 'How many', value: q.count, choices: UPD_COUNTS },
+    ],
+    choose: async (key, v) => {
+      if (key === 'age') { evSetAge(v); q.age = evGetAge(); }
+      else { updSetCount(v); q.count = updGetCount(); }
+      await makePrompt();
+    },
     runNote: search ? RUN_NOTE.search : RUN_NOTE.plain,
-    run: () => askMagic(prompt, { maxTokens: Math.min(8000, 800 + count * 260), search }),
-    prompt: () => prompt,
+    run: () => askMagic(q.prompt, { maxTokens: Math.min(8000, 800 + q.count * 260), search }),
+    prompt: () => q.prompt,
     freeNote: search ? 'Use a chat with web search on, so the places and dates are real.' : undefined,
     parse: text => {
       const arr = parseClientJSON(text);
@@ -8385,7 +8332,7 @@ document.getElementById('an-note').addEventListener('keydown', e => { if (e.key 
 
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeSpotlight(); closeUpdateModal(); closeEditModal(); }
+  if (e.key === 'Escape') { closeSpotlight(); closeEditModal(); }
 });
 
 // Init

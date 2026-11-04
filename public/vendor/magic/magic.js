@@ -31,8 +31,14 @@ const setRoute = v => { try { localStorage.setItem(ROUTE_KEY, v); } catch { /* p
  * Open the magic sheet.
  *
  * @param {object} o
- * @param {string} o.title            The job in plain words: "Write up 5 meals". Never "AI" or a model name.
- * @param {string[]} [o.using]        What gets sent, shown as chips before anything leaves the app.
+ * @param {string|(()=>string)} o.title  The job in plain words: "Write up 5 meals". Never "AI" or a model name.
+ * @param {string[]|(()=>string[])} [o.using]  What gets sent, shown as chips before anything leaves the app.
+ *                                    title and using may be functions, so they can follow the choices below.
+ * @param {{key:string, label:string, value:any, choices:(any|{value:any,label:string})[]}[]} [o.choices]
+ *                                    A few dropdowns at the top of the sheet ("Harry's age", "How many"), so a job
+ *                                    with settings opens straight into the sheet instead of a form first.
+ * @param {(key:string, value:string) => (void|Promise<void>)} [o.choose]  Called when one changes. The app updates
+ *                                    what prompt()/run() use; while a returned promise is pending, Copy and Run wait.
  * @param {boolean|(() => Promise<boolean>)} [o.canRun]  Is the paid route available (the site has a key)?
  * @param {(status:(s:string)=>void) => Promise<string>} [o.run]  Paid route: returns the reply text.
  * @param {string} [o.runNote]        e.g. "Claude · about 1p".
@@ -60,17 +66,42 @@ const setRoute = v => { try { localStorage.setItem(ROUTE_KEY, v); } catch { /* p
 export function openMagic(o) {
   return new Promise(resolve => {
     const opener = document.activeElement;
-    const st = { route: null, canRun: false, offer: false, editingKey: false, busy: false, status: '', error: '', copied: false, prepared: null, preparing: false, result: undefined, reply: '' };
+    const val = x => (typeof x === 'function' ? x() : x);
+    const st = { updating: false, route: null, canRun: false, offer: false, editingKey: false, busy: false, status: '', error: '', copied: false, prepared: null, preparing: false, result: undefined, reply: '' };
 
     const wrap = document.createElement('div');
     wrap.className = 'mg-scrim';
     wrap.innerHTML = `<div class="mg-sheet" role="dialog" aria-modal="true" aria-labelledby="mg-title">
-      <div class="mg-head"><span class="mg-badge">${SPARK}</span><h2 id="mg-title">${esc(o.title)}</h2>
+      <div class="mg-head"><span class="mg-badge">${SPARK}</span><h2 id="mg-title">${esc(val(o.title))}</h2>
         <button type="button" class="mg-x" data-mg="close" aria-label="Close">✕</button></div>
-      ${o.using?.length ? `<div class="mg-using"><span>Using</span>${o.using.map(u => `<span class="mg-chip">${esc(u)}</span>`).join('')}</div>` : ''}
+      <div class="mg-using" hidden></div>
+      ${o.choices?.length ? '<div class="mg-opts"></div>' : ''}
       <div class="mg-body"></div></div>`;
     document.body.append(wrap);
     const body = wrap.querySelector('.mg-body');
+    const usingEl = wrap.querySelector('.mg-using'), optsEl = wrap.querySelector('.mg-opts');
+    function renderHead() {
+      wrap.querySelector('#mg-title').textContent = val(o.title);
+      const using = val(o.using) ?? [];
+      usingEl.hidden = !using.length;
+      usingEl.innerHTML = `<span>Using</span>${using.map(u => `<span class="mg-chip">${esc(u)}</span>`).join('')}`;
+    }
+    function renderChoices() {
+      if (!optsEl) return;
+      optsEl.innerHTML = o.choices.map(c => `<label class="mg-opt">${esc(c.label)}<select data-mg-choice="${esc(c.key)}">${c.choices.map(ch => {
+        const v = typeof ch === 'object' ? ch.value : ch, l = typeof ch === 'object' ? ch.label : ch;
+        return `<option value="${esc(v)}" ${String(v) === String(c.value) ? 'selected' : ''}>${esc(l)}</option>`; }).join('')}</select></label>`).join('');
+    }
+    renderHead(); renderChoices();
+    // Choices sit outside the body, so redraws don't steal focus from them; only the view stays put.
+    if (optsEl) optsEl.addEventListener('change', async e => {
+      const key = e.target.dataset.mgChoice; if (!key) return;
+      const c = o.choices.find(x => x.key === key); c.value = e.target.value;
+      st.updating = true; st.copied = false; st.error = ''; st.result = undefined; render();
+      try { await o.choose?.(key, e.target.value); }
+      catch (err) { st.error = err?.message ?? String(err); }
+      st.updating = false; renderHead(); render();
+    });
 
     let closed = false;
     const close = (val = null) => {
@@ -115,7 +146,7 @@ export function openMagic(o) {
           : o.prepare.check === false
             ? `<div class="mg-stack">${esc(st.prepared)}<div><button type="button" class="mg-ghost" data-mg="prepare" ${st.preparing ? 'disabled' : ''}>${esc(o.prepare.again ?? o.prepare.label)}</button></div></div>`
             : `<label class="mg-stack" for="mg-prep">Check the text, fix anything wrong<textarea id="mg-prep" rows="5">${esc(st.prepared)}</textarea></label>`, st.prepared != null) : ''}
-        ${step(`<div class="mg-stack">Copy the prompt<div><button type="button" class="${needPrep ? 'mg-ghost' : 'mg-go'}" data-mg="copy" ${needPrep ? 'disabled' : ''}>${st.copied ? 'Copied ✓' : 'Copy prompt'}</button></div></div>`, st.copied)}
+        ${step(`<div class="mg-stack">Copy the prompt<div><button type="button" class="${needPrep ? 'mg-ghost' : 'mg-go'}" data-mg="copy" ${needPrep || st.updating ? 'disabled' : ''}>${st.copied ? 'Copied ✓' : 'Copy prompt'}</button></div></div>`, st.copied)}
         ${step(`Paste it into <a href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT ↗</a> or <a href="https://claude.ai/new" target="_blank" rel="noopener">claude.ai ↗</a> and send it.`)}
         ${step(`<label class="mg-stack" for="mg-reply">Paste the whole reply here<textarea id="mg-reply" rows="5" placeholder="The reply goes here…">${esc(st.reply)}</textarea></label>`)}
       </ol>
@@ -131,14 +162,14 @@ export function openMagic(o) {
           <button type="button" class="mg-go" data-mg="apply">${esc(o.applyLabel ?? 'Apply')}</button></div>`;
         return;
       }
-      const working = st.busy || st.preparing;
+      const working = st.busy || st.preparing || st.updating;
       body.innerHTML = `${routes()}
         ${st.route === 'run'
           ? (o.key && (st.editingKey || !paid())) ? keyForm()
           : `<div class="mg-actions mg-split"><span class="mg-note">Nothing is saved until you check it.</span><button type="button" class="mg-go" data-mg="run" ${working ? 'disabled' : ''}>Run it</button></div>
              ${o.key && !st.canRun ? `<p class="mg-note">Using your API key on this device · <button type="button" class="mg-link" data-mg="key-edit">Change key</button></p>` : ''}`
           : freeSteps()}
-        ${working ? `<p class="mg-status" role="status"><i></i><span class="mg-status-text">${esc(st.status || 'Working…')}</span></p>` : ''}
+        ${working ? `<p class="mg-status" role="status"><i></i><span class="mg-status-text">${esc(st.updating ? 'Updating…' : st.status || 'Working…')}</span></p>` : ''}
         ${st.error ? `<p class="mg-error" role="alert">${esc(st.error)}</p>` : ''}`;
     }
 

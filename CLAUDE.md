@@ -49,8 +49,8 @@ check step: lists come back as tick boxes, a rewrite drops into the edit fields.
 `aiAvailable` and `askClaude` on `window`; `magicSheet()` in the app wraps it.
 
 The four jobs, all marked with the sparkle (and nothing else is):
-- **Get ideas** (Activities, Meals, Crafts) and **Find events** — a small picker (Harry's age,
-  how many), then the sheet. The events prompt comes from `GET /api/events/prompt` so it can
+- **Get ideas** (Activities, Meals, Crafts) and **Find events** — `getIdeas(type)` opens the sheet
+  straight away, with Harry's age and how many as dropdowns on it (the sheet's `choices`). The events prompt comes from `GET /api/events/prompt` so it can
   skip what's already in D1; the ticked events go to `POST /api/events/manual`.
 - **Fill in the details** on the Add new tab — looks up everything on the jotted list.
 - **Rewrite it** in the edit-card modal.
