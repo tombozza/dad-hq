@@ -32,6 +32,7 @@
       --faint: #F9F8FF;
 
       --act: #F59E0B;
+      --lock-accent: #F59E0B;
       --act-bg: #FFFBEB;
       --act-dark: #92400E;
 
@@ -153,6 +154,9 @@
     .an-form .form-group { margin-bottom: 0; }
     .an-opt { font-weight: 600; text-transform: none; opacity: 0.8; }
     .an-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+    .dh-lock-row { display: flex; align-items: center; gap: 0.75rem; justify-content: space-between; margin: 0.4rem 0 0.75rem; cursor: pointer; }
+    .dh-lock-row small { color: var(--muted); font-size: 0.8rem; line-height: 1.4; }
+    .dh-lock-row input { width: 22px; height: 22px; flex: none; accent-color: var(--act); cursor: pointer; }
     .btn:disabled { opacity: 0.45; cursor: default; }
     .an-list { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.25rem; }
     .an-row { display: flex; align-items: center; gap: 0.75rem; background: var(--card); border: 2px solid var(--border); border-radius: var(--r); padding: 0.7rem 0.9rem; box-shadow: var(--shadow); }
@@ -520,6 +524,7 @@
       .filter-toggle { margin-left: auto; margin-right: auto; }
     }
   </style>
+<script src="/lock.js"></script>
 <script src="/vendor/fuzzy-plain.js"></script>
 <!-- The magic button (sites/_shared/magic, synced copy in vendor/magic) and the paid route.
      The app script is a classic script, so the module hands what it needs to window. -->
@@ -839,6 +844,31 @@
       <div class="an-actions" style="margin-bottom:0;">
         <button class="btn btn-act" id="an-fill" onclick="fillDrafts()"><magic-mark></magic-mark> Fill in the details</button>
       </div>
+    </div>
+
+    <!-- Settings: optional password lock + backup (public/lock.js does the work) -->
+    <div class="an-card" id="an-settings">
+      <h3>Password &amp; backup</h3>
+      <label class="dh-lock-row" for="pw-on">
+        <span><strong>Require a password</strong><br>
+          <small>Off: anyone with the link can make changes. On: changes need the password on each device.</small></span>
+        <input type="checkbox" id="pw-on">
+      </label>
+      <div id="pw-form" style="display:none;">
+        <div class="form-group" style="margin-bottom:0.6rem;">
+          <label for="pw-new">Password <span class="an-opt" id="pw-hint">(at least 4 characters)</span></label>
+          <input type="password" id="pw-new" autocomplete="new-password">
+        </div>
+        <div class="an-actions">
+          <button class="btn btn-act" id="pw-save">Save password</button>
+          <button class="btn btn-outline" id="pw-lock" style="display:none;">Lock this device</button>
+        </div>
+      </div>
+      <div id="pw-status" class="an-opt" style="min-height:1.1rem;margin-bottom:0.6rem;"></div>
+      <div class="an-actions" style="margin-bottom:0;">
+        <button class="btn btn-outline" id="backup-btn">Download a backup</button>
+      </div>
+      <p class="an-opt" style="margin-top:0.5rem;">Every event, place, meal, craft, note, edit and favourite saved online, as a JSON file.</p>
     </div>
   </div>
 
@@ -8353,6 +8383,38 @@ if ('serviceWorker' in navigator) {
     r.update();
   }).catch(() => {});
 }
+</script>
+<script>
+// Add new → Password & backup. Updates in place, so the page never moves.
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const on = $('pw-on'), form = $('pw-form'), pw = $('pw-new'), hint = $('pw-hint');
+  const lockBtn = $('pw-lock'), status = $('pw-status');
+  let saved = false;
+  const say = (m) => { status.textContent = m; };
+  const sync = () => {
+    form.style.display = on.checked ? '' : 'none';
+    lockBtn.style.display = saved ? '' : 'none';
+    hint.textContent = saved ? '(leave blank to keep the current one)' : '(at least 4 characters)';
+  };
+  window.AppLock.ready.then((st) => { saved = st.enabled; on.checked = saved; sync(); });
+  on.addEventListener('change', async () => {
+    say('');
+    if (on.checked || !saved) { sync(); if (on.checked) pw.focus({ preventScroll: true }); return; }
+    try { await window.AppLock.save(false); saved = false; pw.value = ''; say('Password switched off.'); }
+    catch (e) { on.checked = true; say(e.message); }
+    sync();
+  });
+  $('pw-save').addEventListener('click', async () => {
+    try { await window.AppLock.save(true, pw.value); say(saved ? 'Password updated.' : 'Password switched on.'); saved = true; pw.value = ''; }
+    catch (e) { say(e.message); }
+    sync();
+  });
+  lockBtn.addEventListener('click', () => window.AppLock.lock());
+  $('backup-btn').addEventListener('click', async () => {
+    try { await window.AppLock.download('dad-hq'); say('Backup downloaded.'); } catch (e) { say(e.message); }
+  });
+})();
 </script>
 </body>
 </html>

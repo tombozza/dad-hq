@@ -91,3 +91,11 @@ CREATE TABLE IF NOT EXISTS flags (
   item_id TEXT,
   PRIMARY KEY (scope, kind, item_id)
 );
+
+-- Optional password lock (off by default). One row; src/auth.js also creates it on first save.
+CREATE TABLE IF NOT EXISTS app_settings (
+  id               INTEGER PRIMARY KEY CHECK (id = 1),
+  password_enabled INTEGER DEFAULT 0,
+  password_hash    TEXT,               -- pbkdf2$iter$salt$hash, never plain text
+  updated_at       TEXT DEFAULT (datetime('now'))
+);

@@ -5,6 +5,7 @@ import { handleEvents } from './events.js';
 import { handlePlaces } from './places.js';
 import { handleSync } from './sync.js';
 import { handleAI } from './ai.js';
+import { handleAuth } from './auth.js';
 
 // What kind of events Dad HQ pulls in — days out with a young child.
 // `focus` is a function of the child's age so the prompt can be tuned from the
@@ -48,6 +49,25 @@ export default {
     }
 
     try {
+      // ---- Optional password lock (off by default) — see src/auth.js ----
+      const gated = await handleAuth(request, env, url);
+      if (gated) return gated;
+
+      // ---- Backup: every table, as one JSON download (Add new → Download a backup) ----
+      if (url.pathname === '/api/backup' && request.method === 'GET') {
+        const tables = ['events', 'places', 'meals', 'crafts', 'drafts', 'edits', 'flags'];
+        const rows = await Promise.all(tables.map((t) => env.DB.prepare(`SELECT * FROM ${t}`).all().then((r) => r.results)));
+        const data = Object.fromEntries(tables.map((t, i) => [t, rows[i]]));
+        const day = new Date().toISOString().slice(0, 10);
+        return new Response(JSON.stringify({
+          app: 'dad-hq', version: 1, exported_at: new Date().toISOString(),
+          counts: Object.fromEntries(tables.map((t, i) => [t, rows[i].length])), ...data,
+        }), { headers: {
+          'content-type': 'application/json', 'cache-control': 'no-store',
+          'content-disposition': `attachment; filename="dad-hq-backup-${day}.json"`,
+        } });
+      }
+
       // ---- Events (kid/family-friendly) ----
       const ev = await handleEvents(request, env, ctx, url, EVENTS_PERSONA);
       if (ev) return ev;

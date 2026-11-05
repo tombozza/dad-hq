@@ -76,6 +76,26 @@ With no key anywhere, the Free route works as before.
 There is a `GET /api/dad-hq` export on the Bozza HQ side that pushes kid-friendly places
 here — the two apps are linked in that one direction.
 
+## Password lock and backup (Nov 2026)
+
+Bottom of the **Add new** tab (the ＋ button) → **Password & backup**. Dad HQ has no other
+settings screen, so the card lives there.
+
+- **Require a password** — off by default; when off the app works exactly as before. When on,
+  every write under `/api/` (POST/PATCH/DELETE/PUT) and the backup download need the
+  `dh_session` cookie, `HMAC(AUTH_SECRET, "authenticated")`; reads stay open and the app shows a
+  password screen until the device is unlocked. The magic sheet's `/api/anthropic` and
+  `/api/status` are handled before the gate (they're origin-locked and use Tom's own key).
+  Same pattern as golf-tracker / life-kanban's gate, adapted for this Worker: `src/auth.js`
+  (server) + `public/lock.js` (client, loaded first in `<head>`). Copies of both live in
+  Storage Log, Swipefy and Bozza HQ — only the cookie name and storage differ.
+- Stored in D1 table `app_settings` (one row, PBKDF2 hash, never plain text; created on first
+  save). Secret: `AUTH_SECRET`. Forgot it?
+  `npx wrangler d1 execute dad-hq --remote --command "UPDATE app_settings SET password_enabled=0, password_hash=NULL WHERE id=1"`.
+- **Download a backup** (`GET /api/backup`): every row of events, places, meals, crafts,
+  drafts, edits and flags as JSON. No import (a safe merge would need per-table rules, e.g.
+  events' favourite/in_plans flags) — restore by hand if ever needed.
+
 ## Commands
 
 ```bash
