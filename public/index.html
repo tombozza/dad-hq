@@ -61,8 +61,7 @@
 
     /* Pick lists inside the magic sheet's check step, and the little "added" toast. */
     .dh-picks { display: flex; flex-direction: column; gap: 0.4rem; max-height: 50vh; overflow-y: auto; margin-top: 0.5rem; }
-    .dh-pick { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.55rem 0.7rem; border: 2px solid var(--border); border-radius: 12px; cursor: pointer; font-size: 0.88rem; line-height: 1.35; }
-    .dh-pick input { margin-top: 0.2rem; width: 18px; height: 18px; flex: none; accent-color: var(--act); }
+    .dh-pick { gap: 0.6rem; padding: 0.55rem 0.7rem; border: 2px solid var(--border); border-radius: 12px; cursor: pointer; font-size: 0.88rem; line-height: 1.35; }
     .dh-pick small { display: block; color: var(--muted); font-size: 0.78rem; }
     .dh-rewrite { border: 2px solid var(--border); border-radius: 12px; padding: 0.7rem 0.85rem; font-size: 0.88rem; line-height: 1.45; }
     .dh-rewrite b { display: block; margin-bottom: 0.25rem; }
@@ -142,7 +141,7 @@
     .search-box.t-wish input:focus { border-color:#0D9488; }
     .filter-toggle.t-wish:hover, .filter-toggle.t-wish.open { border-color:#0D9488; color:#0F766E; background:#CCFBF1; }
     .filter-badge.t-wish { background:#0D9488; }
-    #wl-filter-panel .switch input:checked + .track { background:#0D9488; }
+    #wl-filter-panel { --accent: #0D9488; }
     /* ── ADD NEW ── */
     .an-intro { margin-bottom: 1.1rem; }
     .an-intro h2 { font-size: 1.2rem; font-weight: 800; margin-bottom: 0.35rem; }
@@ -156,7 +155,6 @@
     .an-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
     .dh-lock-row { display: flex; align-items: center; gap: 0.75rem; justify-content: space-between; margin: 0.4rem 0 0.75rem; cursor: pointer; }
     .dh-lock-row small { color: var(--muted); font-size: 0.8rem; line-height: 1.4; }
-    .dh-lock-row input { width: 22px; height: 22px; flex: none; accent-color: var(--act); cursor: pointer; }
     .btn:disabled { opacity: 0.45; cursor: default; }
     .an-list { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.25rem; }
     .an-row { display: flex; align-items: center; gap: 0.75rem; background: var(--card); border: 2px solid var(--border); border-radius: var(--r); padding: 0.7rem 0.9rem; box-shadow: var(--shadow); }
@@ -279,7 +277,6 @@
       margin-bottom: 0.5rem;
     }
     .filter-inline { display: flex; align-items: center; gap: 0.75rem; }
-    .filter-inline input[type="range"] { flex: 1; max-width: 320px; }
     .filter-panel .chip-row { margin-bottom: 0; }
     .filter-panel-footer {
       border-top: 1px solid var(--border);
@@ -299,7 +296,6 @@
     }
     .clear-filters-btn:hover { color: var(--act-dark); }
     .filter-label { font-size: 0.78rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
-    input[type="range"] { accent-color: var(--act); cursor: pointer; }
     #dist-label { font-size: 0.82rem; font-weight: 800; color: var(--act); min-width: 40px; }
 
     .btn-act   { background: var(--act);   color: white; }
@@ -377,13 +373,9 @@
     .toggle-list { display: flex; flex-direction: column; }
     .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 0.55rem 0.1rem; font-size: 0.88rem; font-weight: 700; color: var(--text); cursor: pointer; }
     .toggle-row + .toggle-row { border-top: 1px solid var(--border); }
-    .switch { position: relative; display: inline-block; width: 44px; height: 26px; flex-shrink: 0; }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .switch .track { position: absolute; inset: 0; background: var(--border); border-radius: 999px; transition: 0.2s; }
-    .switch .track::before { content: ''; position: absolute; height: 20px; width: 20px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
-    .switch input:checked + .track::before { transform: translateX(18px); }
-    #meal-filter-panel .switch input:checked + .track { background: var(--meal); }
-    #craft-filter-panel .switch input:checked + .track { background: var(--craft); }
+    /* Each tab's switches take that tab's colour (drawn by vendor/chassis/controls.css). */
+    #meal-filter-panel { --accent: var(--meal); }
+    #craft-filter-panel { --accent: var(--craft); }
     /* per-tab filter toggle + badge theming */
     .filter-toggle.t-meal:hover { border-color: var(--meal); color: var(--meal-dark); }
     .filter-toggle.t-meal.open { border-color: var(--meal); background: var(--meal-bg); color: var(--meal-dark); }
@@ -395,7 +387,7 @@
     .filter-toggle.t-event.open { border-color: #E11D8F; background: #FCE7F3; color: #9D174D; }
     .filter-badge.t-event { background: #E11D8F; }
     .chip.on-event { border-color: #E11D8F; color: #9D174D; background: #FCE7F3; }
-    #ev-filter-panel .switch input:checked + .track { background: #E11D8F; }
+    #ev-filter-panel { --accent: #E11D8F; }
     .filter-toolbar .ev-seg { margin-left: auto; }
 
     /* ── BADGES ── */
@@ -524,6 +516,8 @@
       .filter-toggle { margin-left: auto; margin-right: auto; }
     }
   </style>
+  <!-- Shared checkboxes, radios, switches and sliders (sites/_shared/chassis). Loaded after the app's CSS. -->
+  <link rel="stylesheet" href="/vendor/chassis/controls.css" />
 <script src="/lock.js"></script>
 <script src="/vendor/fuzzy-plain.js"></script>
 <!-- The magic button (sites/_shared/magic, synced copy in vendor/magic) and the paid route.
@@ -594,7 +588,7 @@
       <div class="filter-group">
         <div class="filter-group-label">Max distance</div>
         <div class="filter-inline">
-          <input type="range" id="dist-slider" min="10" max="160" value="160" step="5">
+          <input type="range" id="dist-slider" style="flex:1;max-width:320px" min="10" max="160" value="160" step="5">
           <span id="dist-label">Any</span>
         </div>
       </div>
@@ -647,7 +641,7 @@
         <div class="toggle-list">
           <label class="toggle-row">
             <span>🥦 Includes veg</span>
-            <span class="switch"><input type="checkbox" id="meal-veg-toggle" onchange="toggleMealVeg()"><span class="track"></span></span>
+            <input type="checkbox" role="switch" id="meal-veg-toggle" onchange="toggleMealVeg()">
           </label>
         </div>
       </div>
@@ -692,11 +686,11 @@
         <div class="toggle-list">
           <label class="toggle-row">
             <span>💦 Messy</span>
-            <span class="switch"><input type="checkbox" id="craft-messy-toggle" onchange="toggleCraftMessy()" checked><span class="track"></span></span>
+            <input type="checkbox" role="switch" id="craft-messy-toggle" onchange="toggleCraftMessy()" checked>
           </label>
           <label class="toggle-row">
             <span>🏠 At Home</span>
-            <span class="switch"><input type="checkbox" id="craft-home-toggle" onchange="toggleCraftHome()"><span class="track"></span></span>
+            <input type="checkbox" role="switch" id="craft-home-toggle" onchange="toggleCraftHome()">
           </label>
         </div>
       </div>
@@ -745,7 +739,7 @@
         <div class="toggle-list">
           <label class="toggle-row">
             <span>Saved to wishlist only</span>
-            <span class="switch"><input type="checkbox" id="ev-fav-toggle" onchange="evToggleFavFilter()"><span class="track"></span></span>
+            <input type="checkbox" role="switch" id="ev-fav-toggle" onchange="evToggleFavFilter()">
           </label>
         </div>
       </div>
@@ -784,7 +778,7 @@
         <div class="toggle-list">
           <label class="toggle-row">
             <span>Favourites only</span>
-            <span class="switch"><input type="checkbox" id="wl-fav-toggle" onchange="toggleWlFavOnly()"><span class="track"></span></span>
+            <input type="checkbox" role="switch" id="wl-fav-toggle" onchange="toggleWlFavOnly()">
           </label>
         </div>
       </div>
@@ -852,7 +846,7 @@
       <label class="dh-lock-row" for="pw-on">
         <span><strong>Require a password</strong><br>
           <small>Off: anyone with the link can make changes. On: changes need the password on each device.</small></span>
-        <input type="checkbox" id="pw-on">
+        <input type="checkbox" role="switch" id="pw-on">
       </label>
       <div id="pw-form" style="display:none;">
         <div class="form-group" style="margin-bottom:0.6rem;">
@@ -6888,7 +6882,7 @@ const askMagic = (prompt, opts) => window.askClaude(prompt, opts);
 
 // A tickable list for the sheet's check step. Rows already in the app start unticked.
 function pickPreview(rows, note) {
-  return `<p class="mg-note">${note || 'Untick anything you don’t want.'}</p><div class="dh-picks">${rows.map((r, i) => `<label class="dh-pick">
+  return `<p class="mg-note">${note || 'Untick anything you don’t want.'}</p><div class="dh-picks">${rows.map((r, i) => `<label class="check top dh-pick">
     <input type="checkbox" data-pick="${i}" ${r.dup ? '' : 'checked'}>
     <span><b>${evEsc(r.label)}</b>${r.sub || r.dup ? `<small>${evEsc([r.sub, r.dup ? 'already in the app' : ''].filter(Boolean).join(' · '))}</small>` : ''}</span></label>`).join('')}</div>`;
 }
