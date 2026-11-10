@@ -20,7 +20,7 @@ src/sync.js         cross-device state sync
 public/index.html   the entire curated PWA — ~9k lines, one file
 public/lib/claude.js  aiAvailable() + askClaude() for the paid route (model id lives here)
 public/vendor/magic   COPY of sites/_shared/magic — edit there, run node _shared/sync.mjs dad-hq
-public/vendor/chassis COPY of the shared tokens; vendored, not loaded (see the alias block)
+public/vendor/chassis COPY of sites/_shared/chassis: tokens, controls, ui- components (all loaded)
 schema.sql          D1 schema (no migrations dir; this is applied wholesale)
 ```
 
@@ -97,6 +97,14 @@ settings screen, so the card lives there.
 - **Download a backup** (`GET /api/backup`): every row of events, places, meals, crafts,
   drafts, edits and flags as JSON. No import (a safe merge would need per-table rules, e.g.
   events' favourite/in_plans flags) — restore by hand if ever needed.
+
+## Look: the shared components (10 Nov 2026)
+
+Every button, field, card, list row, chip, badge, sheet, toast and the bottom tab bar are the shared
+`ui-` classes from `vendor/chassis/components.css`; the `<style>` in `index.html` only lays them out
+(`dh-` classes). Each section keeps its colour by setting `--accent` on its `.t-act/.t-meal/.t-craft/
+.t-event/.t-wish` container. Nunito is `--font-display` only. Don't add app-made buttons or cards
+back; if a piece is missing, it goes in `sites/_shared/chassis/` first.
 
 ## Commands
 

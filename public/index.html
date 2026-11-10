@@ -13,511 +13,89 @@
   <title>Dad HQ</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <!-- The shared chassis (sites/_shared/chassis, synced copies in vendor/chassis): tokens, controls,
+       then the ui- components. Every button, field, card, list, chip, badge, tab, sheet and toast
+       on this page is a ui- class; the app's own CSS below only lays them out. -->
+  <link rel="stylesheet" href="/vendor/chassis/tokens.css" />
+  <link rel="stylesheet" href="/vendor/chassis/controls.css" />
+  <link rel="stylesheet" href="/vendor/chassis/components.css" />
   <link rel="stylesheet" href="/vendor/magic/magic.css" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    /* iOS Safari zooms into any field whose text is under 16px. Pinning every
-       field to 16px is the only reliable way to stop it, so this wins over any
-       per-component font size. */
-    input, select, textarea { font-size: 16px !important; }
-    html { -webkit-text-size-adjust: 100%; }
-
+    /* Dad HQ's tokens. Amber is the app's identity colour (icon, App Hub tile). Each section keeps
+       its own colour by setting --accent on its tab (and its tab-bar button): amber places, green
+       meals, violet crafts, pink events, teal wishlist. Amber and green are light, so their ticks
+       and filled chips use a dark ink. Nunito stays for headings only. */
     :root {
-      --bg: #F5F3FF;
-      --card: #FFFFFF;
-      --border: #E5E1FF;
-      --text: #1A1523;
-      --muted: #6B7280;
-      --faint: #F9F8FF;
-
-      --act: #F59E0B;
-      --lock-accent: #F59E0B;
-      --act-bg: #FFFBEB;
-      --act-dark: #92400E;
-
-      --meal: #10B981;
-      --meal-bg: #ECFDF5;
-      --meal-dark: #065F46;
-
-      --craft: #8B5CF6;
-      --craft-bg: #F5F3FF;
-      --craft-dark: #4C1D95;
-
-      --r: 14px;
-      --r-sm: 8px;
-      --shadow: 0 2px 12px rgba(99,102,241,0.08);
-      --shadow-lg: 0 8px 30px rgba(99,102,241,0.15);
-
-      /* Shared chassis names (sites/_shared/chassis/tokens.css, vendored in vendor/chassis but
-         not loaded) mapped onto Dad HQ's own, so shared pieces like the magic sheet
-         (vendor/magic) match. Amber is Dad HQ's identity colour. --r-sm already matches (8px). */
-      --accent: var(--act); --surface: var(--card); --surface-2: var(--faint);
-      --border-strong: #D4CEF5; --text-2: var(--muted); --text-3: #9CA3AF; --text-on-accent: #fff;
-      --success: var(--meal); --warning: var(--act); --danger: #DC2626;
-      --r-md: 12px; --r-lg: var(--r);
-      --overlay: rgba(26,21,35,0.55);
+      --act: #F59E0B; --meal: #10B981; --craft: #8B5CF6; --event: #E11D8F; --wish: #0D9488;
+      --accent: var(--act); --text-on-accent: #1a1206; --lock-accent: var(--act);
+      --font-display: 'Nunito', var(--font-sans);
     }
+    .t-act   { --accent: var(--act);   --text-on-accent: #1a1206; }
+    .t-meal  { --accent: var(--meal);  --text-on-accent: #04221b; }
+    .t-craft { --accent: var(--craft); --text-on-accent: #fff; }
+    .t-event { --accent: var(--event); --text-on-accent: #fff; }
+    .t-wish  { --accent: var(--wish);  --text-on-accent: #fff; }
 
-    /* Pick lists inside the magic sheet's check step, and the little "added" toast. */
-    .dh-picks { display: flex; flex-direction: column; gap: 0.4rem; max-height: 50vh; overflow-y: auto; margin-top: 0.5rem; }
-    .dh-pick { gap: 0.6rem; padding: 0.55rem 0.7rem; border: 2px solid var(--border); border-radius: 12px; cursor: pointer; font-size: 0.88rem; line-height: 1.35; }
-    .dh-pick small { display: block; color: var(--muted); font-size: 0.78rem; }
-    .dh-rewrite { border: 2px solid var(--border); border-radius: 12px; padding: 0.7rem 0.85rem; font-size: 0.88rem; line-height: 1.45; }
-    .dh-rewrite b { display: block; margin-bottom: 0.25rem; }
-    .add-btn magic-mark, .ed-toggle magic-mark { color: var(--act); }
-    .dh-toast { position: fixed; left: 50%; bottom: calc(1.25rem + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 1100; background: var(--text); color: #fff; padding: 0.6rem 1rem; border-radius: 12px; font-weight: 700; font-size: 0.88rem; box-shadow: var(--shadow-lg); animation: fadeIn 0.15s ease; }
+    html { -webkit-text-size-adjust: 100%; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: var(--text-md)/1.5 var(--font-sans); -webkit-font-smoothing: antialiased; }
+    /* iOS zooms into any field under 16px. */
+    input, select, textarea { font-size: 16px !important; }
 
-    body {
-      font-family: 'Nunito', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      padding-bottom: calc(3rem + env(safe-area-inset-bottom));
-    }
+    /* Top bar: name, location, add new. */
+    .dh-name { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em; }
+    .dh-name b { color: var(--act); font-weight: inherit; }
+    .ui-btn .dh-ico { inline-size: 18px; block-size: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 
-    /* ── HEADER ── */
-    header {
-      background: white;
-      border-bottom: 2px solid var(--border);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: var(--shadow);
-    }
-    .header-inner {
-      max-width: 920px;
-      margin: 0 auto;
-      /* env(safe-area-inset-*) keeps the header below the iPhone status bar
-         (and clear of the rounded corners) when installed to the home screen. */
-      padding: calc(1rem + env(safe-area-inset-top)) calc(1.5rem + env(safe-area-inset-right)) 0 calc(1.5rem + env(safe-area-inset-left));
-    }
-    .app-title {
-      font-size: 1.5rem;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-    }
-    .app-title .highlight { color: var(--act); }
-    .title-row { display: flex; align-items: center; justify-content: space-between; }
-    .header-actions { display: flex; align-items: center; gap: 0.5rem; }
-    .loc-btn { background: none; border: 2px solid var(--border); border-radius: 50%; width: 38px; height: 38px; padding: 0; font-size: 1rem; cursor: pointer; color: var(--muted); display: grid; place-items: center; line-height: 1; }
-    .loc-btn:hover { border-color: var(--act); color: var(--act); }
-    .loc-btn.guest { border-color: var(--craft); color: var(--craft); }
-
-    /* Bookmark (wishlist) icon — outline until saved, then filled. */
-    .bm-icon { width: 1.05em; height: 1.05em; display: block; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linejoin: round; }
-    .on > .bm-icon, .bm-icon.on { fill: currentColor; }
-    .nav-wish-btn { position: relative; background: none; border: 2px solid var(--border); border-radius: 50%; width: 38px; height: 38px; padding: 0; font-size: 1.15rem; cursor: pointer; color: var(--muted); display: grid; place-items: center; transition: all 0.15s; }
-    .nav-wish-btn:hover { border-color: #0D9488; color: #0D9488; }
-    .nav-wish-btn.active { border-color: #0D9488; background: #CCFBF1; color: #0D9488; }
-    .nav-icon-btn { position: relative; background: none; border: 2px solid var(--border); border-radius: 50%; width: 38px; height: 38px; padding: 0; cursor: pointer; color: var(--muted); display: grid; place-items: center; transition: all 0.15s; }
-    .nav-icon-btn:hover { border-color: var(--act); color: var(--act); }
-    .nav-icon-btn.active { border-color: var(--act); background: var(--act-bg); color: var(--act-dark); }
-    .plus-icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
-    .nav-add-count { position: absolute; top: -5px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px; background: var(--act); color: #fff; font-size: 0.62rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
-    .nav-wish-count { position: absolute; top: -5px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px; background: #0D9488; color: #fff; font-size: 0.62rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
-    .tab-bar { display: flex; gap: 0; margin-top: 0.75rem; }
-    .tab-btn {
-      flex: 1;
-      padding: 0.7rem 0.5rem;
-      border: none;
-      background: none;
-      font-family: 'Nunito', sans-serif;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      color: var(--muted);
-      border-bottom: 3px solid transparent;
-      transition: all 0.18s;
-    }
-    .tab-btn.active { font-weight: 800; }
-    .tab-btn.active[data-tab="activities"] { color: var(--act); border-bottom-color: var(--act); }
-    .tab-btn.active[data-tab="meals"]      { color: var(--meal); border-bottom-color: var(--meal); }
-    .tab-btn.active[data-tab="crafts"]     { color: var(--craft); border-bottom-color: var(--craft); }
-    .tab-btn.active[data-tab="events"]     { color: #E11D8F; border-bottom-color: #E11D8F; }
-
-    /* ── WISHLIST ── */
-    .chip.on-wish { border-color:#0D9488; color:#0F766E; background:#CCFBF1; }
-    .search-box.t-wish input:focus { border-color:#0D9488; }
-    .filter-toggle.t-wish:hover, .filter-toggle.t-wish.open { border-color:#0D9488; color:#0F766E; background:#CCFBF1; }
-    .filter-badge.t-wish { background:#0D9488; }
-    #wl-filter-panel { --accent: #0D9488; }
-    /* ── ADD NEW ── */
-    .an-intro { margin-bottom: 1.1rem; }
-    .an-intro h2 { font-size: 1.2rem; font-weight: 800; margin-bottom: 0.35rem; }
-    .an-intro p { font-size: 0.85rem; color: var(--muted); line-height: 1.55; max-width: 46rem; }
-    .an-card { background: var(--card); border: 2px solid var(--border); border-radius: var(--r); padding: 1.1rem 1.15rem; box-shadow: var(--shadow); margin-bottom: 1.25rem; }
-    .an-card h3, #edit-overlay .an-card h3 { font-size: 1rem; font-weight: 800; margin-bottom: 0.3rem; }
-    .an-card > p { font-size: 0.82rem; color: var(--muted); line-height: 1.5; margin-bottom: 0.8rem; }
-    .an-form { display: grid; grid-template-columns: 150px 1fr 1fr auto; gap: 0.75rem; align-items: end; }
-    .an-form .form-group { margin-bottom: 0; }
-    .an-opt { font-weight: 600; text-transform: none; opacity: 0.8; }
-    .an-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
-    .dh-lock-row { display: flex; align-items: center; gap: 0.75rem; justify-content: space-between; margin: 0.4rem 0 0.75rem; cursor: pointer; }
-    .dh-lock-row small { color: var(--muted); font-size: 0.8rem; line-height: 1.4; }
-    .btn:disabled { opacity: 0.45; cursor: default; }
-    .an-list { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.25rem; }
-    .an-row { display: flex; align-items: center; gap: 0.75rem; background: var(--card); border: 2px solid var(--border); border-radius: var(--r); padding: 0.7rem 0.9rem; box-shadow: var(--shadow); }
-    .an-row .an-kind { font-size: 0.68rem; font-weight: 800; padding: 0.2rem 0.55rem; border-radius: 999px; background: var(--faint); border: 1px solid var(--border); color: var(--muted); flex: none; }
-    .an-row .an-body { flex: 1; min-width: 0; }
-    .an-row .an-name { font-size: 0.92rem; font-weight: 700; }
-    .an-row .an-note { font-size: 0.78rem; color: var(--muted); }
-    .an-row .an-del { flex: none; background: none; border: none; font-size: 0.95rem; cursor: pointer; opacity: 0.6; }
-    .an-row .an-del:hover { opacity: 1; }
-    .wl-group { margin-bottom: 1.6rem; }
-    .wl-group-head { display:flex; align-items:baseline; gap:0.5rem; margin-bottom:0.7rem; }
-    .wl-group-head h2 { font-size:1.05rem; font-weight:800; }
-    .wl-group-head span { font-size:0.78rem; font-weight:700; color:var(--muted); }
-
-    /* ── EVENTS ── */
-    .ev-refresh { background:#E11D8F; color:#fff; border:none; border-radius:var(--r-sm); padding:0.5rem 0.85rem; font-family:'Nunito',sans-serif; font-weight:800; font-size:0.85rem; cursor:pointer; display:flex; align-items:center; gap:0.4rem; }
-    .ev-refresh:hover { filter:brightness(1.06); }
-    .ev-refresh:disabled { opacity:0.6; cursor:default; }
-
-    main { max-width: 920px; margin: 0 auto; padding: 1.5rem; padding-left: calc(1.5rem + env(safe-area-inset-left)); padding-right: calc(1.5rem + env(safe-area-inset-right)); }
+    main { max-width: 920px; margin: 0 auto; padding: var(--sp-4) max(var(--sp-4), env(safe-area-inset-right)) calc(96px + env(safe-area-inset-bottom)) max(var(--sp-4), env(safe-area-inset-left)); }
     .tab-view { display: none; }
-    .tab-view.active { display: block; }
+    .tab-view.active { display: grid; gap: var(--sp-4); }
 
-    /* ── CHIPS ── */
-    .chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.8rem; }
-    .chip {
-      padding: 0.35rem 0.85rem;
-      border-radius: 999px;
-      border: 2px solid var(--border);
-      background: white;
-      font-family: 'Nunito', sans-serif;
-      font-size: 0.8rem;
-      font-weight: 700;
-      cursor: pointer;
-      color: var(--muted);
-      transition: all 0.15s;
-      user-select: none;
-    }
-    .chip:hover { border-color: #C4B5FD; color: var(--craft); }
-    .chip.on-act  { border-color: var(--act);  color: var(--act-dark);  background: var(--act-bg); }
-    .chip.on-meal { border-color: var(--meal); color: var(--meal-dark); background: var(--meal-bg); }
-    .chip.on-craft{ border-color: var(--craft);color: var(--craft-dark);background: var(--craft-bg); }
+    /* Search and the Filters button share a row; the panel opens under them. */
+    .dh-toolbar { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
+    .dh-toolbar > .ui-input { flex: 1 1 200px; inline-size: auto; }
+    .dh-caret { font-size: 0.75em; transition: transform 0.2s; }
+    [aria-expanded='true'] > .dh-caret { transform: rotate(180deg); }
+    .dh-panel:not(.open) { display: none; }
+    .dh-group { display: grid; gap: var(--sp-2); }
+    .dh-inline { display: flex; align-items: center; gap: var(--sp-3); }
+    .dh-inline input[type='range'] { flex: 1; max-width: 320px; }
+    .dh-switch { display: flex; justify-content: space-between; padding: var(--sp-1) 0; font-weight: 600; }
 
-    /* ── SEARCH ── */
-    .search-box { position: relative; flex: 1 1 180px; min-width: 140px; }
-    .search-box input {
-      width: 100%; box-sizing: border-box;
-      border: 2px solid var(--border); border-radius: 999px;
-      padding: 0.65rem 1rem;
-      font-family: 'Nunito', sans-serif; font-size: 0.95rem; font-weight: 600; color: var(--text);
-      background: #fff;
-    }
-    .search-box input::placeholder { color: var(--muted); font-weight: 600; }
-    .search-box input:focus { outline: none; }
-    .search-box.t-act   input:focus { border-color: var(--act); }
-    .search-box.t-meal  input:focus { border-color: var(--meal); }
-    .search-box.t-craft input:focus { border-color: var(--craft); }
-    .search-box.t-event input:focus { border-color: #E11D8F; }
+    /* Cards in a grid. A card opens its sheet; the star and bookmark sit top right. */
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(265px, 1fr)); gap: var(--sp-3); }
+    .dh-card { display: grid; gap: var(--sp-2); align-content: start; cursor: pointer; }
+    .dh-top { display: flex; align-items: flex-start; gap: var(--sp-2); }
+    .dh-emoji { font-size: 1.4rem; line-height: 1.2; flex: none; }
+    .dh-title { flex: 1; min-width: 0; font-weight: 700; line-height: 1.3; padding-top: 2px; }
+    .dh-flags { display: flex; flex: none; margin: -6px -8px 0 0; }
+    .dh-desc { font-size: var(--text-sm); color: var(--text-2); line-height: 1.5; margin: 0; }
+    .dh-badges { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
+    /* Star and bookmark: outline until on, then filled in the section's colour. */
+    .st-icon, .bm-icon { inline-size: 18px; block-size: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linejoin: round; }
+    [aria-pressed='true'] > .st-icon { fill: var(--act); stroke: var(--act); }
+    [aria-pressed='true'] > .bm-icon { fill: var(--wish); stroke: var(--wish); }
+    .ui-empty .bm-icon { inline-size: 36px; block-size: 36px; stroke-width: 1.5; }
 
-    /* ── FILTER TOOLBAR & PANEL ── */
-    .filter-toolbar {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 1rem;
-      flex-wrap: wrap;
-    }
-    .filter-toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.7rem 1.25rem;
-      border-radius: 12px;
-      border: 2px solid var(--border);
-      background: white;
-      font-family: 'Nunito', sans-serif;
-      font-size: 0.92rem;
-      font-weight: 700;
-      color: var(--text);
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .filter-toggle:hover { border-color: var(--act); color: var(--act-dark); }
-    .filter-toggle.open { border-color: var(--act); background: var(--act-bg); color: var(--act-dark); }
-    .filter-badge {
-      background: var(--act);
-      color: white;
-      font-size: 0.72rem;
-      font-weight: 800;
-      min-width: 20px;
-      height: 20px;
-      padding: 0 6px;
-      border-radius: 999px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .filter-caret { font-size: 0.7rem; transition: transform 0.2s; }
-    .filter-toggle.open .filter-caret { transform: rotate(180deg); }
+    /* The card's sheet. */
+    .dh-sheet-icon { font-size: 2.2rem; line-height: 1; }
+    .dh-list { margin: 0; padding-left: 1.2em; display: grid; gap: 2px; font-size: var(--text-sm); }
 
-    .filter-panel {
-      display: none;
-      background: white;
-      border: 2px solid var(--border);
-      border-radius: var(--r);
-      padding: 1.1rem 1.25rem 1.25rem;
-      margin-bottom: 1.25rem;
-      box-shadow: var(--shadow);
-      animation: slideUp 0.2s ease;
-    }
-    .filter-panel.open { display: block; }
-    .filter-group { margin-bottom: 1rem; }
-    .filter-group:last-of-type { margin-bottom: 0.5rem; }
-    .filter-group-label {
-      font-size: 0.72rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--muted);
-      margin-bottom: 0.5rem;
-    }
-    .filter-inline { display: flex; align-items: center; gap: 0.75rem; }
-    .filter-panel .chip-row { margin-bottom: 0; }
-    .filter-panel-footer {
-      border-top: 1px solid var(--border);
-      margin-top: 1rem;
-      padding-top: 0.9rem;
-    }
-    .clear-filters-btn {
-      background: none;
-      border: none;
-      font-family: 'Nunito', sans-serif;
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: var(--muted);
-      cursor: pointer;
-      text-decoration: underline;
-      padding: 0;
-    }
-    .clear-filters-btn:hover { color: var(--act-dark); }
-    .filter-label { font-size: 0.78rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
-    #dist-label { font-size: 0.82rem; font-weight: 800; color: var(--act); min-width: 40px; }
+    /* Add new. */
+    .dh-form { display: grid; grid-template-columns: 150px 1fr 1fr auto; gap: var(--sp-3); align-items: end; }
+    .wl-group { display: grid; gap: var(--sp-3); }
 
-    .btn-act   { background: var(--act);   color: white; }
-    .btn-meal  { background: var(--meal);  color: white; }
-    .btn-craft { background: var(--craft); color: white; }
+    /* Pick lists inside the magic sheet's check step. */
+    .dh-picks { max-height: 50vh; overflow-y: auto; margin-top: var(--sp-2); }
+    .dh-picks .ui-row { font-size: var(--text-sm); line-height: 1.35; cursor: pointer; }
+    .dh-picks small { display: block; color: var(--text-2); font-size: var(--text-xs); }
+    .dh-rewrite b { display: block; margin-bottom: var(--sp-1); }
 
-    .rb-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
-
-    /* ── SECTION HEADER ── */
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.9rem;
-    }
-    .section-count { font-size: 0.75rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
-    .add-btn {
-      display: flex; align-items: center; gap: 0.25rem;
-      padding: 0.38rem 0.85rem;
-      border-radius: 10px;
-      border: 2px dashed var(--border);
-      background: none;
-      font-family: 'Nunito', sans-serif;
-      font-size: 0.8rem; font-weight: 700;
-      color: var(--muted); cursor: pointer;
-      transition: all 0.15s;
-    }
-    .add-btn:hover { border-color: var(--craft); color: var(--craft); }
-
-    /* ── CARDS GRID ── */
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
-      gap: 1rem;
-    }
-    .card {
-      background: var(--card);
-      border-radius: var(--r);
-      padding: 1.1rem 1.15rem;
-      border: 2px solid var(--border);
-      box-shadow: var(--shadow);
-      cursor: pointer;
-      transition: all 0.18s;
-      position: relative;
-    }
-    .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); border-color: #C4B5FD; }
-    .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.45rem; }
-    .card-icon { font-size: 1.4rem; margin-right: 0.6rem; flex-shrink: 0; }
-    .card-name { font-size: 0.97rem; font-weight: 700; line-height: 1.3; flex: 1; }
-    .card-flags { display: flex; align-items: center; gap: 0.15rem; flex-shrink: 0; }
-    /* Star and bookmark share one 28px box so they line up wherever they appear. */
-    .fav-btn, .wish-btn {
-      width: 28px; height: 28px; padding: 0; flex-shrink: 0;
-      background: none; border: none; cursor: pointer; line-height: 1;
-      display: inline-flex; align-items: center; justify-content: center;
-      transition: transform 0.15s, color 0.15s;
-    }
-    .fav-btn { color: var(--text); }
-    .fav-btn.on { color: #F59E0B; }
-    .fav-btn:hover { transform: scale(1.2); color: #F59E0B; }
-    .st-icon { width: 1.15rem; height: 1.15rem; display: block; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
-    .fav-btn.on .st-icon { fill: currentColor; }
-    .wish-btn { color: var(--text); }
-    .wish-btn.on { color: #0D9488; }
-    .wish-btn:hover { transform: scale(1.2); color: #0D9488; }
-    .wish-btn .bm-icon { width: 1.05rem; height: 1.05rem; }
-    .card-where { font-size: 0.78rem; font-weight: 700; color: var(--muted); margin-bottom: 0.4rem; }
-    .card-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.5; margin-bottom: 0.7rem; }
-    .card-badges { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-    .sp-actions a.btn { text-decoration: none; text-align: center; line-height: 1.5; }
-    .ed-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 0.5rem; padding: 0.7rem 1rem; border-radius: 12px; border: 2px solid var(--border); background: white; font-family: 'Nunito', sans-serif; font-size: 0.92rem; font-weight: 700; color: var(--text); cursor: pointer; }
-    .ed-toggle:hover, .ed-toggle.open { border-color: var(--act); color: var(--act-dark); background: var(--act-bg); }
-    .ed-toggle.open .filter-caret { transform: rotate(180deg); }
-    /* ── TOGGLE SWITCHES ── */
-    .toggle-list { display: flex; flex-direction: column; }
-    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 0.55rem 0.1rem; font-size: 0.88rem; font-weight: 700; color: var(--text); cursor: pointer; }
-    .toggle-row + .toggle-row { border-top: 1px solid var(--border); }
-    /* Each tab's switches take that tab's colour (drawn by vendor/chassis/controls.css). */
-    #meal-filter-panel { --accent: var(--meal); }
-    #craft-filter-panel { --accent: var(--craft); }
-    /* per-tab filter toggle + badge theming */
-    .filter-toggle.t-meal:hover { border-color: var(--meal); color: var(--meal-dark); }
-    .filter-toggle.t-meal.open { border-color: var(--meal); background: var(--meal-bg); color: var(--meal-dark); }
-    .filter-badge.t-meal { background: var(--meal); }
-    .filter-toggle.t-craft:hover { border-color: var(--craft); color: var(--craft-dark); }
-    .filter-toggle.t-craft.open { border-color: var(--craft); background: var(--craft-bg); color: var(--craft-dark); }
-    .filter-badge.t-craft { background: var(--craft); }
-    .filter-toggle.t-event:hover { border-color: #E11D8F; color: #9D174D; }
-    .filter-toggle.t-event.open { border-color: #E11D8F; background: #FCE7F3; color: #9D174D; }
-    .filter-badge.t-event { background: #E11D8F; }
-    .chip.on-event { border-color: #E11D8F; color: #9D174D; background: #FCE7F3; }
-    #ev-filter-panel { --accent: #E11D8F; }
-    .filter-toolbar .ev-seg { margin-left: auto; }
-
-    /* ── BADGES ── */
-    .badge {
-      font-size: 0.7rem; font-weight: 700;
-      padding: 0.18rem 0.5rem;
-      border-radius: 5px;
-    }
-    .b-dist  { background: #EFF6FF; color: #1D4ED8; }
-    .b-date  { background: #FCE7F3; color: #9D174D; }
-    .b-free  { background: #DCFCE7; color: #166534; }
-    .b-paid  { background: #FEF3C7; color: #92400E; }
-    .b-pricey{ background: #FEE2E2; color: #991B1B; }
-    .b-rain  { background: #E0F2FE; color: #0369A1; }
-    .b-sun   { background: #FEF9C3; color: #854D0E; }
-    .b-both  { background: #F0FDF4; color: #166534; }
-    .b-time  { background: #F3F4F6; color: #374151; }
-    .b-mess1 { background: #F0FDF4; color: #166534; }
-    .b-mess2 { background: #FEF9C3; color: #854D0E; }
-    .b-mess3 { background: #FEE2E2; color: #991B1B; }
-    .b-cat   { background: var(--craft-bg); color: var(--craft-dark); }
-
-    /* ── SPOTLIGHT MODAL ── */
-    .overlay {
-      position: fixed; inset: 0;
-      background: rgba(26,21,35,0.55);
-      z-index: 200;
-      display: flex; align-items: center; justify-content: center;
-      padding: 1rem;
-      animation: fadeIn 0.15s ease;
-    }
-    .spotlight {
-      background: white;
-      border-radius: 20px;
-      padding: 2rem;
-      max-width: 480px;
-      width: 100%;
-      position: relative;
-      animation: slideUp 0.2s ease;
-      max-height: 85vh;
-      overflow-y: auto;
-    }
-    .sp-close {
-      position: absolute; top: 1rem; right: 1rem;
-      background: #F3F4F6; border: none;
-      width: 32px; height: 32px; border-radius: 50%;
-      font-size: 0.9rem; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .sp-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.5rem; padding-right: 2.5rem; }
-    .sp-icon { font-size: 2.5rem; line-height: 1; }
-    .sp-flags { transform: scale(1.15); transform-origin: right top; }
-    .sp-where { font-size: 0.85rem; font-weight: 700; color: var(--muted); }
-    .sp-title { font-size: 1.35rem; font-weight: 800; margin-bottom: 0.6rem; padding-right: 2rem; }
-    .sp-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.9rem; }
-    .sp-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.6; margin-bottom: 1rem; }
-    .sp-section { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.35rem; margin-top: 0.9rem; }
-    .sp-list { list-style: none; }
-    .sp-list li { font-size: 0.85rem; padding: 0.25rem 0; color: var(--text); }
-    .sp-list li::before { content: "•  "; color: var(--craft); font-weight: 900; }
-    .sp-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.25rem; }
-    .sp-actions .btn { flex: 1 1 auto; min-width: 8.5rem; }
-    .btn {
-      padding: 0.6rem 1.15rem;
-      border-radius: 12px; border: 2px solid transparent;
-      font-family: 'Nunito', sans-serif; font-size: 0.83rem; font-weight: 700;
-      cursor: pointer; transition: all 0.15s;
-    }
-    .btn-outline { background: white; border-color: var(--border); color: var(--muted); }
-    .btn-outline:hover { border-color: #C4B5FD; color: var(--craft); }
-
-    /* ── ADD MODAL ── */
-    .modal-overlay {
-      position: fixed; inset: 0;
-      background: rgba(26,21,35,0.55);
-      z-index: 300;
-      display: flex; align-items: center; justify-content: center;
-      padding: 1rem;
-    }
-    .modal {
-      position: relative;
-      background: white;
-      border-radius: 20px;
-      padding: 1.75rem;
-      max-width: 420px;
-      width: 100%;
-      animation: slideUp 0.2s ease;
-      max-height: 85vh;
-      overflow-y: auto;
-    }
-    .modal h3 { font-size: 1.15rem; font-weight: 800; margin-bottom: 1.15rem; padding-right: 2.5rem; }
-    .form-group { margin-bottom: 0.9rem; }
-    .form-group label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--muted); margin-bottom: 0.3rem; }
-    .form-group input, .form-group textarea, .form-group select {
-      width: 100%; padding: 0.55rem 0.75rem;
-      border: 2px solid var(--border); border-radius: var(--r-sm);
-      font-family: 'Nunito', sans-serif; font-size: 0.88rem;
-      outline: none; transition: border-color 0.15s; color: var(--text);
-    }
-    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--craft); }
-    .form-group textarea { resize: vertical; min-height: 65px; }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-    .modal-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
-    .modal-actions .btn { flex: 1 1 auto; min-width: 7.5rem; }
-
-    /* ── EMPTY STATE ── */
-    .empty {
-      text-align: center; padding: 3rem 1rem;
-      color: var(--muted);
-    }
-    .empty .e-icon { font-size: 2.8rem; margin-bottom: 0.5rem; }
-    .empty .e-icon .bm-icon { width: 2.4rem; height: 2.4rem; margin: 0 auto; stroke-width: 1.5; opacity: 0.55; }
-    .empty p { font-size: 0.9rem; font-weight: 600; }
-
-    /* ── ANIMATIONS ── */
-    @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-    /* ── RESPONSIVE ── */
     @media (max-width: 580px) {
       .cards-grid { grid-template-columns: 1fr; }
-      .tab-btn { font-size: 0.85rem; padding: 0.7rem 0.2rem; }
-      .an-form { grid-template-columns: 1fr; }
-      main { padding: 1rem; padding-left: calc(1rem + env(safe-area-inset-left)); padding-right: calc(1rem + env(safe-area-inset-right)); }
-      .filter-toolbar .ev-seg { margin-left: auto; margin-right: auto; width: auto; }
-      .filter-toggle { margin-left: auto; margin-right: auto; }
+      .dh-form { grid-template-columns: 1fr; }
     }
   </style>
-  <!-- Shared checkboxes, radios, switches and sliders (sites/_shared/chassis). Loaded after the app's CSS. -->
-  <link rel="stylesheet" href="/vendor/chassis/controls.css" />
 <script src="/lock.js"></script>
 <script src="/vendor/fuzzy-plain.js"></script>
 <!-- The magic button (sites/_shared/magic, synced copy in vendor/magic) and the paid route.
@@ -528,403 +106,279 @@
   Object.assign(window, { openMagic, aiAvailable, askClaude, userKey });
 </script>
 <script src="/vendor/clearx.js" defer></script>
-<style>@media (pointer:coarse){input,select,textarea{font-size:16px !important}}</style>
 </head>
 <body>
 
-<header>
-  <div class="header-inner">
-    <div class="title-row">
-      <div class="app-title">Dad <span class="highlight">HQ</span></div>
-      <div class="header-actions">
-        <button class="loc-btn" id="loc-btn" title="Macclesfield" aria-label="Home location: Macclesfield" onclick="openLocModal()">📍</button>
-        <button class="nav-icon-btn" id="nav-add-btn" title="Add new" aria-label="Add new" onclick="openAddNew()">
-          <svg class="plus-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-          <span class="nav-add-count" id="nav-add-count" style="display:none;">0</span>
-        </button>
-        <button class="nav-wish-btn" id="nav-wish-btn" title="Wishlist" aria-label="Wishlist" onclick="selectTab('wishlist')">
-          <svg class="bm-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3h11a1.5 1.5 0 0 1 1.5 1.5v16.2a.8.8 0 0 1-1.25.66L12 17.4l-5.75 3.96A.8.8 0 0 1 5 20.7V4.5A1.5 1.5 0 0 1 6.5 3z"/></svg>
-          <span class="nav-wish-count" id="nav-wish-count" style="display:none;">0</span>
-        </button>
-      </div>
-    </div>
-    <div class="tab-bar">
-      <button class="tab-btn active" data-tab="activities">Activities</button>
-      <button class="tab-btn" data-tab="meals">Meals</button>
-      <button class="tab-btn" data-tab="crafts">Crafts</button>
-      <button class="tab-btn" data-tab="events">Events</button>
-    </div>
-  </div>
+<header class="ui-bar">
+  <span class="name dh-name">Dad <b>HQ</b></span>
+  <button class="ui-btn quiet icon small" id="loc-btn" title="Macclesfield" aria-label="Home location: Macclesfield" onclick="openLocModal()">📍</button>
+  <button class="ui-btn quiet small" id="nav-add-btn" title="Add new" aria-label="Add new" onclick="openAddNew()">
+    <svg class="dh-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    <span class="ui-badge accent" id="nav-add-count" style="display:none;">0</span>
+  </button>
 </header>
+
+<nav class="ui-tabbar" aria-label="Sections">
+  <button class="tab-btn t-act" data-tab="activities" aria-current="page"><span>🗺️</span>Places</button>
+  <button class="tab-btn t-meal" data-tab="meals"><span>🍽️</span>Meals</button>
+  <button class="tab-btn t-craft" data-tab="crafts"><span>🎨</span>Crafts</button>
+  <button class="tab-btn t-event" data-tab="events"><span>📅</span>Events</button>
+  <button class="tab-btn t-wish" data-tab="wishlist" id="nav-wish-btn"><span>🔖</span>Wishlist <span class="ui-badge accent" id="nav-wish-count" style="display:none;">0</span></button>
+</nav>
 
 <main>
 
   <!-- ── ACTIVITIES ── -->
-  <div class="tab-view active" id="tab-activities">
-    <div class="filter-toolbar">
-      <button class="filter-toggle" id="filter-toggle">
-        <span>Filters</span>
-        <span class="filter-badge" id="filter-badge" style="display:none;">0</span>
-        <span class="filter-caret" id="filter-caret">▾</span>
+  <div class="tab-view t-act active" id="tab-activities">
+    <div class="dh-toolbar">
+      <input class="ui-input search" id="act-search" type="search" placeholder="Search places…" oninput="setActQuery(this.value)">
+      <button class="ui-btn" id="filter-toggle" aria-expanded="false">
+        Filters <span class="ui-badge accent" id="filter-badge" style="display:none;">0</span><span class="dh-caret" id="filter-caret">▾</span>
       </button>
-      <div class="search-box t-act">
-        <input id="act-search" type="search" placeholder="Search places…" oninput="setActQuery(this.value)">
-      </div>
     </div>
 
-    <div class="filter-panel" id="filter-panel">
-      <div class="filter-group">
-        <div class="filter-group-label">Indoor or outdoor?</div>
-        <div class="chip-row" id="act-weather-row"></div>
-      </div>
-      <div class="filter-group">
-        <div class="filter-group-label">Activity type</div>
-        <div class="chip-row" id="act-cat-row"></div>
-      </div>
-      <div class="filter-group">
-        <div class="filter-group-label">Area</div>
-        <div class="chip-row" id="act-region-row"></div>
-      </div>
-      <div class="filter-group">
-        <div class="filter-group-label">Max distance</div>
-        <div class="filter-inline">
-          <input type="range" id="dist-slider" style="flex:1;max-width:320px" min="10" max="160" value="160" step="5">
-          <span id="dist-label">Any</span>
+    <div class="ui-card ui-stack dh-panel" id="filter-panel">
+      <div class="dh-group"><span class="ui-label">Indoor or outdoor?</span><div class="ui-chips" id="act-weather-row"></div></div>
+      <div class="dh-group"><span class="ui-label">Activity type</span><div class="ui-chips" id="act-cat-row"></div></div>
+      <div class="dh-group"><span class="ui-label">Area</span><div class="ui-chips" id="act-region-row"></div></div>
+      <div class="dh-group"><span class="ui-label">Max distance</span>
+        <div class="dh-inline">
+          <input type="range" id="dist-slider" min="10" max="160" value="160" step="5">
+          <span class="ui-badge accent" id="dist-label">Any</span>
         </div>
       </div>
-      <div class="filter-group">
-        <div class="filter-group-label">Cost</div>
-        <div class="chip-row" id="price-row"></div>
-      </div>
-      <div class="filter-panel-footer">
-        <button class="clear-filters-btn" id="clear-filters-btn">Clear all filters</button>
-      </div>
+      <div class="dh-group"><span class="ui-label">Cost</span><div class="ui-chips" id="price-row"></div></div>
+      <div class="ui-actions"><button class="ui-btn quiet small" id="clear-filters-btn">Clear all filters</button></div>
     </div>
-    <div class="section-header">
-      <span class="section-count" id="act-count"></span>
-      <div style="display:flex;gap:0.5rem;">
-        <button class="add-btn" id="ideas-act-btn" onclick="getIdeas('act')"><magic-mark></magic-mark> Get ideas</button>
-        <button class="add-btn" id="add-act-btn">+ Add place</button>
-      </div>
+    <div class="ui-head">
+      <span class="ui-label ui-spacer" id="act-count"></span>
+      <button class="ui-btn small" id="ideas-act-btn" onclick="getIdeas('act')"><magic-mark></magic-mark> Get ideas</button>
+      <button class="ui-btn small" id="add-act-btn">+ Add place</button>
     </div>
     <div class="cards-grid" id="act-grid"></div>
   </div>
 
   <!-- ── MEALS ── -->
-  <div class="tab-view" id="tab-meals">
-    <div class="filter-toolbar">
-      <button class="filter-toggle t-meal" id="meal-filter-toggle">
-        <span>Filters</span>
-        <span class="filter-badge t-meal" id="meal-filter-badge" style="display:none;">0</span>
-        <span class="filter-caret">▾</span>
+  <div class="tab-view t-meal" id="tab-meals">
+    <div class="dh-toolbar">
+      <input class="ui-input search" id="meal-search" type="search" placeholder="Search meals…" oninput="setMealQuery(this.value)">
+      <button class="ui-btn" id="meal-filter-toggle" aria-expanded="false">
+        Filters <span class="ui-badge accent" id="meal-filter-badge" style="display:none;">0</span><span class="dh-caret">▾</span>
       </button>
-      <div class="search-box t-meal">
-        <input id="meal-search" type="search" placeholder="Search meals…" oninput="setMealQuery(this.value)">
-      </div>
     </div>
 
-    <div class="filter-panel" id="meal-filter-panel">
-      <div class="filter-group">
-        <div class="filter-group-label">Meal type</div>
-        <div class="chip-row" id="meal-cat-row"></div>
+    <div class="ui-card ui-stack dh-panel" id="meal-filter-panel">
+      <div class="dh-group"><span class="ui-label">Meal type</span><div class="ui-chips" id="meal-cat-row"></div></div>
+      <div class="dh-group"><span class="ui-label">Time of day</span><div class="ui-chips" id="meal-slot-row"></div></div>
+      <div class="dh-group"><span class="ui-label">Time to make</span><div class="ui-chips" id="meal-time-row"></div></div>
+      <div class="dh-group"><span class="ui-label">Other</span>
+        <label class="check dh-switch"><span>🥦 Includes veg</span><input type="checkbox" role="switch" id="meal-veg-toggle" onchange="toggleMealVeg()"></label>
       </div>
-      <div class="filter-group">
-        <div class="filter-group-label">Time of day</div>
-        <div class="chip-row" id="meal-slot-row"></div>
-      </div>
-      <div class="filter-group">
-        <div class="filter-group-label">Time to make</div>
-        <div class="chip-row" id="meal-time-row"></div>
-      </div>
-      <div class="filter-group">
-        <div class="filter-group-label">Other</div>
-        <div class="toggle-list">
-          <label class="toggle-row">
-            <span>🥦 Includes veg</span>
-            <input type="checkbox" role="switch" id="meal-veg-toggle" onchange="toggleMealVeg()">
-          </label>
-        </div>
-      </div>
-      <div class="filter-panel-footer">
-        <button class="clear-filters-btn" id="meal-clear-btn">Clear all filters</button>
-      </div>
+      <div class="ui-actions"><button class="ui-btn quiet small" id="meal-clear-btn">Clear all filters</button></div>
     </div>
-    <div class="section-header">
-      <span class="section-count" id="meal-count"></span>
-      <div style="display:flex;gap:0.5rem;">
-        <button class="add-btn" id="ideas-meal-btn" onclick="getIdeas('meal')"><magic-mark></magic-mark> Get ideas</button>
-        <button class="add-btn" id="add-meal-btn">+ Add meal</button>
-      </div>
+    <div class="ui-head">
+      <span class="ui-label ui-spacer" id="meal-count"></span>
+      <button class="ui-btn small" id="ideas-meal-btn" onclick="getIdeas('meal')"><magic-mark></magic-mark> Get ideas</button>
+      <button class="ui-btn small" id="add-meal-btn">+ Add meal</button>
     </div>
     <div class="cards-grid" id="meal-grid"></div>
   </div>
 
   <!-- ── CRAFTS ── -->
-  <div class="tab-view" id="tab-crafts">
-    <div class="filter-toolbar">
-      <button class="filter-toggle t-craft" id="craft-filter-toggle">
-        <span>Filters</span>
-        <span class="filter-badge t-craft" id="craft-filter-badge" style="display:none;">0</span>
-        <span class="filter-caret">▾</span>
+  <div class="tab-view t-craft" id="tab-crafts">
+    <div class="dh-toolbar">
+      <input class="ui-input search" id="craft-search" type="search" placeholder="Search crafts…" oninput="setCraftQuery(this.value)">
+      <button class="ui-btn" id="craft-filter-toggle" aria-expanded="false">
+        Filters <span class="ui-badge accent" id="craft-filter-badge" style="display:none;">0</span><span class="dh-caret">▾</span>
       </button>
-      <div class="search-box t-craft">
-        <input id="craft-search" type="search" placeholder="Search crafts…" oninput="setCraftQuery(this.value)">
-      </div>
     </div>
 
-    <div class="filter-panel" id="craft-filter-panel">
-      <div class="filter-group">
-        <div class="filter-group-label">Craft type</div>
-        <div class="chip-row" id="craft-cat-row"></div>
+    <div class="ui-card ui-stack dh-panel" id="craft-filter-panel">
+      <div class="dh-group"><span class="ui-label">Craft type</span><div class="ui-chips" id="craft-cat-row"></div></div>
+      <div class="dh-group"><span class="ui-label">Time to make</span><div class="ui-chips" id="craft-time-row"></div></div>
+      <div class="dh-group"><span class="ui-label">Other</span>
+        <label class="check dh-switch"><span>💦 Messy</span><input type="checkbox" role="switch" id="craft-messy-toggle" onchange="toggleCraftMessy()" checked></label>
+        <label class="check dh-switch"><span>🏠 At Home</span><input type="checkbox" role="switch" id="craft-home-toggle" onchange="toggleCraftHome()"></label>
       </div>
-      <div class="filter-group">
-        <div class="filter-group-label">Time to make</div>
-        <div class="chip-row" id="craft-time-row"></div>
-      </div>
-      <div class="filter-group">
-        <div class="filter-group-label">Other</div>
-        <div class="toggle-list">
-          <label class="toggle-row">
-            <span>💦 Messy</span>
-            <input type="checkbox" role="switch" id="craft-messy-toggle" onchange="toggleCraftMessy()" checked>
-          </label>
-          <label class="toggle-row">
-            <span>🏠 At Home</span>
-            <input type="checkbox" role="switch" id="craft-home-toggle" onchange="toggleCraftHome()">
-          </label>
-        </div>
-      </div>
-      <div class="filter-panel-footer">
-        <button class="clear-filters-btn" id="craft-clear-btn">Clear all filters</button>
-      </div>
+      <div class="ui-actions"><button class="ui-btn quiet small" id="craft-clear-btn">Clear all filters</button></div>
     </div>
-    <div class="section-header">
-      <span class="section-count" id="craft-count"></span>
-      <div style="display:flex;gap:0.5rem;">
-        <button class="add-btn" id="ideas-craft-btn" onclick="getIdeas('craft')"><magic-mark></magic-mark> Get ideas</button>
-        <button class="add-btn" id="add-craft-btn">+ Add craft</button>
-      </div>
+    <div class="ui-head">
+      <span class="ui-label ui-spacer" id="craft-count"></span>
+      <button class="ui-btn small" id="ideas-craft-btn" onclick="getIdeas('craft')"><magic-mark></magic-mark> Get ideas</button>
+      <button class="ui-btn small" id="add-craft-btn">+ Add craft</button>
     </div>
     <div class="cards-grid" id="craft-grid"></div>
   </div>
 
   <!-- ── EVENTS ── -->
-  <div class="tab-view" id="tab-events">
-    <div class="filter-toolbar">
-      <button class="filter-toggle t-event" id="ev-filter-toggle">
-        <span>Filters</span>
-        <span class="filter-badge t-event" id="ev-filter-badge" style="display:none;">0</span>
-        <span class="filter-caret">▾</span>
+  <div class="tab-view t-event" id="tab-events">
+    <div class="dh-toolbar">
+      <input class="ui-input search" id="ev-search" type="search" placeholder="Search events…" oninput="setEvQuery(this.value)">
+      <button class="ui-btn" id="ev-filter-toggle" aria-expanded="false">
+        Filters <span class="ui-badge accent" id="ev-filter-badge" style="display:none;">0</span><span class="dh-caret">▾</span>
       </button>
-      <div class="search-box t-event">
-        <input id="ev-search" type="search" placeholder="Search events…" oninput="setEvQuery(this.value)">
-      </div>
     </div>
 
-    <div class="filter-panel" id="ev-filter-panel">
-      <div class="filter-group">
-        <div class="filter-group-label">Category</div>
-        <div class="chip-row" id="ev-cat-row"></div>
+    <div class="ui-card ui-stack dh-panel" id="ev-filter-panel">
+      <div class="dh-group"><span class="ui-label">Category</span><div class="ui-chips" id="ev-cat-row"></div></div>
+      <div class="dh-group"><span class="ui-label">Area</span><div class="ui-chips" id="ev-region-row"></div></div>
+      <div class="dh-group"><span class="ui-label">Month</span><div class="ui-chips" id="ev-month-row"></div></div>
+      <div class="dh-group"><span class="ui-label">Other</span>
+        <label class="check dh-switch"><span>Saved to wishlist only</span><input type="checkbox" role="switch" id="ev-fav-toggle" onchange="evToggleFavFilter()"></label>
       </div>
-      <div class="filter-group">
-        <div class="filter-group-label">Area</div>
-        <div class="chip-row" id="ev-region-row"></div>
-      </div>
-      <div class="filter-group">
-        <div class="filter-group-label">Month</div>
-        <div class="chip-row" id="ev-month-row"></div>
-      </div>
-      <div class="filter-group">
-        <div class="filter-group-label">Other</div>
-        <div class="toggle-list">
-          <label class="toggle-row">
-            <span>Saved to wishlist only</span>
-            <input type="checkbox" role="switch" id="ev-fav-toggle" onchange="evToggleFavFilter()">
-          </label>
-        </div>
-      </div>
-      <div class="filter-panel-footer">
-        <button class="clear-filters-btn" id="ev-clear-btn" onclick="clearEvFilters()">Clear all filters</button>
-      </div>
+      <div class="ui-actions"><button class="ui-btn quiet small" id="ev-clear-btn" onclick="clearEvFilters()">Clear all filters</button></div>
     </div>
 
-    <div class="section-header">
-      <span class="section-count" id="ev-count"></span>
-      <button class="add-btn" id="ev-update-btn" onclick="getIdeas('event')"><magic-mark></magic-mark> Find events</button>
+    <div class="ui-head">
+      <span class="ui-label ui-spacer" id="ev-count"></span>
+      <button class="ui-btn small" id="ev-update-btn" onclick="getIdeas('event')"><magic-mark></magic-mark> Find events</button>
     </div>
     <div id="ev-body"></div>
   </div>
 
   <!-- ── WISHLIST ── -->
-  <div class="tab-view" id="tab-wishlist">
-    <div class="filter-toolbar">
-      <button class="filter-toggle t-wish" id="wl-filter-toggle">
-        <span>Filters</span>
-        <span class="filter-badge t-wish" id="wl-filter-badge" style="display:none;">0</span>
-        <span class="filter-caret">▾</span>
+  <div class="tab-view t-wish" id="tab-wishlist">
+    <div class="dh-toolbar">
+      <input class="ui-input search" id="wl-search" type="search" placeholder="Search your wishlist…" oninput="setWlQuery(this.value)">
+      <button class="ui-btn" id="wl-filter-toggle" aria-expanded="false">
+        Filters <span class="ui-badge accent" id="wl-filter-badge" style="display:none;">0</span><span class="dh-caret">▾</span>
       </button>
-      <div class="search-box t-wish">
-        <input id="wl-search" type="search" placeholder="Search your wishlist…" oninput="setWlQuery(this.value)">
-      </div>
     </div>
 
-    <div class="filter-panel" id="wl-filter-panel">
-      <div class="filter-group">
-        <div class="filter-group-label">Type</div>
-        <div class="chip-row" id="wl-type-row"></div>
+    <div class="ui-card ui-stack dh-panel" id="wl-filter-panel">
+      <div class="dh-group"><span class="ui-label">Type</span><div class="ui-chips" id="wl-type-row"></div></div>
+      <div class="dh-group"><span class="ui-label">Other</span>
+        <label class="check dh-switch"><span>Favourites only</span><input type="checkbox" role="switch" id="wl-fav-toggle" onchange="toggleWlFavOnly()"></label>
       </div>
-      <div class="filter-group">
-        <div class="filter-group-label">Other</div>
-        <div class="toggle-list">
-          <label class="toggle-row">
-            <span>Favourites only</span>
-            <input type="checkbox" role="switch" id="wl-fav-toggle" onchange="toggleWlFavOnly()">
-          </label>
-        </div>
-      </div>
-      <div class="filter-panel-footer">
-        <button class="clear-filters-btn" id="wl-clear-btn" onclick="clearWlFilters()">Clear all filters</button>
-      </div>
+      <div class="ui-actions"><button class="ui-btn quiet small" id="wl-clear-btn" onclick="clearWlFilters()">Clear all filters</button></div>
     </div>
 
-    <div class="section-header">
-      <span class="section-count" id="wl-count"></span>
-    </div>
-    <div id="wl-body"></div>
+    <div class="ui-head"><span class="ui-label ui-spacer" id="wl-count"></span></div>
+    <div id="wl-body" class="ui-page"></div>
   </div>
 
   <!-- ── ADD NEW ── -->
-  <div class="tab-view" id="tab-addnew">
-    <div class="an-intro">
-      <h2>Add something new</h2>
-      <p>Jot down anything you want in the app — a place, a meal, a craft or an event. Just the name is enough.
+  <div class="tab-view t-act" id="tab-addnew">
+    <div class="ui-stack">
+      <h1 class="ui-title">Add something new</h1>
+      <p class="ui-sub">Jot down anything you want in the app — a place, a meal, a craft or an event. Just the name is enough.
          When you've got a few, tap Fill in the details at the bottom and everything gets looked up and
          added properly — you check it first.</p>
     </div>
 
-    <div class="an-card">
-      <div class="an-form">
-        <div class="form-group">
-          <label for="an-kind">What is it?</label>
-          <select id="an-kind">
+    <div class="ui-card">
+      <div class="dh-form">
+        <label class="ui-field"><span>What is it?</span>
+          <select class="ui-input" id="an-kind">
             <option value="act">Place</option>
             <option value="meal">Meal</option>
             <option value="craft">Craft</option>
             <option value="event">Event</option>
           </select>
-        </div>
-        <div class="form-group">
-          <label for="an-name">Name</label>
-          <input id="an-name" placeholder="e.g. Bents Garden &amp; Home" autocomplete="off">
-        </div>
-        <div class="form-group">
-          <label for="an-note">Note <span class="an-opt">(optional)</span></label>
-          <input id="an-note" placeholder="e.g. near Glazebury, do the dinosaur trail" autocomplete="off">
-        </div>
-        <button class="btn btn-act" id="an-add">Add to list</button>
+        </label>
+        <label class="ui-field"><span>Name</span>
+          <input class="ui-input" id="an-name" placeholder="e.g. Bents Garden &amp; Home" autocomplete="off">
+        </label>
+        <label class="ui-field"><span>Note (optional)</span>
+          <input class="ui-input" id="an-note" placeholder="e.g. near Glazebury, do the dinosaur trail" autocomplete="off">
+        </label>
+        <button class="ui-btn primary" id="an-add">Add to list</button>
       </div>
     </div>
 
-    <div class="section-header">
-      <span class="section-count" id="an-count"></span>
-      <button class="add-btn" id="an-clear" onclick="clearDrafts()">Clear list</button>
+    <div class="ui-head">
+      <span class="ui-label ui-spacer" id="an-count"></span>
+      <button class="ui-btn quiet small" id="an-clear" onclick="clearDrafts()">Clear list</button>
     </div>
     <div id="an-list"></div>
 
-    <div class="an-card an-research" id="an-research">
-      <h3>Fill in the details</h3>
-      <p>Looks up the real details for everything on the list, then you tick what to add.</p>
-      <p id="an-hint" style="display:none;">Add something to the list first and it will cover everything on it.</p>
-      <div class="an-actions" style="margin-bottom:0;">
-        <button class="btn btn-act" id="an-fill" onclick="fillDrafts()"><magic-mark></magic-mark> Fill in the details</button>
+    <div class="ui-card ui-stack" id="an-research">
+      <div class="ui-head"><h2 class="ui-h2">Fill in the details</h2></div>
+      <p class="ui-hint">Looks up the real details for everything on the list, then you tick what to add.</p>
+      <p class="ui-hint" id="an-hint" style="display:none;">Add something to the list first and it will cover everything on it.</p>
+      <div class="ui-actions">
+        <button class="ui-btn primary" id="an-fill" onclick="fillDrafts()"><magic-mark></magic-mark> Fill in the details</button>
       </div>
     </div>
 
     <!-- Settings: optional password lock + backup (public/lock.js does the work) -->
-    <div class="an-card" id="an-settings">
-      <h3>Password &amp; backup</h3>
-      <label class="dh-lock-row" for="pw-on">
+    <div class="ui-card ui-stack" id="an-settings">
+      <div class="ui-head"><h2 class="ui-h2">Password &amp; backup</h2></div>
+      <label class="check top dh-switch" for="pw-on">
         <span><strong>Require a password</strong><br>
-          <small>Off: anyone with the link can make changes. On: changes need the password on each device.</small></span>
+          <span class="ui-hint">Off: anyone with the link can make changes. On: changes need the password on each device.</span></span>
         <input type="checkbox" role="switch" id="pw-on">
       </label>
-      <div id="pw-form" style="display:none;">
-        <div class="form-group" style="margin-bottom:0.6rem;">
-          <label for="pw-new">Password <span class="an-opt" id="pw-hint">(at least 4 characters)</span></label>
-          <input type="password" id="pw-new" autocomplete="new-password">
-        </div>
-        <div class="an-actions">
-          <button class="btn btn-act" id="pw-save">Save password</button>
-          <button class="btn btn-outline" id="pw-lock" style="display:none;">Lock this device</button>
+      <div id="pw-form" class="ui-stack" style="display:none;">
+        <label class="ui-field"><span>Password</span>
+          <input class="ui-input" type="password" id="pw-new" autocomplete="new-password">
+          <small id="pw-hint">At least 4 characters</small>
+        </label>
+        <div class="ui-actions">
+          <button class="ui-btn primary" id="pw-save">Save password</button>
+          <button class="ui-btn" id="pw-lock" style="display:none;">Lock this device</button>
         </div>
       </div>
-      <div id="pw-status" class="an-opt" style="min-height:1.1rem;margin-bottom:0.6rem;"></div>
-      <div class="an-actions" style="margin-bottom:0;">
-        <button class="btn btn-outline" id="backup-btn">Download a backup</button>
+      <p id="pw-status" class="ui-hint" role="status"></p>
+      <div class="ui-actions">
+        <button class="ui-btn" id="backup-btn">Download a backup</button>
       </div>
-      <p class="an-opt" style="margin-top:0.5rem;">Every event, place, meal, craft, note, edit and favourite saved online, as a JSON file.</p>
+      <p class="ui-hint">Every event, place, meal, craft, note, edit and favourite saved online, as a JSON file.</p>
     </div>
   </div>
 
 </main>
 
-<!-- SPOTLIGHT -->
-<div class="overlay" id="spotlight-overlay" style="display:none;" onclick="onOverlayClick(event,'spotlight-overlay')">
-  <div class="spotlight" id="spotlight-inner"></div>
-</div>
+<!-- SPOTLIGHT: a card's details -->
+<dialog class="ui-sheet" id="spotlight-overlay" onclick="if(event.target===this)closeSpotlight()" onclose="closeSpotlight()">
+</dialog>
 
 <!-- EDIT CARD -->
-<div class="modal-overlay" id="edit-overlay" style="display:none;" onclick="if(event.target===this)closeEditModal()">
-  <div class="modal">
-    <button class="sp-close" onclick="closeEditModal()" aria-label="Close">✕</button>
-    <h3>Edit this card</h3>
-    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">Change the wording yourself, or say what you want and have it rewritten.</p>
-
-    <div class="form-row" id="ed-row" style="grid-template-columns:80px 1fr;">
-      <div class="form-group" id="ed-icon-wrap"><label for="ed-icon">Icon</label><input id="ed-icon" maxlength="4"></div>
-      <div class="form-group"><label for="ed-name">Name <span class="an-opt" id="ed-name-count"></span></label><input id="ed-name"></div>
+<dialog class="ui-sheet t-act" id="edit-overlay" onclick="if(event.target===this)closeEditModal()" onclose="closeEditModal()">
+  <header><h2>Edit this card</h2><button class="ui-btn quiet icon small" onclick="closeEditModal()" aria-label="Close">✕</button></header>
+  <div class="body">
+    <p class="ui-hint">Change the wording yourself, or say what you want and have it rewritten.</p>
+    <div class="dh-inline" id="ed-row" style="align-items:start">
+      <label class="ui-field" id="ed-icon-wrap" style="inline-size:80px;flex:none"><span>Icon</span><input class="ui-input" id="ed-icon" maxlength="4"></label>
+      <label class="ui-field" style="flex:1"><span>Name <span id="ed-name-count"></span></span><input class="ui-input" id="ed-name"></label>
     </div>
-    <div class="form-group">
-      <label for="ed-desc">Description <span class="an-opt" id="ed-desc-count"></span></label>
-      <textarea id="ed-desc" rows="3"></textarea>
-    </div>
-    <div class="modal-actions" style="margin-bottom:1.25rem;">
-      <button class="btn btn-act" id="ed-save" onclick="saveCardEdit()">Save changes</button>
-      <button class="btn btn-outline" id="ed-reset" onclick="resetCardEdit()">Reset to original</button>
+    <label class="ui-field"><span>Description <span id="ed-desc-count"></span></span>
+      <textarea class="ui-input" id="ed-desc" rows="3"></textarea>
+    </label>
+    <div class="ui-actions">
+      <button class="ui-btn primary" id="ed-save" onclick="saveCardEdit()">Save changes</button>
+      <button class="ui-btn" id="ed-reset" onclick="resetCardEdit()">Reset to original</button>
     </div>
 
-    <button class="ed-toggle" id="ed-ai-toggle" onclick="toggleEditAI()">
-      <span><magic-mark></magic-mark> Rewrite it</span><span class="filter-caret">▾</span>
+    <button class="ui-btn block" id="ed-ai-toggle" aria-expanded="false" onclick="toggleEditAI()">
+      <magic-mark></magic-mark> Rewrite it <span class="ui-spacer"></span><span class="dh-caret">▾</span>
     </button>
-    <div class="an-card" id="ed-ai" style="margin-bottom:0;display:none;">
-      <div class="form-group">
-        <label for="ed-instruction">What should change? <span class="an-opt">(optional)</span></label>
-        <textarea id="ed-instruction" rows="2" placeholder="e.g. mention the new play area and that parking is free"></textarea>
-      </div>
-      <div class="an-actions" style="margin-bottom:0;">
-        <button class="btn btn-act" id="ed-rewrite" onclick="rewriteCard()"><magic-mark></magic-mark> Rewrite it</button>
+    <div class="ui-card inset ui-stack" id="ed-ai" style="display:none;">
+      <label class="ui-field"><span>What should change? (optional)</span>
+        <textarea class="ui-input" id="ed-instruction" rows="2" placeholder="e.g. mention the new play area and that parking is free"></textarea>
+      </label>
+      <div class="ui-actions">
+        <button class="ui-btn primary" id="ed-rewrite" onclick="rewriteCard()"><magic-mark></magic-mark> Rewrite it</button>
       </div>
     </div>
   </div>
-</div>
+</dialog>
 
-<div class="modal-overlay" id="loc-overlay" style="display:none;" onclick="if(event.target===this)closeLocModal()">
-  <div class="modal">
-    <button class="sp-close" onclick="closeLocModal()" aria-label="Close">✕</button>
-    <h3>Set home location</h3>
-    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">Distances will be recalculated from your location. Default is Macclesfield.</p>
-    <div class="form-group">
-      <label>Town or postcode</label>
-      <input type="text" id="loc-input" placeholder="e.g. Stockport, or SK10 1AA">
-    </div>
-    <div id="loc-status" style="font-size:0.8rem;min-height:1.2rem;margin-bottom:0.5rem;"></div>
-    <div class="modal-actions">
-      <button class="btn btn-act" onclick="setLocation()">Set location</button>
-      <button class="btn btn-outline" onclick="useGPS()">Use GPS</button>
-      <button class="btn btn-outline" onclick="resetLocation()">Reset</button>
-    </div>
+<dialog class="ui-sheet t-act" id="loc-overlay" onclick="if(event.target===this)closeLocModal()" onclose="closeLocModal()">
+  <header><h2>Set home location</h2><button class="ui-btn quiet icon small" onclick="closeLocModal()" aria-label="Close">✕</button></header>
+  <div class="body">
+    <p class="ui-hint">Distances will be recalculated from your location. Default is Macclesfield.</p>
+    <label class="ui-field"><span>Town or postcode</span>
+      <input class="ui-input" type="text" id="loc-input" placeholder="e.g. Stockport, or SK10 1AA">
+    </label>
+    <p class="ui-hint" id="loc-status" role="status"></p>
   </div>
-</div>
+  <footer class="ui-actions end">
+    <button class="ui-btn" onclick="resetLocation()">Reset</button>
+    <button class="ui-btn" onclick="useGPS()">Use GPS</button>
+    <button class="ui-btn primary" onclick="setLocation()">Set location</button>
+  </footer>
+</dialog>
 
 <script>
 // ════════════════════════════════════════════
@@ -6231,40 +5685,40 @@ function saveJSON(k,v) { localStorage.setItem(k, JSON.stringify(v)); }
 // ════════════════════════════════════════════
 
 function weatherBadge(w) {
-  if (w === 'indoor')  return '<span class="badge b-rain">☔ Rainy day</span>';
-  if (w === 'outdoor') return '<span class="badge b-sun">☀️ Outdoors</span>';
-  return '<span class="badge b-both">⛅ Any weather</span>';
+  if (w === 'indoor')  return '<span class="ui-badge">☔ Rainy day</span>';
+  if (w === 'outdoor') return '<span class="ui-badge">☀️ Outdoors</span>';
+  return '<span class="ui-badge">⛅ Any weather</span>';
 }
 
 function priceBadge(price, label) {
-  if (price === 0) return `<span class="badge b-free">🆓 ${label || 'Free'}</span>`;
-  if (price === 3) return `<span class="badge b-pricey">${label}</span>`;
-  return `<span class="badge b-paid">${label}</span>`;
+  if (price === 0) return `<span class="ui-badge good">🆓 ${label || 'Free'}</span>`;
+  if (price === 3) return `<span class="ui-badge warn">${label}</span>`;
+  return `<span class="ui-badge">${label}</span>`;
 }
 
 function distBadge(d) {
-  return `<span class="badge b-dist">📍 ${d} miles</span>`;
+  return `<span class="ui-badge">📍 ${d} miles</span>`;
 }
 
 function timeBadge(t) {
-  if (t < 60) return `<span class="badge b-time">⏱️ ${t} min</span>`;
-  return `<span class="badge b-time">⏱️ ${Math.floor(t/60)}h ${t%60?t%60+'m':''}</span>`;
+  if (t < 60) return `<span class="ui-badge">⏱️ ${t} min</span>`;
+  return `<span class="ui-badge">⏱️ ${Math.floor(t/60)}h ${t%60?t%60+'m':''}</span>`;
 }
 
 function messBadge(m) {
   const labels = ['','🟢 Tidy','🟡 Messy','🔴 Very messy'];
-  const cls = ['','b-mess1','b-mess2','b-mess3'];
-  return `<span class="badge ${cls[m]}">${labels[m]}</span>`;
+  const cls = ['','good','warn','bad'];
+  return `<span class="ui-badge ${cls[m]}">${labels[m]}</span>`;
 }
 
 function helpBadge(h) {
   const labels = ['','👀 Watch','🤝 Help out','⭐ Kids lead'];
-  return `<span class="badge b-cat">${labels[h]}</span>`;
+  return `<span class="ui-badge accent">${labels[h]}</span>`;
 }
 
 function kidBadge(k) {
   const stars = '⭐'.repeat(k);
-  return `<span class="badge b-cat">${stars} Kid fave</span>`;
+  return `<span class="ui-badge accent">${stars} Kid fave</span>`;
 }
 
 const REGION_MAP = {
@@ -6358,7 +5812,7 @@ function getSubcat(a) {
 
 function subcatBadge(a) {
   const m = SUBCAT_META[getSubcat(a)] || {i:'📌', l:'Activity'};
-  return `<span class="badge b-cat">${m.i} ${m.l}</span>`;
+  return `<span class="ui-badge accent">${m.i} ${m.l}</span>`;
 }
 
 function catLabel(cat) {
@@ -6422,7 +5876,7 @@ const STAR_SVG = '<svg class="st-icon" viewBox="0 0 24 24" aria-hidden="true"><p
 
 function wishBtn(type, id) {
   const on = isWish(type, id);
-  return `<button class="wish-btn ${on?'on':''}" title="${on?'Remove from wishlist':'Add to wishlist'}"
+  return `<button class="ui-btn quiet icon small" aria-pressed="${!!on}" title="${on?'Remove from wishlist':'Add to wishlist'}"
     onclick="event.stopPropagation();toggleWish('${type}','${id}')">${BOOKMARK_SVG}</button>`;
 }
 
@@ -6610,9 +6064,9 @@ function renderChips() {
     {val:'indoor',label:'☔ Indoors'},
   ];
   document.getElementById('act-weather-row').innerHTML = actWeathers.map(w =>
-    `<button class="chip ${S.actWeather===w.val?'on-act':''}" onclick="setActWeather('${w.val}')">${w.label}</button>`
+    `<button class="ui-chip ${S.actWeather===w.val?'on':''}" onclick="setActWeather('${w.val}')">${w.label}</button>`
   ).join('');
-  if (S.actWeather === 'all') document.querySelector('#act-weather-row .chip').classList.add('on-act');
+  if (S.actWeather === 'all') document.querySelector('#act-weather-row .ui-chip').classList.add('on');
 
   const actCats = [
     {val:'all',label:'All'},
@@ -6641,7 +6095,7 @@ function renderChips() {
     {val:'favs',label:'Favourites'},
   ];
   document.getElementById('act-cat-row').innerHTML = actCats.map(c =>
-    `<button class="chip ${c.val==='all' ? (!S.actCat.size?'on-act':'') : (S.actCat.has(c.val)?'on-act':'')}" onclick="setActCat('${c.val}')">${c.label}</button>`
+    `<button class="ui-chip ${c.val==='all' ? (!S.actCat.size?'on':'') : (S.actCat.has(c.val)?'on':'')}" onclick="setActCat('${c.val}')">${c.label}</button>`
   ).join('');
 
   // Activity regions
@@ -6662,13 +6116,13 @@ function renderChips() {
     {val:'north',label:'🏛️ North East'},
   ];
   document.getElementById('act-region-row').innerHTML = actRegions.map(r =>
-    `<button class="chip ${r.val==='all' ? (!S.actRegion.size?'on-act':'') : (S.actRegion.has(r.val)?'on-act':'')}" onclick="setActRegion('${r.val}')">${r.label}</button>`
+    `<button class="ui-chip ${r.val==='all' ? (!S.actRegion.size?'on':'') : (S.actRegion.has(r.val)?'on':'')}" onclick="setActRegion('${r.val}')">${r.label}</button>`
   ).join('');
 
   // Price chips
   const prices = [{val:'all',label:'Any'},{val:0,label:'Free'},{val:1,label:'£'},{val:2,label:'££'},{val:3,label:'£££'}];
   document.getElementById('price-row').innerHTML = prices.map(p =>
-    `<button class="chip ${p.val==='all' ? (!S.actMaxPrice.size?'on-act':'') : (S.actMaxPrice.has(p.val)?'on-act':'')}" onclick="setPrice('${p.val}')">${p.label}</button>`
+    `<button class="ui-chip ${p.val==='all' ? (!S.actMaxPrice.size?'on':'') : (S.actMaxPrice.has(p.val)?'on':'')}" onclick="setPrice('${p.val}')">${p.label}</button>`
   ).join('');
 
   // Meal cats
@@ -6681,7 +6135,7 @@ function renderChips() {
     {val:'favs',label:'Favourites'},
   ];
   document.getElementById('meal-cat-row').innerHTML = mealCats.map(c =>
-    `<button class="chip ${c.val==='all' ? (!S.mealCat.size?'on-meal':'') : (S.mealCat.has(c.val)?'on-meal':'')}" onclick="setMealCat('${c.val}')">${c.label}</button>`
+    `<button class="ui-chip ${c.val==='all' ? (!S.mealCat.size?'on':'') : (S.mealCat.has(c.val)?'on':'')}" onclick="setMealCat('${c.val}')">${c.label}</button>`
   ).join('');
 
   // Meal time of day
@@ -6693,7 +6147,7 @@ function renderChips() {
     {val:'snack',label:'🧁 Snack / pud'},
   ];
   document.getElementById('meal-slot-row').innerHTML = mealSlots.map(s =>
-    `<button class="chip ${s.val==='all' ? (!S.mealSlot.size?'on-meal':'') : (S.mealSlot.has(s.val)?'on-meal':'')}" onclick="setMealSlot('${s.val}')">${s.label}</button>`
+    `<button class="ui-chip ${s.val==='all' ? (!S.mealSlot.size?'on':'') : (S.mealSlot.has(s.val)?'on':'')}" onclick="setMealSlot('${s.val}')">${s.label}</button>`
   ).join('');
 
   // Meal time to make
@@ -6704,7 +6158,7 @@ function renderChips() {
     {val:45,label:'⏱️ Under 45 min'},
   ];
   document.getElementById('meal-time-row').innerHTML = mealTimes.map(t =>
-    `<button class="chip ${S.mealMaxTime===t.val?'on-meal':''}" onclick="setMealMaxTime(${t.val})">${t.label}</button>`
+    `<button class="ui-chip ${S.mealMaxTime===t.val?'on':''}" onclick="setMealMaxTime(${t.val})">${t.label}</button>`
   ).join('');
 
   // Craft cats
@@ -6719,7 +6173,7 @@ function renderChips() {
     {val:'favs',label:'Favourites'},
   ];
   document.getElementById('craft-cat-row').innerHTML = craftCats.map(c =>
-    `<button class="chip ${c.val==='all' ? (!S.craftCat.size?'on-craft':'') : (S.craftCat.has(c.val)?'on-craft':'')}" onclick="setCraftCat('${c.val}')">${c.label}</button>`
+    `<button class="ui-chip ${c.val==='all' ? (!S.craftCat.size?'on':'') : (S.craftCat.has(c.val)?'on':'')}" onclick="setCraftCat('${c.val}')">${c.label}</button>`
   ).join('');
 
   // Craft time to make
@@ -6730,7 +6184,7 @@ function renderChips() {
     {val:45,label:'⏱️ Under 45 min'},
   ];
   document.getElementById('craft-time-row').innerHTML = craftTimes.map(t =>
-    `<button class="chip ${S.craftMaxTime===t.val?'on-craft':''}" onclick="setCraftMaxTime(${t.val})">${t.label}</button>`
+    `<button class="ui-chip ${S.craftMaxTime===t.val?'on':''}" onclick="setCraftMaxTime(${t.val})">${t.label}</button>`
   ).join('');
 }
 
@@ -6820,15 +6274,15 @@ function renderAddNew() {
   document.getElementById('an-clear').style.display = n ? '' : 'none';
   document.getElementById('an-fill').disabled = !n;
   document.getElementById('an-hint').style.display = n ? 'none' : '';
-  list.className = n ? 'an-list' : '';
-  list.innerHTML = n ? S.drafts.map(d => `<div class="an-row">
-      <span class="an-kind">${DRAFT_KINDS[d.kind] ? DRAFT_KINDS[d.kind].label : d.kind}</span>
-      <div class="an-body">
-        <div class="an-name">${evEsc(d.name)}</div>
-        ${d.note ? `<div class="an-note">${evEsc(d.note)}</div>` : ''}
-      </div>
-      <button class="an-del" title="Remove" onclick="removeDraft('${evEsc(d.id)}')">✕</button>
-    </div>`).join('') : '';
+  list.className = n ? 'ui-card' : '';
+  list.innerHTML = n ? `<ul class="ui-list">${S.drafts.map(d => `<li class="ui-row">
+      <span class="ui-badge">${DRAFT_KINDS[d.kind] ? DRAFT_KINDS[d.kind].label : d.kind}</span>
+      <span class="main">
+        <span>${evEsc(d.name)}</span>
+        ${d.note ? `<span class="sub">${evEsc(d.note)}</span>` : ''}
+      </span>
+      <button class="ui-btn quiet icon small" aria-label="Remove" title="Remove" onclick="removeDraft('${evEsc(d.id)}')">✕</button>
+    </li>`).join('')}</ul>` : '';
 }
 
 // One prompt covering everything on the list, grouped by kind. The reply shape
@@ -6882,9 +6336,9 @@ const askMagic = (prompt, opts) => window.askClaude(prompt, opts);
 
 // A tickable list for the sheet's check step. Rows already in the app start unticked.
 function pickPreview(rows, note) {
-  return `<p class="mg-note">${note || 'Untick anything you don’t want.'}</p><div class="dh-picks">${rows.map((r, i) => `<label class="check top dh-pick">
+  return `<p class="mg-note">${note || 'Untick anything you don’t want.'}</p><div class="ui-card flat dh-picks"><ul class="ui-list">${rows.map((r, i) => `<li class="ui-row"><label class="check top" style="flex:1">
     <input type="checkbox" data-pick="${i}" ${r.dup ? '' : 'checked'}>
-    <span><b>${evEsc(r.label)}</b>${r.sub || r.dup ? `<small>${evEsc([r.sub, r.dup ? 'already in the app' : ''].filter(Boolean).join(' · '))}</small>` : ''}</span></label>`).join('')}</div>`;
+    <span><b>${evEsc(r.label)}</b>${r.sub || r.dup ? `<small>${evEsc([r.sub, r.dup ? 'already in the app' : ''].filter(Boolean).join(' · '))}</small>` : ''}</span></label></li>`).join('')}</ul></div>`;
 }
 function pickedRows(rows) {
   const on = new Set([...document.querySelectorAll('.mg-preview [data-pick]')].filter(x => x.checked).map(x => +x.dataset.pick));
@@ -6894,9 +6348,9 @@ function pickedRows(rows) {
 }
 
 function dhToast(msg) {
-  document.querySelectorAll('.dh-toast').forEach(t => t.remove());
+  document.querySelectorAll('.ui-toast').forEach(t => t.remove());
   const t = document.createElement('div');
-  t.className = 'dh-toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+  t.className = 'ui-toast'; t.setAttribute('role', 'status'); t.textContent = msg;
   document.body.append(t);
   setTimeout(() => t.remove(), 2600);
 }
@@ -7045,10 +6499,10 @@ function openEditModal(type, id) {
   // Events don't show an icon on their row, so don't offer to set one.
   const isEvent = type === 'event';
   document.getElementById('ed-icon-wrap').style.display = isEvent ? 'none' : '';
-  document.getElementById('ed-row').style.gridTemplateColumns = isEvent ? '1fr' : '80px 1fr';
   edCounts();
   closeSpotlight();
-  document.getElementById('edit-overlay').style.display = 'flex';
+  const dlg = document.getElementById('edit-overlay');
+  if (!dlg.open) dlg.showModal();
   document.body.style.overflow = 'hidden';
 }
 
@@ -7057,11 +6511,12 @@ function toggleEditAI(open) {
   const btn = document.getElementById('ed-ai-toggle');
   const show = open === undefined ? panel.style.display === 'none' : open;
   panel.style.display = show ? '' : 'none';
-  btn.classList.toggle('open', show);
+  btn.setAttribute('aria-expanded', String(show));
 }
 
 function closeEditModal() {
-  document.getElementById('edit-overlay').style.display = 'none';
+  const dlg = document.getElementById('edit-overlay');
+  if (dlg.open) dlg.close();
   document.body.style.overflow = '';
   ED.type = null; ED.id = null;
 }
@@ -7157,7 +6612,7 @@ function rewriteCard() {
       if (!out.name && !out.desc) throw new Error('That reply had no name or description in it.');
       return out;
     },
-    preview: r => `<div class="dh-rewrite"><b>${evEsc([ED.type === 'event' ? '' : r.icon, r.name].filter(Boolean).join(' '))}</b>${evEsc(r.desc)}</div>
+    preview: r => `<div class="ui-card inset dh-rewrite"><b>${evEsc([ED.type === 'event' ? '' : r.icon, r.name].filter(Boolean).join(' '))}</b>${evEsc(r.desc)}</div>
       <p class="mg-note">It goes into the fields — tap Save changes to keep it.</p>`,
     applyLabel: 'Use this wording',
     apply: r => {
@@ -7207,7 +6662,7 @@ function renderWlChips() {
   if (!row) return;
   const chips = [{ val:'all', label:'All' }, ...WL_TYPES];
   row.innerHTML = chips.map(c =>
-    `<button class="chip ${c.val==='all' ? (!S.wlTypes.size?'on-wish':'') : (S.wlTypes.has(c.val)?'on-wish':'')}" onclick="setWlType('${c.val}')">${c.label}</button>`
+    `<button class="ui-chip ${c.val==='all' ? (!S.wlTypes.size?'on':'') : (S.wlTypes.has(c.val)?'on':'')}" onclick="setWlType('${c.val}')">${c.label}</button>`
   ).join('');
 }
 
@@ -7257,15 +6712,14 @@ function renderWishlist() {
           t.val === 'act' ? actCard(x) : t.val === 'meal' ? mealCard(x) : craftCard(x)
         ).join('')}</div>`;
     return `<div class="wl-group">
-      <div class="wl-group-head"><h2>${t.title}</h2><span>${items.length}</span></div>
+      <div class="ui-head"><h2 class="ui-h2">${t.title}</h2><span class="ui-badge">${items.length}</span></div>
       ${cards}
     </div>`;
   }).join('');
 
   document.getElementById('wl-count').textContent = `${total} item${total!==1?'s':''} on the wishlist`;
   updateWishCount();
-  body.innerHTML = total ? html : `<div class="empty"><div class="e-icon">${BOOKMARK_SVG}</div>
-    <p>Nothing here yet — tap the bookmark on any place, meal, craft or event to add it.</p></div>`;
+  body.innerHTML = total ? html : `<div class="ui-empty"><span class="icon">${BOOKMARK_SVG}</span><span>Nothing here yet — tap the bookmark on any place, meal, craft or event to add it.</span></div>`;
 }
 
 // ════════════════════════════════════════════
@@ -7456,7 +6910,7 @@ function evVisible() {
 function renderEvents() {
   const body = document.getElementById('ev-body');
   if (!body) return;
-  if (!EV.loaded) { loadEvents(); body.innerHTML = `<div class="empty"><div class="e-icon">📅</div><p>Loading events…</p></div>`; return; }
+  if (!EV.loaded) { loadEvents(); body.innerHTML = `<div class="ui-empty"><span class="icon">📅</span><span>Loading events…</span></div>`; return; }
 
   const counts = {}; EV.events.forEach(e => counts[e.category] = (counts[e.category]||0) + 1);
   const cats = EVENT_CATS.filter(c => counts[c.key]);
@@ -7465,14 +6919,14 @@ function renderEvents() {
   // Category chips (collapsed inside Filters, like the other tabs).
   const catRow = document.getElementById('ev-cat-row');
   if (catRow) catRow.innerHTML =
-    `<button class="chip ${EV.cat==='all'?'on-event':''}" onclick="evSetCat('all')">All</button>` +
-    cats.map(c => `<button class="chip ${EV.cat===c.key?'on-event':''}" onclick="evSetCat('${c.key}')">${c.icon} ${c.label} ${counts[c.key]}</button>`).join('');
+    `<button class="ui-chip ${EV.cat==='all'?'on':''}" onclick="evSetCat('all')">All</button>` +
+    cats.map(c => `<button class="ui-chip ${EV.cat===c.key?'on':''}" onclick="evSetCat('${c.key}')">${c.icon} ${c.label} ${counts[c.key]}</button>`).join('');
 
   // Area chips.
   const regionRow = document.getElementById('ev-region-row');
   if (regionRow) regionRow.innerHTML =
-    `<button class="chip ${EV.region==='all'?'on-event':''}" onclick="evSetRegion('all')">📍 All areas</button>` +
-    regions.map(r => `<button class="chip ${EV.region===r?'on-event':''}" onclick="evSetRegion('${r}')">${EV_REGION_LABEL[r]||r}</button>`).join('');
+    `<button class="ui-chip ${EV.region==='all'?'on':''}" onclick="evSetRegion('all')">📍 All areas</button>` +
+    regions.map(r => `<button class="ui-chip ${EV.region===r?'on':''}" onclick="evSetRegion('${r}')">${EV_REGION_LABEL[r]||r}</button>`).join('');
 
   // Month chips — only the months something actually runs in.
   const monthRow = document.getElementById('ev-month-row');
@@ -7482,10 +6936,10 @@ function renderEvents() {
       .filter(e => { const d = evParseDate(e.endDate || e.startDate); return !d || d >= today; })
       .map(e => (e.startDate || '').slice(0, 7)))].filter(Boolean).sort();
     monthRow.innerHTML =
-      `<button class="chip ${!EV.month?'on-event':''}" onclick="evSetMonth(null)">Any month</button>` +
+      `<button class="ui-chip ${!EV.month?'on':''}" onclick="evSetMonth(null)">Any month</button>` +
       months.map(m => {
         const [y, mm] = m.split('-').map(Number);
-        return `<button class="chip ${EV.month===m?'on-event':''}" onclick="evSetMonth('${m}')">${EV_MONTHS[mm-1]} ${y}</button>`;
+        return `<button class="ui-chip ${EV.month===m?'on':''}" onclick="evSetMonth('${m}')">${EV_MONTHS[mm-1]} ${y}</button>`;
       }).join('');
   }
 
@@ -7497,7 +6951,7 @@ function renderEvents() {
   updateEvFilterBadge();
 
   body.innerHTML = list.length ? evListHTML(list)
-    : `<div class="empty"><div class="e-icon">🗓️</div><p>${EV.events.length ? 'No events match these filters.' : 'No events yet — tap Update events to pull in what’s coming up.'}</p></div>`;
+    : `<div class="ui-empty"><span class="icon">🗓️</span><span>${EV.events.length ? 'No events match these filters.' : 'No events yet — tap Update events to pull in what’s coming up.'}</span></div>`;
 }
 
 function activeEvFilterCount() {
@@ -7528,33 +6982,33 @@ function evDateBadge(e) {
   if (!sd) return '';
   const fmt = d => `${d.getDate()} ${EV_MONTHS[d.getMonth()].slice(0,3)}`;
   const multi = e.endDate && e.endDate !== e.startDate && ed;
-  return `<span class="badge b-date">${fmt(sd)}${multi ? ` → ${fmt(ed)}` : ''}</span>`;
+  return `<span class="ui-badge">${fmt(sd)}${multi ? ` → ${fmt(ed)}` : ''}</span>`;
 }
 
 function evBadges(e) {
   const cat = evCatFor(e.category);
   return [
     evDateBadge(e),
-    `<span class="badge b-cat">${cat.icon} ${cat.label}</span>`,
-    e.region ? `<span class="badge b-dist">📍 ${EV_REGION_LABEL[e.region] || e.region}${e.distanceMiles ? ` · ${e.distanceMiles}mi` : ''}</span>` : '',
-    e.price ? `<span class="badge ${/free/i.test(e.price) ? 'b-free' : 'b-paid'}">${evEsc(e.price)}</span>` : '',
-    e.kidFriendly ? '<span class="badge b-sun">👶 Kid-friendly</span>' : '',
+    `<span class="ui-badge accent">${cat.icon} ${cat.label}</span>`,
+    e.region ? `<span class="ui-badge">📍 ${EV_REGION_LABEL[e.region] || e.region}${e.distanceMiles ? ` · ${e.distanceMiles}mi` : ''}</span>` : '',
+    e.price ? `<span class="ui-badge${/free/i.test(e.price) ? ' good' : ''}">${evEsc(e.price)}</span>` : '',
+    e.kidFriendly ? '<span class="ui-badge">👶 Kid-friendly</span>' : '',
   ].join('');
 }
 
 function eventCard(e) {
   const id = evEsc(e.id);
-  return `<div class="card" onclick="openSpotlight('event','${id}')">
-    <div class="card-top">
-      <span class="card-icon">${evCatFor(e.category).icon}</span>
-      <span class="card-name">${evEsc(e.title)}</span>
-      <span class="card-flags">
-        <button class="wish-btn ${e.inPlans?'on':''}" title="${e.inPlans?'Remove from wishlist':'Add to wishlist'}" onclick="event.stopPropagation();evTogglePlan('${id}')">${BOOKMARK_SVG}</button>
+  return `<div class="ui-card dh-card" onclick="openSpotlight('event','${id}')">
+    <div class="dh-top">
+      <span class="dh-emoji">${evCatFor(e.category).icon}</span>
+      <span class="dh-title">${evEsc(e.title)}</span>
+      <span class="dh-flags">
+        <button class="ui-btn quiet icon small" aria-pressed="${!!e.inPlans}" title="${e.inPlans?'Remove from wishlist':'Add to wishlist'}" onclick="event.stopPropagation();evTogglePlan('${id}')">${BOOKMARK_SVG}</button>
       </span>
     </div>
-    ${e.location ? `<div class="card-where">📍 ${evEsc(e.location)}</div>` : ''}
-    ${e.description ? `<div class="card-desc">${evEsc(e.description)}</div>` : ''}
-    <div class="card-badges">${evBadges(e)}</div>
+    ${e.location ? `<div class="ui-hint">📍 ${evEsc(e.location)}</div>` : ''}
+    ${e.description ? `<div class="dh-desc">${evEsc(e.description)}</div>` : ''}
+    <div class="dh-badges">${evBadges(e)}</div>
   </div>`;
 }
 
@@ -7791,7 +7245,7 @@ function renderActivities() {
   document.getElementById('act-count').textContent = `${items.length} place${items.length!==1?'s':''}`;
   const grid = document.getElementById('act-grid');
   if (!items.length) {
-    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="e-icon">🗺️</div><p>No activities match your filters</p></div>`;
+    grid.innerHTML = `<div class="ui-empty" style="grid-column:1/-1"><span class="icon">🗺️</span><span>No activities match your filters</span></div>`;
     return;
   }
   grid.innerHTML = items.map(a => actCard(a)).join('');
@@ -7802,7 +7256,7 @@ function renderMeals() {
   document.getElementById('meal-count').textContent = `${items.length} meal${items.length!==1?'s':''}`;
   const grid = document.getElementById('meal-grid');
   if (!items.length) {
-    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="e-icon">🍽️</div><p>No meals here yet</p></div>`;
+    grid.innerHTML = `<div class="ui-empty" style="grid-column:1/-1"><span class="icon">🍽️</span><span>No meals here yet</span></div>`;
     return;
   }
   grid.innerHTML = items.map(m => mealCard(m)).join('');
@@ -7813,7 +7267,7 @@ function renderCrafts() {
   document.getElementById('craft-count').textContent = `${items.length} craft idea${items.length!==1?'s':''}`;
   const grid = document.getElementById('craft-grid');
   if (!items.length) {
-    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="e-icon">🎨</div><p>No crafts match your filters</p></div>`;
+    grid.innerHTML = `<div class="ui-empty" style="grid-column:1/-1"><span class="icon">🎨</span><span>No crafts match your filters</span></div>`;
     return;
   }
   grid.innerHTML = items.map(c => craftCard(c)).join('');
@@ -7825,17 +7279,17 @@ function mapsUrl(name) {
 
 function actCard(a) {
   const fav = isFav('act', a.id);
-  return `<div class="card" onclick="openSpotlight('act','${a.id}')">
-    <div class="card-top">
-      <span class="card-icon">${a.icon}</span>
-      <span class="card-name">${a.name}</span>
-      <span class="card-flags">
-        <button class="fav-btn ${fav?'on':''}" title="${fav?'Remove favourite':'Add to favourites'}" onclick="event.stopPropagation();toggleFav('act','${a.id}')">${STAR_SVG}</button>
+  return `<div class="ui-card dh-card" onclick="openSpotlight('act','${a.id}')">
+    <div class="dh-top">
+      <span class="dh-emoji">${a.icon}</span>
+      <span class="dh-title">${a.name}</span>
+      <span class="dh-flags">
+        <button class="ui-btn quiet icon small" aria-pressed="${!!fav}" title="${fav?'Remove favourite':'Add to favourites'}" onclick="event.stopPropagation();toggleFav('act','${a.id}')">${STAR_SVG}</button>
         ${wishBtn('act', a.id)}
       </span>
     </div>
-    <div class="card-desc">${a.desc}</div>
-    <div class="card-badges">
+    <div class="dh-desc">${a.desc}</div>
+    <div class="dh-badges">
       ${distBadge(getEffectiveDist(a))}
       ${priceBadge(a.price, a.priceLabel)}
       ${weatherBadge(a.weather)}
@@ -7846,41 +7300,41 @@ function actCard(a) {
 
 function mealCard(m) {
   const fav = isFav('meal', m.id);
-  return `<div class="card" onclick="openSpotlight('meal','${m.id}')">
-    <div class="card-top">
-      <span class="card-icon">${m.icon}</span>
-      <span class="card-name">${m.name}</span>
-      <span class="card-flags">
-        <button class="fav-btn ${fav?'on':''}" title="${fav?'Remove favourite':'Add to favourites'}" onclick="event.stopPropagation();toggleFav('meal','${m.id}')">${STAR_SVG}</button>
+  return `<div class="ui-card dh-card" onclick="openSpotlight('meal','${m.id}')">
+    <div class="dh-top">
+      <span class="dh-emoji">${m.icon}</span>
+      <span class="dh-title">${m.name}</span>
+      <span class="dh-flags">
+        <button class="ui-btn quiet icon small" aria-pressed="${!!fav}" title="${fav?'Remove favourite':'Add to favourites'}" onclick="event.stopPropagation();toggleFav('meal','${m.id}')">${STAR_SVG}</button>
         ${wishBtn('meal', m.id)}
       </span>
     </div>
-    <div class="card-desc">${m.desc}</div>
-    <div class="card-badges">
+    <div class="dh-desc">${m.desc}</div>
+    <div class="dh-badges">
       ${timeBadge(m.time)}
-      <span class="badge b-cat">${catIcon(m.cat)} ${catLabel(m.cat)}</span>
-      ${hasVeg(m) ? '<span class="badge b-cat">🥦 Veg</span>' : ''}
+      <span class="ui-badge accent">${catIcon(m.cat)} ${catLabel(m.cat)}</span>
+      ${hasVeg(m) ? '<span class="ui-badge accent">🥦 Veg</span>' : ''}
     </div>
   </div>`;
 }
 
 function craftCard(c) {
   const fav = isFav('craft', c.id);
-  return `<div class="card" onclick="openSpotlight('craft','${c.id}')">
-    <div class="card-top">
-      <span class="card-icon">${c.icon}</span>
-      <span class="card-name">${c.name}</span>
-      <span class="card-flags">
-        <button class="fav-btn ${fav?'on':''}" title="${fav?'Remove favourite':'Add to favourites'}" onclick="event.stopPropagation();toggleFav('craft','${c.id}')">${STAR_SVG}</button>
+  return `<div class="ui-card dh-card" onclick="openSpotlight('craft','${c.id}')">
+    <div class="dh-top">
+      <span class="dh-emoji">${c.icon}</span>
+      <span class="dh-title">${c.name}</span>
+      <span class="dh-flags">
+        <button class="ui-btn quiet icon small" aria-pressed="${!!fav}" title="${fav?'Remove favourite':'Add to favourites'}" onclick="event.stopPropagation();toggleFav('craft','${c.id}')">${STAR_SVG}</button>
         ${wishBtn('craft', c.id)}
       </span>
     </div>
-    <div class="card-desc">${c.desc}</div>
-    <div class="card-badges">
+    <div class="dh-desc">${c.desc}</div>
+    <div class="dh-badges">
       ${timeBadge(c.time)}
       ${messBadge(c.mess)}
-      <span class="badge b-cat">${catIcon(c.cat)} ${catLabel(c.cat)}</span>
-      ${canDoAtHome(c) ? '<span class="badge b-cat">🏠 At home</span>' : ''}
+      <span class="ui-badge accent">${catIcon(c.cat)} ${catLabel(c.cat)}</span>
+      ${canDoAtHome(c) ? '<span class="ui-badge accent">🏠 At home</span>' : ''}
     </div>
   </div>`;
 }
@@ -7925,73 +7379,76 @@ function openSpotlight(type, id) {
   const item = allById(type).find(x => x.id === id);
   if (!item) return;
   SP.type = type; SP.id = id;
-  const inner = document.getElementById('spotlight-inner');
+  const inner = document.getElementById('spotlight-overlay');
   const fav = spFav(type, id, item);
   const wish = spWish(type, id, item);
   const name = item.name || item.title || '';
   const desc = item.desc || item.description || '';
   const icon = type === 'event' ? evCatFor(item.category).icon : item.icon;
-  const theme = type === 'meal' ? 'meal' : type === 'craft' ? 'craft' : 'act';
+  const theme = type === 'meal' ? 'meal' : type === 'craft' ? 'craft' : type === 'event' ? 'event' : 'act';
 
   let badges = '', extra = '';
   if (type === 'act') {
     badges = distBadge(getEffectiveDist(item)) + priceBadge(item.price, item.priceLabel) + weatherBadge(item.weather) + subcatBadge(item);
     extra = `
-      <div class="sp-section">Tags</div>
-      <div class="rb-badges">${(item.tags||[]).map(t=>`<span class="badge b-cat">${t}</span>`).join('')}</div>
+      <div class="ui-label">Tags</div>
+      <div class="dh-badges">${(item.tags||[]).map(t=>`<span class="ui-badge accent">${t}</span>`).join('')}</div>
     `;
   } else if (type === 'meal') {
-    badges = timeBadge(item.time) + `<span class="badge b-cat">${catIcon(item.cat)} ${catLabel(item.cat)}</span>`;
+    badges = timeBadge(item.time) + `<span class="ui-badge accent">${catIcon(item.cat)} ${catLabel(item.cat)}</span>`;
     extra = `
-      <div class="sp-section">Key Ingredients</div>
-      <ul class="sp-list">${(item.ingredients||[]).map(i=>`<li>${i}</li>`).join('')}</ul>
-      <div class="sp-section">Kitchen info</div>
-      <div class="rb-badges">
+      <div class="ui-label">Key Ingredients</div>
+      <ul class="dh-list">${(item.ingredients||[]).map(i=>`<li>${i}</li>`).join('')}</ul>
+      <div class="ui-label">Kitchen info</div>
+      <div class="dh-badges">
         ${helpBadge(item.helpRating)}
-        ${hasVeg(item) ? '<span class="badge b-cat">🥦 Has veg</span>' : ''}
+        ${hasVeg(item) ? '<span class="ui-badge accent">🥦 Has veg</span>' : ''}
       </div>
     `;
   } else if (type === 'craft') {
-    badges = timeBadge(item.time) + messBadge(item.mess) + `<span class="badge b-cat">${catIcon(item.cat)} ${catLabel(item.cat)}</span>`;
+    badges = timeBadge(item.time) + messBadge(item.mess) + `<span class="ui-badge accent">${catIcon(item.cat)} ${catLabel(item.cat)}</span>`;
     extra = `
-      <div class="sp-section">You'll need</div>
-      <ul class="sp-list">${(item.materials||[]).map(m=>`<li>${m}</li>`).join('')}</ul>
+      <div class="ui-label">You'll need</div>
+      <ul class="dh-list">${(item.materials||[]).map(m=>`<li>${m}</li>`).join('')}</ul>
     `;
   } else if (type === 'event') {
     badges = evBadges(item);
-    extra = item.location ? `<div class="sp-section">Where</div><div class="sp-where">📍 ${evEsc(item.location)}</div>` : '';
+    extra = item.location ? `<div class="ui-label">Where</div><div class="ui-sub">📍 ${evEsc(item.location)}</div>` : '';
   }
 
   // Directions: places go by name, events by their venue.
   const mapsTarget = type === 'act' ? item.name : type === 'event' ? (item.location || item.title) : null;
 
   inner.innerHTML = `
-    <button class="sp-close" onclick="closeSpotlight()">✕</button>
-    <div class="sp-head">
-      <span class="sp-icon">${icon}</span>
-      <span class="card-flags sp-flags">
-        ${type === 'event' ? '' : `<button class="fav-btn ${fav?'on':''}" title="${fav?'Remove favourite':'Add to favourites'}" onclick="spToggleFav()">${STAR_SVG}</button>`}
-        <button class="wish-btn ${wish?'on':''}" title="${wish?'Remove from wishlist':'Add to wishlist'}" onclick="spToggleWish()">${BOOKMARK_SVG}</button>
-      </span>
+    <header>
+      <span class="dh-sheet-icon">${icon}</span>
+      <h2>${type === 'event' ? evEsc(name) : name}</h2>
+      ${type === 'event' ? '' : `<button class="ui-btn quiet icon small" aria-pressed="${!!fav}" title="${fav?'Remove favourite':'Add to favourites'}" onclick="spToggleFav()">${STAR_SVG}</button>`}
+      <button class="ui-btn quiet icon small" aria-pressed="${!!wish}" title="${wish?'Remove from wishlist':'Add to wishlist'}" onclick="spToggleWish()">${BOOKMARK_SVG}</button>
+      <button class="ui-btn quiet icon small" onclick="closeSpotlight()" aria-label="Close">✕</button>
+    </header>
+    <div class="body">
+      <div class="dh-badges">${badges}</div>
+      <p class="ui-sub">${type === 'event' ? evEsc(desc) : desc}</p>
+      ${extra}
     </div>
-    <div class="sp-title">${type === 'event' ? evEsc(name) : name}</div>
-    <div class="sp-badges">${badges}</div>
-    <div class="sp-desc">${type === 'event' ? evEsc(desc) : desc}</div>
-    ${extra}
-    <div class="sp-actions">
-      ${mapsTarget ? `<a href="${mapsUrl(mapsTarget)}" target="_blank" class="btn btn-${theme}">Directions</a>` : ''}
-      ${item.url ? `<a href="${item.url}" target="_blank" rel="noopener" class="btn btn-outline">Website</a>` : ''}
-      <button class="btn btn-outline" onclick="openEditModal('${type}','${evEsc(id)}')">Edit</button>
-      <button class="btn btn-outline" onclick="${type === 'event' ? `removeEvent('${evEsc(id)}')` : `removeItem('${type}','${id}')`}">Remove</button>
-    </div>
+    <footer class="ui-actions">
+      ${mapsTarget ? `<a href="${mapsUrl(mapsTarget)}" target="_blank" class="ui-btn primary">Directions</a>` : ''}
+      ${item.url ? `<a href="${item.url}" target="_blank" rel="noopener" class="ui-btn">Website</a>` : ''}
+      <button class="ui-btn" onclick="openEditModal('${type}','${evEsc(id)}')">Edit</button>
+      <button class="ui-btn danger" onclick="${type === 'event' ? `removeEvent('${evEsc(id)}')` : `removeItem('${type}','${id}')`}">Remove</button>
+    </footer>
   `;
 
-  document.getElementById('spotlight-overlay').style.display = 'flex';
+  const dlg = document.getElementById('spotlight-overlay');
+  dlg.className = `ui-sheet t-${theme}`;
+  if (!dlg.open) dlg.showModal();
   document.body.style.overflow = 'hidden';
 }
 
 function closeSpotlight() {
-  document.getElementById('spotlight-overlay').style.display = 'none';
+  const dlg = document.getElementById('spotlight-overlay');
+  if (dlg.open) dlg.close();
   document.body.style.overflow = '';
 }
 
@@ -8113,7 +7570,7 @@ function setLocBtn(btn) {
   const name = homeLoc ? (homeLoc.name || 'Custom') : 'Macclesfield';
   btn.title = name;
   btn.setAttribute('aria-label', 'Home location: ' + name);
-  btn.classList.toggle('guest', !!homeLoc);
+  btn.setAttribute('aria-pressed', String(!!homeLoc));
 }
 
 function recalcDistances() {
@@ -8123,13 +7580,15 @@ function recalcDistances() {
 }
 
 function openLocModal() {
-  document.getElementById('loc-overlay').style.display = 'flex';
+  const dlg = document.getElementById('loc-overlay');
+  if (!dlg.open) dlg.showModal();
   document.getElementById('loc-input').value = '';
   document.getElementById('loc-status').textContent = '';
 }
 
 function closeLocModal() {
-  document.getElementById('loc-overlay').style.display = 'none';
+  const dlg = document.getElementById('loc-overlay');
+  if (dlg.open) dlg.close();
 }
 
 async function geocodePlace(q) {
@@ -8146,34 +7605,34 @@ async function setLocation() {
   if (!input) return;
   const status = document.getElementById('loc-status');
   status.textContent = '🔍 Searching...';
-  status.style.color = 'var(--muted)';
+  status.style.color = 'var(--text-3)';
   try {
     const loc = await geocodePlace(input);
-    if (!loc) { status.textContent = '❌ Location not found — try a town name or postcode'; status.style.color = '#c0392b'; return; }
+    if (!loc) { status.textContent = '❌ Location not found — try a town name or postcode'; status.style.color = 'var(--danger)'; return; }
     homeLoc = loc;
     saveJSON('dh_homeLoc', homeLoc);
     status.textContent = '✅ Set to ' + loc.name;
-    status.style.color = '#27ae60';
+    status.style.color = 'var(--success)';
     recalcDistances();
     setTimeout(closeLocModal, 800);
   } catch (e) {
-    status.textContent = '❌ Network error — check connection'; status.style.color = '#c0392b';
+    status.textContent = '❌ Network error — check connection'; status.style.color = 'var(--danger)';
   }
 }
 
 function useGPS() {
   const status = document.getElementById('loc-status');
-  if (!navigator.geolocation) { status.textContent = '❌ GPS not available on this device'; status.style.color = '#c0392b'; return; }
-  status.textContent = '📡 Getting position...'; status.style.color = 'var(--muted)';
+  if (!navigator.geolocation) { status.textContent = '❌ GPS not available on this device'; status.style.color = 'var(--danger)'; return; }
+  status.textContent = '📡 Getting position...'; status.style.color = 'var(--text-3)';
   navigator.geolocation.getCurrentPosition(
     pos => {
       homeLoc = { lat: pos.coords.latitude, lon: pos.coords.longitude, name: 'My location' };
       saveJSON('dh_homeLoc', homeLoc);
-      status.textContent = '✅ Using GPS location'; status.style.color = '#27ae60';
+      status.textContent = '✅ Using GPS location'; status.style.color = 'var(--success)';
       recalcDistances();
       setTimeout(closeLocModal, 800);
     },
-    () => { status.textContent = '❌ Location permission denied'; status.style.color = '#c0392b'; }
+    () => { status.textContent = '❌ Location permission denied'; status.style.color = 'var(--danger)'; }
   );
 }
 
@@ -8181,7 +7640,7 @@ function resetLocation() {
   homeLoc = null;
   localStorage.removeItem('dh_homeLoc');
   document.getElementById('loc-status').textContent = 'Reset to Macclesfield';
-  document.getElementById('loc-status').style.color = '#27ae60';
+  document.getElementById('loc-status').style.color = 'var(--success)';
   recalcDistances();
   setTimeout(closeLocModal, 800);
 }
@@ -8290,11 +7749,9 @@ function setPrice(val) { if (val === 'all') { S.actMaxPrice.clear(); } else { to
 // bookmark button in the header).
 function selectTab(tab) {
   S.tab = tab;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-btn').forEach(b => b.dataset.tab === tab ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
   document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
   document.getElementById(`tab-${tab}`).classList.add('active');
-  document.getElementById('nav-wish-btn').classList.toggle('active', tab === 'wishlist');
-  document.getElementById('nav-add-btn').classList.toggle('active', tab === 'addnew');
   renderChips();
   renderTab(tab);
 }
@@ -8313,7 +7770,7 @@ document.getElementById('dist-slider').addEventListener('input', function() {
 document.getElementById('filter-toggle').addEventListener('click', () => {
   S.filtersOpen = !S.filtersOpen;
   document.getElementById('filter-panel').classList.toggle('open', S.filtersOpen);
-  document.getElementById('filter-toggle').classList.toggle('open', S.filtersOpen);
+  document.getElementById('filter-toggle').setAttribute('aria-expanded', String(S.filtersOpen));
 });
 
 document.getElementById('clear-filters-btn').addEventListener('click', clearActFilters);
@@ -8321,27 +7778,27 @@ document.getElementById('clear-filters-btn').addEventListener('click', clearActF
 document.getElementById('meal-filter-toggle').addEventListener('click', () => {
   S.mealFiltersOpen = !S.mealFiltersOpen;
   document.getElementById('meal-filter-panel').classList.toggle('open', S.mealFiltersOpen);
-  document.getElementById('meal-filter-toggle').classList.toggle('open', S.mealFiltersOpen);
+  document.getElementById('meal-filter-toggle').setAttribute('aria-expanded', String(S.mealFiltersOpen));
 });
 document.getElementById('meal-clear-btn').addEventListener('click', clearMealFilters);
 
 document.getElementById('craft-filter-toggle').addEventListener('click', () => {
   S.craftFiltersOpen = !S.craftFiltersOpen;
   document.getElementById('craft-filter-panel').classList.toggle('open', S.craftFiltersOpen);
-  document.getElementById('craft-filter-toggle').classList.toggle('open', S.craftFiltersOpen);
+  document.getElementById('craft-filter-toggle').setAttribute('aria-expanded', String(S.craftFiltersOpen));
 });
 document.getElementById('craft-clear-btn').addEventListener('click', clearCraftFilters);
 
 document.getElementById('ev-filter-toggle').addEventListener('click', () => {
   S.evFiltersOpen = !S.evFiltersOpen;
   document.getElementById('ev-filter-panel').classList.toggle('open', S.evFiltersOpen);
-  document.getElementById('ev-filter-toggle').classList.toggle('open', S.evFiltersOpen);
+  document.getElementById('ev-filter-toggle').setAttribute('aria-expanded', String(S.evFiltersOpen));
 });
 
 document.getElementById('wl-filter-toggle').addEventListener('click', () => {
   S.wlFiltersOpen = !S.wlFiltersOpen;
   document.getElementById('wl-filter-panel').classList.toggle('open', S.wlFiltersOpen);
-  document.getElementById('wl-filter-toggle').classList.toggle('open', S.wlFiltersOpen);
+  document.getElementById('wl-filter-toggle').setAttribute('aria-expanded', String(S.wlFiltersOpen));
 });
 
 
@@ -8389,7 +7846,7 @@ if ('serviceWorker' in navigator) {
   const sync = () => {
     form.style.display = on.checked ? '' : 'none';
     lockBtn.style.display = saved ? '' : 'none';
-    hint.textContent = saved ? '(leave blank to keep the current one)' : '(at least 4 characters)';
+    hint.textContent = saved ? 'Leave blank to keep the current one' : 'At least 4 characters';
   };
   window.AppLock.ready.then((st) => { saved = st.enabled; on.checked = saved; sync(); });
   on.addEventListener('change', async () => {

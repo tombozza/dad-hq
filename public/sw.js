@@ -1,5 +1,5 @@
-const CACHE_NAME = 'dadhq-v10';
-const ASSETS = ['./', './index.html', './lock.js', './vendor/chassis/controls.css'];
+const CACHE_NAME = 'dadhq-v11';
+const ASSETS = ['./', './index.html', './lock.js', './vendor/chassis/tokens.css', './vendor/chassis/controls.css', './vendor/chassis/components.css', './vendor/magic/magic.css'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
