@@ -107,6 +107,10 @@ There is **no import**. Restoring means writing the rows back by hand.
 
 Newest first. Dates are from commits or from the day Tom said it in a chat.
 
+- 2026-11-10: every screen built from the shared `ui-` components (`vendor/chassis/components.css`):
+  shared top bar and bottom tab bar, chips, badges, cards, sheets on `<dialog>`, toast, empty
+  states. Each section keeps its own colour through `--accent` on `.t-*`; Nunito for the name
+  only. Tom OK'd the look in the browser first. Commit `2528462`, deployed the same evening.
 - 2026-11-10: Checkboxes, switches and the slider are drawn by the shared chassis controls, not
   hand-styled (rule from the `sites/` CLAUDE.md).
 - 2026-11-05: Added an optional password lock, **off by default**: writes locked, reads open.
