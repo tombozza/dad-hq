@@ -1,0 +1,9 @@
+# Copy to .dev.vars for local dev (.dev.vars is gitignored). Never commit real values.
+
+# Signs the dh_session cookie for the optional password lock (any long random string).
+# Without it the lock fails closed when switched on.
+AUTH_SECRET=
+
+# Optional. Site-wide Anthropic key for the magic sheet's "Run it" route. Leave empty:
+# the live site has none, and Run it asks each browser for its own key instead.
+ANTHROPIC_API_KEY=

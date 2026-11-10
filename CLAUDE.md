@@ -1,5 +1,7 @@
 # Dad HQ
 
+Read docs/HANDOVER.md first.
+
 Family planning and activity finder for days out with Harry (5), centred on
 **Macclesfield**. Cloudflare Worker + D1 + a hand-curated single-page PWA.
 
@@ -114,3 +116,8 @@ npm run deploy
 
 This is a **Worker**, so a new secret applies immediately — no redeploy needed
 (unlike the Pages apps in this directory).
+
+## Keep the handover current
+
+At the end of any session that makes a decision or changes what works or what's next, add a
+dated line to `docs/HANDOVER.md`'s Decisions and update its Status and Parked ideas.
