@@ -126,8 +126,9 @@ label.check {
   line-height: 1.3;
 }
 /* Words that run to two lines or more (a title with a note under it): the control sits on the
-   first line, not halfway down. <label class="check top"> */
-label.check.top { align-items: flex-start; }
-label.check.top > input[type='checkbox'],
-label.check.top > input[type='radio'] { margin-block-start: calc((1lh - max(16px, 1.1em)) / 2); }
+   first line, not halfway down. <label class="check top">, or class="check top" on any flex row
+   (a list item) whose font-size and line-height are the words'. */
+.check.top { align-items: flex-start; }
+.check.top > input[type='checkbox'],
+.check.top > input[type='radio'] { margin-block-start: calc((1lh - max(16px, 1.1em)) / 2); }
 label.check:has(:disabled) { cursor: default; color: var(--text-3, #868a9c); }
