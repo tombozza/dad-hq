@@ -6,8 +6,9 @@
 //   AppLock.save(on, pw)     -> switch the lock on (with a password) or off; throws on error
 //   AppLock.lock()           -> forget the password on this device
 //   AppLock.download(name)   -> fetch /api/backup and save it as a .json file
-// Same file in storage-log, spotify-albums (Swipefy), dad-hq and bozza-hq; set the colour
-// with --lock-accent on :root.
+// Same file in storage-log, spotify-albums (Swipefy), dad-hq and bozza-hq. The lock screen is
+// drawn with the shared ui- classes, so the page must load vendor/chassis/tokens.css and
+// components.css; its colour is the app's --accent.
 (function () {
   const state = { enabled: false, unlocked: true };
   const nativeFetch = window.fetch.bind(window);
@@ -45,28 +46,22 @@
     if (overlay) return;
     if (!document.body) { document.addEventListener('DOMContentLoaded', show, { once: true }); return; }
     const css = document.createElement('style');
+    // Built from the shared components (vendor/chassis/components.css: ui-card, ui-input, ui-btn),
+    // so it takes the app's --accent and follows light/dark. Only the overlay is drawn here.
     css.textContent = `
       .applock{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;
-        padding:16px;background:rgba(15,23,42,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
-        font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
-      .applock form{width:100%;max-width:340px;background:#fff;color:#111;border-radius:18px;padding:22px;
-        box-shadow:0 20px 50px rgba(0,0,0,.25);box-sizing:border-box}
-      .applock h2{margin:0 0 4px;font-size:1.2rem}
-      .applock p{margin:0 0 14px;color:#555;font-size:.92rem}
-      .applock input{width:100%;box-sizing:border-box;font-size:16px;padding:12px;border:1px solid #ccc;border-radius:12px;margin:0 0 10px}
-      .applock button{width:100%;font-size:1rem;font-weight:600;padding:12px;border:0;border-radius:12px;
-        background:var(--lock-accent,#334155);color:#fff;cursor:pointer}
-      .applock .err{color:#b91c1c;min-height:1.2em;margin:0 0 8px;font-size:.9rem}
-      @media (prefers-color-scheme:dark){.applock form{background:#1f2937;color:#f3f4f6}.applock p{color:#cbd5e1}
-        .applock input{background:#111827;color:#f3f4f6;border-color:#374151}}`;
+        padding:16px;background:var(--overlay);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+      .applock form{width:100%;max-width:340px;display:grid;gap:var(--sp-3);box-shadow:var(--shadow-lg)}
+      .applock .err{color:var(--danger);min-height:1.2em;font-size:var(--text-sm)}
+      .applock .err:empty{display:none}`;
     overlay = document.createElement('div');
     overlay.className = 'applock';
-    overlay.innerHTML = `<form autocomplete="on">
-        <h2>🔒 Locked</h2>
-        <p>Enter the password to use this app on this device.</p>
-        <input type="password" name="password" autocomplete="current-password" placeholder="Password" required>
+    overlay.innerHTML = `<form class="ui-card" autocomplete="on">
+        <h2 class="ui-h2">🔒 Locked</h2>
+        <p class="ui-sub">Enter the password to use this app on this device.</p>
+        <input class="ui-input" type="password" name="password" autocomplete="current-password" placeholder="Password" aria-label="Password" required>
         <div class="err" aria-live="polite"></div>
-        <button type="submit">Unlock</button>
+        <button class="ui-btn primary block" type="submit">Unlock</button>
       </form>`;
     overlay.appendChild(css);
     // keep keys typed here away from the app's own shortcuts (Enter, arrows…)
