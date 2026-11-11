@@ -108,6 +108,7 @@ There is **no import**. Restoring means writing the rows back by hand.
 Newest first. Dates are from commits or from the day Tom said it in a chat.
 
 - 2026-11-11: shared `ui-badge` good/warn/bad text now mixes 30% of `--text` into the status colour (the green and amber were about 2.7:1 in Light; now 4.5:1 or better in both themes). Synced copy of `components.css`, deployed 11 Nov.
+- 2026-11-11: shared `--success` and `--warning` are deeper in Light (`#15803d`, `#b45309`, 5:1 on white; the old bright ones were about 3.2:1 as words) and stay bright in Dark. Synced copy of `tokens.css`.
 - 2026-11-11: shared light/dark switch. `vendor/chassis/theme.js` first in `<head>`, `<theme-switch>`
   at the top of the Settings card (bottom of Add new). Section colours have deeper Light values (readable
   as text on white) and the old bright ones in Dark, in the three token places. `lock.js` is now
