@@ -107,6 +107,11 @@ There is **no import**. Restoring means writing the rows back by hand.
 
 Newest first. Dates are from commits or from the day Tom said it in a chat.
 
+- 2026-11-11: shared light/dark switch. `vendor/chassis/theme.js` first in `<head>`, `<theme-switch>`
+  at the top of the Settings card (bottom of Add new). Section colours have deeper Light values (readable
+  as text on white) and the old bright ones in Dark, in the three token places. `lock.js` is now
+  storage-log's shared ui- version (the old one had its own @media-only dark). SW `dadhq-v12`. Commit
+  `d485903`, deployed and checked live 11 Nov.
 - 2026-11-10: every screen built from the shared `ui-` components (`vendor/chassis/components.css`):
   shared top bar and bottom tab bar, chips, badges, cards, sheets on `<dialog>`, toast, empty
   states. Each section keeps its own colour through `--accent` on `.t-*`; Nunito for the name
