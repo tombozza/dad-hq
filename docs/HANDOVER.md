@@ -107,6 +107,7 @@ There is **no import**. Restoring means writing the rows back by hand.
 
 Newest first. Dates are from commits or from the day Tom said it in a chat.
 
+- 12 Nov 2026: deployed the move onto the new shared pieces (stepper, cards, toasts, photo pieces and the rest; Tom's yes). Live site checked after clearing the service worker: new pieces present, data loads, no console errors.
 - 12 Nov 2026 (later): synced shared components.css (_shared cbadf25): a `.ui-count` on a `.ui-btn.small` now sits out over the corner; also brings `.ui-stepper.small` and `.ui-table .tight`. No app code change. Not deployed.
 - 12 Nov 2026: the Wishlist tab count and the Add new drafts count are the shared `.ui-count` (a dot-style count on the tab and on the + button; shown with `hidden`, not inline display). The 📍 and + buttons in the top bar are full-size `ui-btn quiet icon` (44px), because on the 36px small button the count covered the +. Cards stay `div.ui-card` with onclick: every card holds its own star/bookmark buttons, so none can be a `button.ui-card`. Dad HQ has no back-to-top button, so nothing moved to `.ui-fab`. `lock.js` is still the older copy (storage-log has the newer one), left alone. Service worker dadhq-v19. Not deployed.
 - 2026-11-12: **Haiku 5.5** for every Claude job (was Haiku 4.5): about a tenth of the price per token. Thinking
