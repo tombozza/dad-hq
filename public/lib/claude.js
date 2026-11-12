@@ -4,7 +4,8 @@
 // Based on sites/_shared/starter/public/lib/claude.js, plus a `search` option (web search,
 // capped on the server) for jobs about real places and dated events.
 
-const MODEL = 'claude-haiku-4-5-20251001';
+// Haiku 5.5 since 12 Nov 2026: about a tenth of Haiku 4.5's price per token. src/ai.js keeps its thinking off.
+const MODEL = 'claude-haiku-5-5';
 const KEY = 'anthropic-key';   // this device's own key, if the person added one (per site)
 let status = null;
 

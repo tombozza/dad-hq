@@ -5,8 +5,9 @@
 // Add a row here whenever an AI feature is added, or it won't be on the page.
 //   job       the id passed to askClaude({ job }).
 //   search    the job looks things up on the web (each search costs, and so do the pages it reads).
-//   estimate  dollars per run until real runs replace it. Worked out from Haiku 4.5 prices ($1 in /
-//             $5 out per million tokens, web search $10 per 1,000) at the usual size (10 ideas).
+//   estimate  dollars per run until real runs replace it. Worked out from Haiku 5.5 prices ($0.10 in /
+//             $0.50 out per million tokens, since 12 Nov 2026; web search $10 per 1,000) at the usual size
+//             (10 ideas). The searches are most of a search job's cost now.
 //   off       the Claude route is switched off on purpose (says why); the job is free-only.
 //   open      what tapping it does: 'ideas:<type>' opens that sheet, 'addnew' goes to the list,
 //             'card' says how to reach it (it needs a card open).
@@ -14,17 +15,17 @@
 export const AI_GROUPS = ['Ideas', 'Look things up', 'Cards'];
 
 export const AI_ACTIONS = [
-  { group: 'Ideas', title: 'Get place ideas', job: 'ideas-act', search: true, estimate: 0.15, open: 'ideas:act',
+  { group: 'Ideas', title: 'Get place ideas', job: 'ideas-act', search: true, estimate: 0.06, open: 'ideas:act',
     text: 'New days out near home, checked on the web, skipping the ones you have', where: 'Places › Get ideas' },
-  { group: 'Ideas', title: 'Get meal ideas', job: 'ideas-meal', estimate: 0.015, open: 'ideas:meal',
+  { group: 'Ideas', title: 'Get meal ideas', job: 'ideas-meal', estimate: 0.0015, open: 'ideas:meal',
     text: 'Meals Harry would eat, skipping the ones you have', where: 'Meals › Get ideas' },
-  { group: 'Ideas', title: 'Get craft ideas', job: 'ideas-craft', estimate: 0.015, open: 'ideas:craft',
+  { group: 'Ideas', title: 'Get craft ideas', job: 'ideas-craft', estimate: 0.0015, open: 'ideas:craft',
     text: 'Crafts for his age, skipping the ones you have', where: 'Crafts › Get ideas' },
-  { group: 'Look things up', title: 'Find events', job: 'find-events', search: true, estimate: 0.18, open: 'ideas:event', off: 'switched off, too costly',
+  { group: 'Look things up', title: 'Find events', job: 'find-events', search: true, estimate: 0.06, open: 'ideas:event', off: 'switched off, too costly',
     text: 'Real dated family events nearby, skipping ones already listed', where: 'Events › Find events' },
-  { group: 'Look things up', title: 'Fill in the details', job: 'fill-details', search: true, estimate: 0.12, open: 'addnew',
+  { group: 'Look things up', title: 'Fill in the details', job: 'fill-details', search: true, estimate: 0.05, open: 'addnew',
     text: 'Looks up everything you jotted on the Add new list', where: 'Add new (＋) › Fill in the details' },
-  { group: 'Cards', title: 'Rewrite a card', job: 'rewrite-card', estimate: 0.004, open: 'card',
+  { group: 'Cards', title: 'Rewrite a card', job: 'rewrite-card', estimate: 0.0004, open: 'card',
     text: 'Tighter wording, or say what to change; you check it before it’s saved', where: 'Open any card › Edit › Rewrite it' },
 ];
 

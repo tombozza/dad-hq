@@ -107,6 +107,9 @@ There is **no import**. Restoring means writing the rows back by hand.
 
 Newest first. Dates are from commits or from the day Tom said it in a chat.
 
+- 2026-11-12: **Haiku 5.5** for every Claude job (was Haiku 4.5): about a tenth of the price per token. Thinking
+  is sent off, as 4.5 had none. Web search on 5.5 hadn't been tried on this account, so if Anthropic refuses a
+  search request (400) `src/ai.js` reruns it once on Haiku 4.5. Step 1 of moving every app; Food Planner moved too.
 - 2026-11-12: **Find events is free-only.** Tom: the events job was the one that "cost loads" on Claude (web
   search re-reads every page it found before each next search). Its sheet shows Run it greyed out, "Switched off:
   too costly" (the shared sheet's new `runOff` option), and its AI actions row says so instead of a price. The other

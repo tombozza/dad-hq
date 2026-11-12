@@ -71,7 +71,7 @@ function draw() {
       <span class="ui-label">${esc(g)}</span>
       <div class="ui-card"><ul class="ui-list">${AI_ACTIONS.filter(a => a.group === g).map(row).join('')}</ul></div></section>`).join('')}
     <p class="ui-hint" data-ainone hidden>Nothing matches.</p>
-    <p class="ui-hint">Claude costs are worked out from what each run used, at Anthropic’s prices for Haiku, plus 1¢ for each web search. Web search jobs cost most because the pages Claude reads count too. “avg” is the last 10 runs; “estimate” means it hasn’t run since costs started being logged (12 Nov 2026). Runs go on your own Anthropic key.</p>`;
+    <p class="ui-hint">Claude costs are worked out from what each run used, at Anthropic’s prices for Haiku 5.5, plus 1¢ for each web search. Web search jobs cost most because the pages Claude reads count too. “avg” is the last 10 runs; “estimate” means it hasn’t run since costs started being logged (12 Nov 2026). Runs go on your own Anthropic key.</p>`;
   filter();
 }
 

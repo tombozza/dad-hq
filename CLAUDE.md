@@ -44,7 +44,7 @@ steam railways), tagged kid-friendly. Bozza HQ's persona is the grown-up equival
 ## AI features: the magic button (4 Nov 2026)
 
 Every AI job goes through the shared magic sheet (`openMagic()` from `public/vendor/magic/`),
-which offers **Run it** (Claude Haiku through this Worker, on the site's key) and **Free**
+which offers **Run it** (Claude Haiku 5.5 since 12 Nov 2026, thinking off, through this Worker, on the site's key) and **Free**
 (copy the prompt into ChatGPT/claude.ai, paste the reply back). Nothing is saved until the
 check step: lists come back as tick boxes, a rewrite drops into the edit fields.
 `index.html` is a classic script, so a small module in `<head>` puts `openMagic`,

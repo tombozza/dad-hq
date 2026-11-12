@@ -10,7 +10,7 @@
 // as the dearest one here, so an unknown model never looks cheap.
 export const PRICES = {
   'claude-haiku-4-5': { in: 1, out: 5 },
-  'claude-haiku-5-5': { in: 0.1, out: 0.5 },
+  'claude-haiku-5-5': { in: 0.1, out: 0.5, over: { at: 100000, in: 0.5, out: 2.5 } },   // dearer past 100K input
   'claude-sonnet-5': { in: 2, out: 10 },
   'claude-sonnet-5-5': { in: 2, out: 10 },
 };
@@ -27,8 +27,10 @@ export function costOf(model, usage = {}) {
   const p = priceOf(model);
   const n = k => Number(usage?.[k]) || 0;
   const input = n('input_tokens') + 1.25 * n('cache_creation_input_tokens') + 0.1 * n('cache_read_input_tokens');
+  const all = n('input_tokens') + n('cache_creation_input_tokens') + n('cache_read_input_tokens');
+  const rate = p.over && all > p.over.at ? p.over : p;
   const searches = Number(usage?.server_tool_use?.web_search_requests) || 0;
-  return (input * p.in + n('output_tokens') * p.out) / 1e6 + searches * PER_SEARCH;
+  return (input * rate.in + n('output_tokens') * rate.out) / 1e6 + searches * PER_SEARCH;
 }
 
 /** A job name the page sent, or 'other'. */

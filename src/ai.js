@@ -17,8 +17,9 @@
 
 import { costOf, jobName, logCall } from './ai-usage.js';
 
-const MODELS = new Set(['claude-haiku-4-5-20251001', 'claude-haiku-4-5']);
-const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
+const MODELS = new Set(['claude-haiku-5-5', 'claude-haiku-4-5-20251001', 'claude-haiku-4-5']);
+const DEFAULT_MODEL = 'claude-haiku-5-5';
+const FALLBACK_MODEL = 'claude-haiku-4-5-20251001';   // if Haiku 5.5 turns down the web search tool
 const MAX_TOKENS_CAP = 8192; // 30 events as JSON is ~6k tokens
 const MAX_SEARCHES = 5;
 
@@ -47,22 +48,31 @@ export async function handleAI(request, env, url, ctx) {
   if (!Array.isArray(body.messages)) return err('No messages provided.', 400);
   const model = MODELS.has(body.model) ? body.model : DEFAULT_MODEL;
   const max_tokens = Math.min(Number(body.max_tokens) || 1500, MAX_TOKENS_CAP);
-  const payload = { model, max_tokens, messages: body.messages };
+  // Haiku 5.5 thinks by default and thinking is billed as output; these jobs ran fine on 4.5 with none.
+  const payload = { model, max_tokens, messages: body.messages, ...(model.startsWith('claude-haiku-5') ? { thinking: { type: 'disabled' } } : {}) };
   if (body.search === true) {
     payload.tools = [{ type: 'web_search_20250305', name: 'web_search', max_uses: MAX_SEARCHES, user_location: { type: 'approximate', country: 'GB', city: 'Macclesfield' } }];
   }
 
-  let res;
+  const call = p => fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify(p),
+  });
+  let res, text;
   try {
-    res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify(payload),
-    });
+    res = await call(payload);
+    text = await res.text();
+    // Web search on Haiku 5.5 hasn't been tried on this account yet: if the request itself is refused
+    // (400), run that one call on Haiku 4.5 rather than fail the job.
+    if (res.status === 400 && payload.tools && payload.model !== FALLBACK_MODEL) {
+      const { thinking, ...rest } = payload;
+      res = await call({ ...rest, model: FALLBACK_MODEL });
+      text = await res.text();
+    }
   } catch (e) {
     return err('Couldn’t reach Anthropic: ' + (e.message || e), 502);
   }
-  const text = await res.text();
   const headers = { 'content-type': 'application/json' };
   // What it cost (12 Nov 2026): logged per job for the AI actions page, and sent back in a header
   // so the page can say so. Logged whichever key paid. A reply we can't read passes through untouched.
