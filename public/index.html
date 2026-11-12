@@ -6343,7 +6343,7 @@ function renderAddNew() {
 const DRAFT_SCHEMAS = {
   act:   '{"name": str, "icon": str (one emoji), "desc": str (1-2 sentences), "cat": "outdoor"|"museum"|"theme_park"|"farm"|"sport"|"softplay", "weather": "outdoor"|"indoor"|"both", "region": str, "dist": int (one-way miles from Macclesfield), "price": 0|1|2|3, "priceLabel": str, "tags": [str]}',
   meal:  '{"name": str, "icon": str (one emoji), "desc": str (1-2 sentences), "cat": "quick"|"proper"|"weekend"|"baking", "time": int (minutes), "ingredients": [str]}',
-  craft: '{"name": str, "icon": str (one emoji), "desc": str (1-2 sentences), "cat": "painting"|"building"|"nature"|"quiet"|"seasonal"|"science", "time": int (minutes), "mess": 1|2|3, "materials": [str]}',
+  craft: '{"name": str, "icon": str (one emoji), "desc": str (1-2 sentences), "cat": "painting"|"building"|"nature"|"messy"|"quiet"|"seasonal"|"science", "time": int (minutes), "mess": 1|2|3, "materials": [str]}',
   event: '{"title": str, "category": str, "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD", "region": str, "distance_miles": int|null, "location": str, "price": str, "url": str, "description": str (1-2 sentences), "kid_friendly": bool}',
 };
 const DRAFT_KEYS = { act: 'places', meal: 'meals', craft: 'crafts', event: 'events' };

@@ -11,12 +11,12 @@ const json = (data, status = 200) =>
 
 // Home base + how far each region sits from it. Shared by both sites so
 // "local" means the same thing everywhere.
-export const LOCATION_CONTEXT = `Home base is central Cheshire, England. Use these approximate driving distances when tagging the "region" and "distance_miles" fields:
-- "local": within ~15 miles of central Cheshire (e.g. Knutsford, Wilmslow, Macclesfield, Northwich, Altrincham)
+export const LOCATION_CONTEXT = `Home base is Macclesfield, Cheshire, England. Use these approximate driving distances when tagging the "region" and "distance_miles" fields:
+- "local": within ~20 miles of Macclesfield (e.g. Knutsford, Wilmslow, Northwich, Altrincham, Stockport)
 - "manchester": Greater Manchester, ~20 miles
 - "peaks": Peak District & Derbyshire, ~20-30 miles
-- "chester": Chester & Cheshire west / Ellesmere Port, ~33 miles
-- "liverpool": Liverpool & Merseyside, ~40 miles
+- "chester": Chester & Cheshire west / Ellesmere Port, ~40 miles
+- "liverpool": Liverpool & Merseyside, ~45 miles
 - "uk": anywhere else in the UK worth travelling for (set distance_miles to null)`;
 
 const EVENT_COLS =
