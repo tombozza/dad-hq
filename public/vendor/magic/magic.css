@@ -60,6 +60,7 @@ magic-mark { display: inline-flex; }
   font: inherit; font-weight: 700; font-size: .9rem; color: var(--mg-text-2); cursor: pointer; display: grid; gap: 1px; justify-items: center; }
 .mg-seg button small { font-size: .74rem; font-weight: 500; color: var(--mg-text-2); }
 .mg-seg button[aria-pressed="true"] { background: var(--mg-surface); color: var(--mg-text); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+.mg-seg button:disabled { cursor: default; opacity: .6; }
 
 .mg-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .mg-steps li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: start; font-size: .92rem; }

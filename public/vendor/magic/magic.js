@@ -42,6 +42,9 @@ const setRoute = v => { try { localStorage.setItem(ROUTE_KEY, v); } catch { /* p
  * @param {boolean|(() => Promise<boolean>)} [o.canRun]  Is the paid route available (the site has a key)?
  * @param {(status:(s:string)=>void) => Promise<string>} [o.run]  Paid route: returns the reply text.
  * @param {string} [o.runNote]        e.g. "Claude · about 1p".
+ * @param {string} [o.runOff]         The paid route is switched off for this job on purpose (it costs too much):
+ *                                    Run it shows greyed out with this note, e.g. "Switched off: too costly". Leave
+ *                                    out `run`. Without it a job with no `run` says one-tap isn't set up.
  * @param {{has:()=>boolean, save:(key:string)=>void, clear:()=>void}} [o.key]
  *                                    Bring your own key (opt-in). With it, Run it shows even when the site has no
  *                                    key: tapping it asks for the person's Anthropic API key, which the app keeps on
@@ -129,6 +132,9 @@ export function openMagic(o) {
     }
 
     function routes() {
+      if (o.runOff) return `<div class="mg-seg" role="group" aria-label="How to do it">
+        <button type="button" disabled aria-pressed="false">Run it<small>${esc(o.runOff)}</small></button>
+        <button type="button" data-mg="route" data-r="free" aria-pressed="true">Free<small>In ChatGPT or claude.ai</small></button></div>`;
       if (!st.offer) return `<p class="mg-note">Free route: copy the prompt into ChatGPT or claude.ai. (One-tap isn’t set up on this site.)</p>`;
       const on = r => st.route === r ? 'true' : 'false';
       return `<div class="mg-seg" role="group" aria-label="How to do it">

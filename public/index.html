@@ -7117,8 +7117,11 @@ async function getIdeas(type) {
       else { updSetCount(v); q.count = updGetCount(); }
       await makePrompt();
     },
-    runNote: jobNote(job, search),
-    run: () => askMagic(q.prompt, { maxTokens: Math.min(8000, 800 + q.count * 260), search, job }),
+    // Tom (12 Nov 2026): Find events on Claude "cost loads" (web search re-reads every page it found), so it's
+    // free-only: Run it shows switched off. The other jobs keep both routes.
+    ...(type === 'event'
+      ? { runOff: 'Switched off: too costly' }
+      : { runNote: jobNote(job, search), run: () => askMagic(q.prompt, { maxTokens: Math.min(8000, 800 + q.count * 260), search, job }) }),
     prompt: () => q.prompt,
     freeNote: search ? 'Use a chat with web search on, so the places and dates are real.' : undefined,
     parse: text => {

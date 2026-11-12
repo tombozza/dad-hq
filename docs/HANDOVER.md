@@ -107,6 +107,10 @@ There is **no import**. Restoring means writing the rows back by hand.
 
 Newest first. Dates are from commits or from the day Tom said it in a chat.
 
+- 2026-11-12: **Find events is free-only.** Tom: the events job was the one that "cost loads" on Claude (web
+  search re-reads every page it found before each next search). Its sheet shows Run it greyed out, "Switched off:
+  too costly" (the shared sheet's new `runOff` option), and its AI actions row says so instead of a price. The other
+  five jobs keep both routes.
 - 2026-11-12: **AI actions page** (Add new › AI actions, `public/lib/ai-actions.js`), the same as Food Planner's.
   It lists all six AI jobs (`public/lib/ai-catalogue.js`, add a row with every new AI feature), and every row
   shows Free · ChatGPT and Paid · ~cost. Tapping one asks free or paid, then opens that job's sheet on the

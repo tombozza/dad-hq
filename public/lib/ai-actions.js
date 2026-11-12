@@ -46,6 +46,7 @@ function credit() {
 }
 
 function costLine(a) {
+  if (a.off) return `<span class="dh-ai-cost"><span class="ui-badge good">Free · ChatGPT</span><span class="ui-badge">Claude · ${esc(a.off)}</span></span>`;
   const c = jobCost(a.job, data?.ledger);
   const cls = c.cost != null && c.cost > PRICEY ? 'warn' : 'accent';
   return `<span class="dh-ai-cost"><span class="ui-badge good">Free · ChatGPT</span>
@@ -62,7 +63,7 @@ function draw() {
     <div class="ui-stack">
       <div class="ui-head"><button class="ui-btn quiet small" data-aiback>← Back</button></div>
       <h1 class="ui-title"><magic-mark></magic-mark> AI actions</h1>
-      <p class="ui-sub">Everything AI can do in Dad HQ, and what each costs. Every job can be done free in ChatGPT, or by Claude in the app for the price shown; tap one and pick which.</p>
+      <p class="ui-sub">Everything AI can do in Dad HQ, and what each costs. Every job can be done free in ChatGPT, and most by Claude in the app for the price shown; tap one and pick which.</p>
     </div>
     <div class="ui-card ui-stack" data-credit>${credit()}</div>
     <input class="ui-input search" type="search" placeholder="Search — ideas, events, rewrite…" value="${esc(st.q)}" data-aiq aria-label="Search AI actions">
@@ -154,7 +155,7 @@ export function renderAiActions(from) {
     });
     el.addEventListener('click', e => {
       const job = e.target.closest('[data-job]');
-      if (job) return choose(AI_ACTIONS.find(a => a.job === job.dataset.job));
+      if (job) { const a = AI_ACTIONS.find(x => x.job === job.dataset.job); return a.off ? go(a) : choose(a); }
       if (e.target.closest('[data-aiback]')) { window.openAddNew(); return document.getElementById('an-settings')?.previousElementSibling?.scrollIntoView({ block: 'center' }); }
       if (e.target.closest('[data-baledit]')) { st.editing = true; st.error = ''; drawCredit(); root().querySelector('[data-balform] input')?.focus(); }
       else if (e.target.closest('[data-balcancel]')) { st.editing = false; st.error = ''; drawCredit(); }
