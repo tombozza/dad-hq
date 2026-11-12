@@ -75,6 +75,12 @@ under the Run it button changes or removes it. This is the shared sheet's `key` 
 (`userKey` in `public/lib/claude.js`). If a site secret is ever set, it wins and nobody is asked.
 With no key anywhere, the Free route works as before.
 
+**AI actions page and costs (12 Nov 2026).** Add new › AI actions (`public/lib/ai-actions.js`) lists every AI
+job from `public/lib/ai-catalogue.js`, with Free and Paid and the paid price. **Add a row there with any new AI
+feature, and pass its `job` id to `askClaude`**, or its cost is logged as `other`. `src/ai-usage.js` (a copy of
+Food Planner's `_ai-usage.js`, plus web search at 1¢ a search) logs each run in D1 table `ai_usage`;
+`GET/POST /api/ai-usage` reads it and sets the typed-in credit balance.
+
 There is a `GET /api/dad-hq` export on the Bozza HQ side that pushes kid-friendly places
 here — the two apps are linked in that one direction.
 

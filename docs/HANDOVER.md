@@ -107,6 +107,16 @@ There is **no import**. Restoring means writing the rows back by hand.
 
 Newest first. Dates are from commits or from the day Tom said it in a chat.
 
+- 2026-11-12: **AI actions page** (Add new › AI actions, `public/lib/ai-actions.js`), the same as Food Planner's.
+  It lists all six AI jobs (`public/lib/ai-catalogue.js`, add a row with every new AI feature), and every row
+  shows Free · ChatGPT and Paid · ~cost. Tapping one asks free or paid, then opens that job's sheet on the
+  chosen route. The Worker logs every Claude run's cost (tokens at Haiku prices plus 1¢ per web search) in D1
+  table `ai_usage` (one row, created on first use), and sends it back in an `x-ai-cost` header. A job's price
+  is its last 10 runs' average, or an estimate until it has run. Each sheet's Run it note uses the same figure:
+  the fixed "about 1p / 5p" notes were far too low for web-search jobs, which is likely where the $6 went.
+  Credit left = a balance Tom types in (Anthropic has no balance API) less what's logged since. Setting it is a
+  write, so it needs the unlock when the password lock is on. Tom: "do you want to do the free version or
+  the paid version? This is how much the paid version is." Estimates still need checking against real runs.
 - 12 Nov 2026: deployed the shared components update (missing pieces + four CSS fixes); live checked. Service worker dadhq-v15.
 - 2026-11-11: shared `ui-badge` good/warn/bad text now mixes 30% of `--text` into the status colour (the green and amber were about 2.7:1 in Light; now 4.5:1 or better in both themes). Synced copy of `components.css`, deployed 11 Nov.
 - 2026-11-11: shared `--success` and `--warning` are deeper in Light (`#15803d`, `#b45309`, 5:1 on white; the old bright ones were about 3.2:1 as words) and stay bright in Dark. Synced copy of `tokens.css`.
@@ -150,10 +160,10 @@ Newest first. Dates are from commits or from the day Tom said it in a chat.
 - 2026-06-10: Places should be specific and plannable (not "regional" catch-alls). Local filters
   of under 5, 10 and 20 miles, measured from the current home location (a guest location can be set).
 
-## Status (10 Nov 2026)
+## Status (12 Nov 2026)
 
 Works: all four tabs with filters and search, favourites and wishlist, Add new with the magic
-sheet, card editing, events import (paid or free route), cross-device sync, optional password
+sheet, the AI actions page with logged costs, card editing, events import (paid or free route), cross-device sync, optional password
 lock, backup download, offline PWA.
 
 Known issues and loose ends:
