@@ -54,7 +54,9 @@ export function contextBlock(o: { app: string; name: string; v: number; data: un
 export const HUB_URL: string;
 export function hubKey(store?: KVStore): string;
 export function setHubKey(key: string, store?: KVStore): boolean;
+/** A short message at the bottom of the page for a few seconds. */
+export function showHubMessage(text: string, doc?: Document): void;
 export function captureHubKey(loc?: Location, hist?: History, store?: KVStore): boolean;
 export function lastShared(app: string, store?: KVStore): { at: number; ok: boolean; sig: string; status: number } | null;
 export function shareContext(schema: AppSchema, context: () => { data: unknown; note?: string },
-  opts?: { store?: KVStore; fetch?: typeof fetch; now?: () => number; force?: boolean }): Promise<{ shared: boolean; reason?: string }>;
+  opts?: { store?: KVStore; fetch?: typeof fetch; now?: () => number; force?: boolean; notify?: (text: string) => void }): Promise<{ shared: boolean; reason?: string }>;

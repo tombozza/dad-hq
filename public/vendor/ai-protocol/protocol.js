@@ -307,6 +307,23 @@ export const HUB_URL = 'https://app-hub-865.pages.dev';
 const HUB_KEY = 'ai-updates-hub-key';
 const SHARED = app => `ai-updates-shared:${app}`;
 const RESHARE_MS = 6 * 3600 * 1000;
+const JUST_LINKED = 'ai-updates-hub-linked';
+
+/** A short message at the bottom of the page, gone after a few seconds. Never moves the page. */
+export function showHubMessage(text, doc = globalThis.document) {
+  try {
+    if (!doc?.body) return;
+    const el = doc.createElement('div');
+    el.setAttribute('role', 'status');
+    el.textContent = text;
+    el.style.cssText = 'position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);'
+      + 'z-index:2147483647;max-width:calc(100vw - 32px);box-sizing:border-box;padding:10px 16px;border-radius:12px;'
+      + 'background:#1f2328;color:#fff;font:500 15px/1.35 system-ui,-apple-system,sans-serif;text-align:center;'
+      + 'box-shadow:0 4px 18px rgba(0,0,0,.25);pointer-events:none;';
+    doc.body.appendChild(el);
+    setTimeout(() => el.remove(), 4500);
+  } catch { /* no page */ }
+}
 
 /** The App Hub key kept on this device ('' when sharing isn't set up). */
 export function hubKey(store = defaultStore()) { try { return store.getItem(HUB_KEY) || ''; } catch { return ''; } }
@@ -327,6 +344,7 @@ export function captureHubKey(loc = globalThis.location, hist = globalThis.histo
     const m = /(?:^#|&)ai-hub-key=([A-Za-z0-9_-]{16,128})(?=&|$)/.exec(loc?.hash || '');
     if (!m) return false;
     setHubKey(m[1], store);
+    try { store.setItem(JUST_LINKED, '1'); } catch { /* blocked */ }
     const rest = loc.hash.replace(/(^#|&)ai-hub-key=[^&]*/, '$1').replace(/^#&/, '#').replace(/&$/, '');
     hist?.replaceState?.(hist.state, '', `${loc.pathname}${loc.search}${rest === '#' ? '' : rest}`);
     return true;
@@ -343,10 +361,13 @@ export function lastShared(app, store = defaultStore()) {
  * Skipped when this device has no key, or when the same data went in the last 6 hours (unless force).
  * @returns {Promise<{shared:boolean, reason?:string}>}
  */
-export async function shareContext(schema, context, { store = defaultStore(), fetch: f = globalThis.fetch, now = () => Date.now(), force = false } = {}) {
+export async function shareContext(schema, context, { store = defaultStore(), fetch: f = globalThis.fetch, now = () => Date.now(), force = false, notify = showHubMessage } = {}) {
   try {
     captureHubKey(undefined, undefined, store);
     const key = hubKey(store);
+    let linked = false;
+    try { linked = store.getItem(JUST_LINKED) === '1'; } catch { /* blocked */ }
+    if (linked) force = true;
     if (!key) return { shared: false, reason: 'no-key' };
     if (typeof f !== 'function') return { shared: false, reason: 'no-fetch' };
     const c = context();
@@ -360,8 +381,14 @@ export async function shareContext(schema, context, { store = defaultStore(), fe
     });
     const ok = !!res?.ok;
     try { store.setItem(SHARED(schema.app), JSON.stringify({ at: now(), ok, sig, status: res?.status ?? 0 })); } catch { /* blocked */ }
+    const bad = res?.status === 401 || res?.status === 403;
+    if (linked && (ok || bad)) {
+      try { store.removeItem(JUST_LINKED); } catch { /* blocked */ }
+      notify(ok ? 'Linked to the App Hub ✓ This app is now in the daily copy.'
+        : 'The App Hub didn’t accept that key. Tap Set up on the App Hub’s AI tab again.');
+    }
     if (ok) return { shared: true };
-    return { shared: false, reason: res?.status === 401 || res?.status === 403 ? 'bad-key' : `http-${res?.status}` };
+    return { shared: false, reason: bad ? 'bad-key' : `http-${res?.status}` };
   } catch (err) {
     return { shared: false, reason: err?.message ?? 'failed' };
   }
