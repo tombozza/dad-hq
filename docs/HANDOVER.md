@@ -107,6 +107,19 @@ There is **no import**. Restoring means writing the rows back by hand.
 
 Newest first. Dates are from commits or from the day Tom said it in a chat.
 
+- 2026-11-12: **AI Updates** (sites/ai-updates, Phase 4). Add new › **AI Updates** opens the shared
+  paste/preview/apply sheet (`vendor/ai-protocol`), with Copy for ChatGPT. App id `dad_hq`, v1,
+  actions `add_place`, `add_meal`, `add_craft`, `add_events`, `add_jot`, `set_flag`. Everything is in
+  **`public/ai/`**: `schema.js` (the contract, plus `ENUMS`, the one list of allowed values), `guide.md`
+  (for ChatGPT), `updates.js` (pure resolve, handlers, context). Applies through the app's own mappers,
+  `saveImported`, a new `saveDraft` (Add to list now uses it) and a new `setItemFlag`; on this path a
+  failed save throws and the sheet reports it (`postStrict`), while Get ideas / Fill in the details keep
+  their offline-friendly saves. Names already in the app show "Already have …" with Add anyway.
+  `src/events.js` untouched (still identical to Bozza HQ). Tests: `npm test`.
+  Drift noted, not changed: the Fill in the details prompt omits craft `messy` (the mapper and 27
+  built-ins use it, so AI Updates allows it); home base is "Macclesfield" in the app's prompts but
+  "central Cheshire" in the shared events engine (AI Updates says Macclesfield).
+
 - 12 Nov 2026: deployed the move onto the new shared pieces (stepper, cards, toasts, photo pieces and the rest; Tom's yes). Live site checked after clearing the service worker: new pieces present, data loads, no console errors.
 - 12 Nov 2026 (later): synced shared components.css (_shared cbadf25): a `.ui-count` on a `.ui-btn.small` now sits out over the corner; also brings `.ui-stepper.small` and `.ui-table .tight`. No app code change. Not deployed.
 - 12 Nov 2026: the Wishlist tab count and the Add new drafts count are the shared `.ui-count` (a dot-style count on the tab and on the + button; shown with `hidden`, not inline display). The 📍 and + buttons in the top bar are full-size `ui-btn quiet icon` (44px), because on the 36px small button the count covered the +. Cards stay `div.ui-card` with onclick: every card holds its own star/bookmark buttons, so none can be a `button.ui-card`. Dad HQ has no back-to-top button, so nothing moved to `.ui-fab`. `lock.js` is still the older copy (storage-log has the newer one), left alone. Service worker dadhq-v19. Not deployed.
@@ -173,7 +186,7 @@ Newest first. Dates are from commits or from the day Tom said it in a chat.
 ## Status (12 Nov 2026)
 
 Works: all four tabs with filters and search, favourites and wishlist, Add new with the magic
-sheet, the AI actions page with logged costs, card editing, events import (paid or free route), cross-device sync, optional password
+sheet, the AI actions page with logged costs, AI Updates (paste a ChatGPT block; `public/ai/`), card editing, events import (paid or free route), cross-device sync, optional password
 lock, backup download, offline PWA.
 
 Known issues and loose ends:
@@ -183,7 +196,7 @@ Known issues and loose ends:
 - Run it's web search only works if web search is enabled for the key's Anthropic organisation;
   otherwise the sheet sends you to the free route.
 - No import for backups.
-- No automated tests.
+- Automated tests cover only AI Updates (`npm test`, `test/ai-updates.test.mjs`).
 
 ## Parked ideas
 

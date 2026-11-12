@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="/vendor/chassis/controls.css" />
   <link rel="stylesheet" href="/vendor/chassis/components.css" />
   <link rel="stylesheet" href="/vendor/magic/magic.css" />
+  <link rel="stylesheet" href="/vendor/ai-protocol/updates-sheet.css" />
   <style>
     /* Dad HQ's tokens. Amber is the app's identity colour (icon, App Hub tile). Each section keeps
        its own colour by setting --accent on its tab (and its tab-bar button): amber places, green
@@ -59,7 +60,7 @@
     /* Top bar: name, location, add new. */
     .dh-name { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em; }
     .dh-name b { color: var(--act); font-weight: inherit; }
-    .ui-btn .dh-ico { inline-size: 18px; block-size: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    .ui-btn .dh-ico, .ui-row .dh-ico { inline-size: 18px; block-size: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 
     main { max-width: 920px; margin: 0 auto; padding: var(--sp-4) max(var(--sp-4), env(safe-area-inset-right)) calc(96px + env(safe-area-inset-bottom)) max(var(--sp-4), env(safe-area-inset-left)); }
     .tab-view { display: none; }
@@ -110,6 +111,10 @@
     .dh-ai-cost small { font-size: var(--text-xs); color: var(--text-2); }
     .dh-ai-error { color: var(--danger); }
     #ai-body li[hidden], #ai-body [data-ai-group][hidden] { display: none; }
+    /* AI Updates sheet (vendor/ai-protocol): a long option in a row's picker widened the whole sheet
+       past a phone's width. Work-around here until the shared updates-sheet.css has it. */
+    .au-row > label > span { grid-template-columns: minmax(0, 1fr); }
+    .au-row select { width: 100%; }
 
     @media (max-width: 580px) {
       .cards-grid { grid-template-columns: 1fr; }
@@ -124,7 +129,11 @@
   import { openMagic } from '/vendor/magic/magic.js';
   import { aiAvailable, askClaude, userKey, runNote } from '/lib/claude.js';
   import { renderAiActions } from '/lib/ai-actions.js';
-  Object.assign(window, { openMagic, aiAvailable, askClaude, userKey, runNote, renderAiActions });
+  // AI Updates (sites/ai-updates): paste a ChatGPT block, preview, apply. public/ai/ holds the
+  // schema, the guide and the pure resolve/handlers/context; openAiUpdates() below wires them in.
+  import { openUpdates } from '/vendor/ai-protocol/updates-sheet.js';
+  import { makeAiUpdates } from '/ai/updates.js';
+  Object.assign(window, { openMagic, aiAvailable, askClaude, userKey, runNote, renderAiActions, openUpdates, makeAiUpdates });
 </script>
 <script src="/vendor/clearx.js" defer></script>
 </head>
@@ -326,6 +335,8 @@
     <div class="ui-card"><ul class="ui-list">
       <li><button class="ui-row" onclick="selectTab('ai'); window.scrollTo(0, 0)"><span class="main"><span><magic-mark></magic-mark> AI actions</span>
         <span class="sub">Everything AI can do here, and what each one costs</span></span></button></li>
+      <li><button class="ui-row" onclick="openAiUpdates()"><span class="main"><span><svg class="dh-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg> AI Updates</span>
+        <span class="sub">Paste a block from ChatGPT and pick what to add, or copy Dad HQ for ChatGPT</span></span></button></li>
     </ul></div>
 
     <!-- Settings: optional password lock + backup (public/lock.js does the work) -->
@@ -6262,17 +6273,20 @@ function addDraft() {
   const name = (nameEl.value || '').trim();
   if (!name) { nameEl.style.borderColor = 'red'; nameEl.focus(); return; }
   nameEl.style.borderColor = '';
-  const item = {
-    id: uid('draft'),
-    kind: document.getElementById('an-kind').value,
-    name,
-    note: (noteEl.value || '').trim(),
-  };
-  S.drafts.push(item);
-  saveDrafts();
-  saveCustomToServer('drafts', item); // sync across devices
+  saveDraft(document.getElementById('an-kind').value, name, (noteEl.value || '').trim());
   nameEl.value = ''; noteEl.value = '';
   renderAddNew();
+}
+
+// One jotted item onto the list. `strict` (AI Updates) saves to the server first and throws if
+// that fails; the Add to list button keeps its offline-friendly fire-and-forget save.
+async function saveDraft(kind, name, note, { strict = false } = {}) {
+  const item = { id: uid('draft'), kind, name, note };
+  if (strict) await postStrict('/api/drafts', item);
+  S.drafts.push(item);
+  saveDrafts();
+  if (!strict) saveCustomToServer('drafts', item); // sync across devices
+  return item.id;
 }
 
 async function removeDraft(id) {
@@ -6401,18 +6415,21 @@ function knownNames(type) {
   return new Set(list.map(x => lower(x.name)));
 }
 
-// Save mapped items into the app. Shared by Get ideas and Fill in the details.
-async function saveImported(type, items) {
+// Save mapped items into the app. Shared by Get ideas, Fill in the details and AI Updates.
+// `strict` (AI Updates) waits for each server save and throws if one fails, so the sheet can say
+// so; Get ideas and Fill in the details keep the offline-friendly save (the local cache has it).
+async function saveImported(type, items, { strict = false } = {}) {
   if (!items.length) return 0;
   if (type === 'act') {
-    await Promise.all(items.map(item => savePlaceToServer(item)));
+    if (strict) for (const item of items) await postStrict('/api/places', placeBody(item));
+    else await Promise.all(items.map(item => savePlaceToServer(item)));
     await loadPlaces(); renderActivities();
   } else if (type === 'meal') {
-    for (const item of items) { S.customMeals.push(item); saveCustomToServer('meals', item); }
-    saveJSON('dh_customMeals', S.customMeals); renderMeals();
+    try { for (const item of items) { if (strict) await postStrict('/api/meals', item); S.customMeals.push(item); if (!strict) saveCustomToServer('meals', item); } }
+    finally { saveJSON('dh_customMeals', S.customMeals); renderMeals(); }
   } else if (type === 'craft') {
-    for (const item of items) { S.customCrafts.push(item); saveCustomToServer('crafts', item); }
-    saveJSON('dh_customCrafts', S.customCrafts); renderCrafts();
+    try { for (const item of items) { if (strict) await postStrict('/api/crafts', item); S.customCrafts.push(item); if (!strict) saveCustomToServer('crafts', item); } }
+    finally { saveJSON('dh_customCrafts', S.customCrafts); renderCrafts(); }
   } else if (type === 'event') {
     const r = await fetch(EV_API + '/api/events/manual', {
       method: 'POST', headers: { 'content-type': 'application/json' },
@@ -6500,6 +6517,50 @@ function parseDraftReply(text) {
     try { const o = JSON.parse(c); if (o && typeof o === 'object') return o; } catch (_) {}
   }
   return null;
+}
+
+// ════════════════════════════════════════════
+//  AI UPDATES — paste a ChatGPT block (sites/ai-updates), check it, apply the ticked ones
+// ════════════════════════════════════════════
+// The shared sheet (vendor/ai-protocol) checks the block against public/ai/schema.js and shows the
+// preview; resolve, the handlers and "Copy for ChatGPT" are public/ai/updates.js. This adapter hands
+// them the app's own functions, so an applied action saves exactly as Get ideas, Add to list and the
+// star/bookmark/hide buttons do, except that a failed save is reported instead of swallowed.
+function aiUpdatesApp() {
+  const builtIn = { act: ACTIVITIES, meal: MEALS, craft: CRAFTS };
+  const custom = { act: () => S.customActs, meal: () => S.customMeals, craft: () => S.customCrafts };
+  const flagKey = (scope, kind) => (FLAG_MAP.find(([s, k]) => s === scope && k === kind) || [])[2];
+  return {
+    knownNames,
+    items: kind => [...builtIn[kind], ...custom[kind]()].map(x => {
+      const e = editFor(x.id);
+      return { id: x.id, name: (e && e.name) || x.name, alt: x.name };
+    }),
+    customItems: kind => custom[kind]().map(withEdit),
+    flagged: (scope, kind) => S[flagKey(scope, kind)] || [],
+    events: () => EV.events || [],
+    drafts: () => S.drafts,
+    age: evGetAge,
+    map: MAPPERS,
+    saveImported: (type, items) => saveImported(type, items, { strict: true }),
+    addDraft: (kind, name, note) => saveDraft(kind, name, note, { strict: true }),
+    setFlag: setItemFlag,
+  };
+}
+
+async function openAiUpdates() {
+  if (!window.openUpdates || !window.makeAiUpdates) { alert('Still loading — try again in a second.'); return; }
+  if (!EV.loaded) await loadEvents(); // the duplicate check and the context need the saved events
+  const ai = window.makeAiUpdates(aiUpdatesApp());
+  window.openUpdates({
+    schema: ai.schema, context: ai.context, resolve: ai.resolve, apply: ai.apply,
+    done: results => {
+      if (!results.some(r => r.ok)) return;
+      const y = window.scrollY; // redraw what changed without moving the page
+      renderTab(S.tab);
+      window.scrollTo(0, y);
+    },
+  });
 }
 
 // ════════════════════════════════════════════
@@ -6821,19 +6882,34 @@ async function loadEvents() {
 // which is what makes deletes / un-favourites propagate to every device. We
 // still cache to localStorage for instant paint and offline reads.
 
+const placeBody = item => ({
+  id: item.id, name: item.name, icon: item.icon, desc: item.desc,
+  cat: item.cat, subcat: item.subcat, weather: item.weather,
+  region: item.region, dist: item.dist, price: item.price,
+  priceLabel: item.priceLabel, tags: item.tags,
+});
+
 async function savePlaceToServer(item) {
   try {
     await fetch(EV_API + '/api/places', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        id: item.id, name: item.name, icon: item.icon, desc: item.desc,
-        cat: item.cat, subcat: item.subcat, weather: item.weather,
-        region: item.region, dist: item.dist, price: item.price,
-        priceLabel: item.priceLabel, tags: item.tags,
-      }),
+      body: JSON.stringify(placeBody(item)),
     });
   } catch (_) { /* offline — the local cache still has it */ }
+}
+
+// A POST that throws when it doesn't save (offline, locked, or refused), for AI Updates, whose
+// sheet reports each failure. The older saves above and below swallow errors on purpose.
+async function postStrict(path, body) {
+  let r;
+  try {
+    r = await fetch(EV_API + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  } catch (_) { throw new Error('Couldn’t reach Dad HQ’s server. Check the connection and try again.'); }
+  if (r.ok) return r;
+  const d = await r.json().catch(() => ({}));
+  if (r.status === 401) throw new Error('The password lock is on: unlock this device first.');
+  throw new Error((typeof d.error === 'string' ? d.error : d.error && d.error.message) || `Couldn’t save (HTTP ${r.status})`);
 }
 
 // Generic POST for JSON-blob collections (meals, crafts).
@@ -6922,6 +6998,17 @@ async function loadFlags() {
   }
   if (!migrated) saveJSON('dh_flagsMigrated', true);
   renderTab(S.tab);
+}
+
+// Set (not toggle) one flag, server first, for AI Updates: throws if the save fails, and only
+// then updates the same state and cache toggleFav / toggleWish / removeItem use. The caller redraws.
+async function setItemFlag(scope, kind, id, on) {
+  const row = FLAG_MAP.find(([s, k]) => s === scope && k === kind);
+  if (!row) throw new Error(`Can’t set ${scope} on a ${kind}`);
+  const [, , stateKey, storeKey] = row;
+  await postStrict('/api/flags', { scope, kind, item_id: id, on: !!on });
+  if (on) S[stateKey].add(id); else S[stateKey].delete(id);
+  saveJSON(storeKey, [...S[stateKey]]);
 }
 
 // A multi-day event counts as being in every month it runs through.

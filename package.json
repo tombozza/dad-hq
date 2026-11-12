@@ -8,7 +8,8 @@
     "db:init": "wrangler d1 execute dad-hq --local --file=./schema.sql",
     "db:init:remote": "wrangler d1 execute dad-hq --remote --file=./schema.sql",
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "test": "node --test test/*.test.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
