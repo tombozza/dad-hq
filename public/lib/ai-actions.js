@@ -50,7 +50,7 @@ function costLine(a) {
   const c = jobCost(a.job, data?.ledger);
   const cls = c.cost != null && c.cost > PRICEY ? 'warn' : 'accent';
   return `<span class="dh-ai-cost"><span class="ui-badge good">Free · ChatGPT</span>
-    <span class="ui-badge ${cls}">Paid · ~${money(c.cost)}</span>
+    <span class="ui-badge ${cls}">Paid · ${money(c.cost).startsWith('<') ? '' : '~'}${money(c.cost)}</span>
     <small>${howSure(c)}${a.search ? ' · uses web search' : ''}</small></span>`;
 }
 
