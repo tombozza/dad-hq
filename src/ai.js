@@ -15,6 +15,8 @@
 // The person's key is used for that one call and never stored here.
 // Without either it says so plainly — the Free route in the sheet still works.
 
+import { costOf, jobName, logCall } from './ai-usage.js';
+
 const MODELS = new Set(['claude-haiku-4-5-20251001', 'claude-haiku-4-5']);
 const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
 const MAX_TOKENS_CAP = 8192; // 30 events as JSON is ~6k tokens
@@ -23,7 +25,7 @@ const MAX_SEARCHES = 5;
 const err = (message, status) =>
   Response.json({ type: 'error', error: { message } }, { status });
 
-export async function handleAI(request, env, url) {
+export async function handleAI(request, env, url, ctx) {
   const { pathname } = url;
 
   if (pathname === '/api/status' && request.method === 'GET') {
@@ -60,5 +62,17 @@ export async function handleAI(request, env, url) {
   } catch (e) {
     return err('Couldn’t reach Anthropic: ' + (e.message || e), 502);
   }
-  return new Response(await res.text(), { status: res.status, headers: { 'content-type': 'application/json' } });
+  const text = await res.text();
+  const headers = { 'content-type': 'application/json' };
+  // What it cost (12 Nov 2026): logged per job for the AI actions page, and sent back in a header
+  // so the page can say so. Logged whichever key paid. A reply we can't read passes through untouched.
+  if (res.ok && env.DB) {
+    let reply = null; try { reply = JSON.parse(text); } catch { /* pass it through */ }
+    if (reply?.usage) {
+      headers['x-ai-cost'] = costOf(reply.model ?? model, reply.usage).toFixed(6);
+      const saving = logCall(env, { job: jobName(body.job), model: reply.model ?? model, usage: reply.usage }).catch(() => {});
+      if (ctx?.waitUntil) ctx.waitUntil(saving); else await saving;
+    }
+  }
+  return new Response(text, { status: res.status, headers });
 }

@@ -105,6 +105,12 @@
     .dh-picks small { display: block; color: var(--text-2); font-size: var(--text-xs); }
     .dh-rewrite b { display: block; margin-bottom: var(--sp-1); }
 
+    /* AI actions page (lib/ai-actions.js): Free and Paid side by side under each job. */
+    .dh-ai-cost { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); margin-top: var(--sp-1); }
+    .dh-ai-cost small { font-size: var(--text-xs); color: var(--text-2); }
+    .dh-ai-error { color: var(--danger); }
+    #ai-body li[hidden], #ai-body [data-ai-group][hidden] { display: none; }
+
     @media (max-width: 580px) {
       .cards-grid { grid-template-columns: 1fr; }
       .dh-form { grid-template-columns: 1fr; }
@@ -116,8 +122,9 @@
      The app script is a classic script, so the module hands what it needs to window. -->
 <script type="module">
   import { openMagic } from '/vendor/magic/magic.js';
-  import { aiAvailable, askClaude, userKey } from '/lib/claude.js';
-  Object.assign(window, { openMagic, aiAvailable, askClaude, userKey });
+  import { aiAvailable, askClaude, userKey, runNote } from '/lib/claude.js';
+  import { renderAiActions } from '/lib/ai-actions.js';
+  Object.assign(window, { openMagic, aiAvailable, askClaude, userKey, runNote, renderAiActions });
 </script>
 <script src="/vendor/clearx.js" defer></script>
 </head>
@@ -315,6 +322,12 @@
       </div>
     </div>
 
+    <!-- Every AI job and what it costs (public/lib/ai-actions.js) -->
+    <div class="ui-card"><ul class="ui-list">
+      <li><button class="ui-row" onclick="selectTab('ai'); window.scrollTo(0, 0)"><span class="main"><span><magic-mark></magic-mark> AI actions</span>
+        <span class="sub">Everything AI can do here, and what each one costs</span></span></button></li>
+    </ul></div>
+
     <!-- Settings: optional password lock + backup (public/lock.js does the work) -->
     <div class="ui-card ui-stack" id="an-settings">
       <div class="ui-head"><h2 class="ui-h2">Settings</h2></div>
@@ -345,6 +358,9 @@
       <p class="ui-hint">Every event, place, meal, craft, note, edit and favourite saved online, as a JSON file.</p>
     </div>
   </div>
+
+  <!-- ── AI ACTIONS (Add new › AI actions) ── -->
+  <div class="tab-view t-act" id="tab-ai"><div id="ai-body" class="ui-stack"></div></div>
 
 </main>
 
@@ -6214,6 +6230,7 @@ function renderTab(tab) {
   if (tab === 'events')     renderEvents();
   if (tab === 'wishlist')   renderWishlist();
   if (tab === 'addnew')     renderAddNew();
+  if (tab === 'ai' && window.renderAiActions) window.renderAiActions({ drafts: () => S.drafts.length, open: () => S.tab === 'ai' });
   updateWishCount();
   updateDraftCount();
 }
@@ -6350,7 +6367,8 @@ function magicSheet(o) {
   // key: Run it is always offered; with no site key it asks for the person's own, kept on this device.
   return window.openMagic({ canRun: window.aiAvailable, key: window.userKey, ...o });
 }
-const RUN_NOTE = { plain: 'Claude · about 1p', search: 'Claude + web search · about 5p' };
+// The Run it note is the job's real average cost (or its estimate until it has run): lib/ai-catalogue.js.
+const jobNote = (job, search) => (window.runNote ? window.runNote(job, { search }) : undefined);
 const askMagic = (prompt, opts) => window.askClaude(prompt, opts);
 
 // A tickable list for the sheet's check step. Rows already in the app start unticked.
@@ -6434,8 +6452,8 @@ function fillDrafts() {
   magicSheet({
     title: `Fill in ${S.drafts.length} thing${S.drafts.length === 1 ? '' : 's'}`,
     using: [...counts.map(([k, n]) => `${n} ${DRAFT_KINDS[k].label.toLowerCase()}${n === 1 ? '' : 's'}`), 'Looks things up on the web'],
-    runNote: RUN_NOTE.search,
-    run: () => askMagic(prompt, { maxTokens: Math.min(8000, 800 + S.drafts.length * 350), search: true }),
+    runNote: jobNote('fill-details', true),
+    run: () => askMagic(prompt, { maxTokens: Math.min(8000, 800 + S.drafts.length * 350), search: true, job: 'fill-details' }),
     prompt: () => prompt,
     freeNote: 'Use a chat with web search on, so the details are real.',
     parse: text => {
@@ -6617,8 +6635,8 @@ function rewriteCard() {
   magicSheet({
     title: 'Rewrite this card',
     using: [editFields(item).name, instruction ? (instruction.length > 40 ? instruction.slice(0, 40) + '…' : instruction) : 'Tighten the wording'],
-    runNote: RUN_NOTE.plain,
-    run: () => askMagic(prompt, { maxTokens: 600 }),
+    runNote: jobNote('rewrite-card'),
+    run: () => askMagic(prompt, { maxTokens: 600, job: 'rewrite-card' }),
     prompt: () => prompt,
     parse: text => {
       const obj = parseDraftReply(text);
@@ -7084,6 +7102,7 @@ async function getIdeas(type) {
   try { await makePrompt(); } catch (e) { alert(String(e.message || e).slice(0, 160)); return; }
 
   const search = type === 'event' || type === 'act'; // real places and dates need looking up
+  const job = type === 'event' ? 'find-events' : `ideas-${type}`;   // its cost is logged under this
   const known = knownNames(type);
   const ages = []; for (let a = EV_AGE_MIN; a <= EV_AGE_MAX; a++) ages.push(a);
   magicSheet({
@@ -7098,8 +7117,8 @@ async function getIdeas(type) {
       else { updSetCount(v); q.count = updGetCount(); }
       await makePrompt();
     },
-    runNote: search ? RUN_NOTE.search : RUN_NOTE.plain,
-    run: () => askMagic(q.prompt, { maxTokens: Math.min(8000, 800 + q.count * 260), search }),
+    runNote: jobNote(job, search),
+    run: () => askMagic(q.prompt, { maxTokens: Math.min(8000, 800 + q.count * 260), search, job }),
     prompt: () => q.prompt,
     freeNote: search ? 'Use a chat with web search on, so the places and dates are real.' : undefined,
     parse: text => {

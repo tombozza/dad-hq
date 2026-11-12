@@ -22,15 +22,33 @@ export function aiAvailable() {
   return status;
 }
 
-/** Ask Claude. `content` is a prompt string or a list of parts. Resolves to the reply text. */
-export async function askClaude(content, { maxTokens = 2000, search = false } = {}) {
+import { money, jobCost } from './ai-catalogue.js';
+
+// What Claude has cost here (GET /api/ai-usage): the AI actions page and each sheet's Run it note.
+let usage = null;
+export function aiUsage({ fresh = false } = {}) {
+  if (fresh || !usage) usage = fetch('/api/ai-usage').then(r => (r.ok ? r.json() : null)).catch(() => null);
+  return usage;
+}
+let ledger = null;
+aiUsage().then(u => { ledger = u?.ledger ?? null; });
+
+/** "Claude · about 16¢" for the sheet's Run it button: the job's recent average, or its estimate. */
+export function runNote(job, { search = false } = {}) {
+  return `Claude${search ? ' + web search' : ''} · about ${money(jobCost(job, ledger).cost)}`;
+}
+
+/** Ask Claude. `content` is a prompt string or a list of parts. Resolves to the reply text.
+ *  `job` is the id its cost is logged under (ai-catalogue.js). */
+export async function askClaude(content, { maxTokens = 2000, search = false, job } = {}) {
   const res = await fetch('/api/anthropic', {
     method: 'POST', headers: { 'content-type': 'application/json', ...(userKey.has() ? { 'x-user-key': userKey.get() } : {}) },
-    body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, search, messages: [{ role: 'user', content }] }),
+    body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, search, job, messages: [{ role: 'user', content }] }),
   });
   let body; try { body = await res.json(); } catch { body = null; }
   if (res.status === 401 && userKey.has()) throw new Error('Anthropic didn’t accept your API key — tap Change key to fix it');
   if (!res.ok || !body || body.type === 'error') throw new Error(body?.error?.message ?? `Claude didn’t answer (HTTP ${res.status})`);
+  if (res.headers.get('x-ai-cost')) aiUsage({ fresh: true }).then(u => { ledger = u?.ledger ?? ledger; });
   // With web search on, the reply mixes search blocks with text; only the text is the answer.
   return (body.content ?? []).filter(c => c.type === 'text').map(c => c.text ?? '').join('');
 }

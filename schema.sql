@@ -99,3 +99,12 @@ CREATE TABLE IF NOT EXISTS app_settings (
   password_hash    TEXT,               -- pbkdf2$iter$salt$hash, never plain text
   updated_at       TEXT DEFAULT (datetime('now'))
 );
+
+-- What each Claude run cost (the AI actions page, Add new › AI actions). One row: the ledger
+-- (per job, per month) and the credit balance Tom typed in. src/ai-usage.js also creates it.
+CREATE TABLE IF NOT EXISTS ai_usage (
+  id         INTEGER PRIMARY KEY CHECK (id = 1),
+  ledger     TEXT,
+  balance    TEXT,
+  updated_at TEXT
+);

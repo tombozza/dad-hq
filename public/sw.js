@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dadhq-v15';
+const CACHE_NAME = 'dadhq-v16';
 const ASSETS = ['./', './index.html', './lock.js', './vendor/chassis/theme.js', './vendor/chassis/tokens.css', './vendor/chassis/controls.css', './vendor/chassis/components.css', './vendor/magic/magic.css'];
 
 self.addEventListener('install', e => {

@@ -6,6 +6,7 @@ import { handlePlaces } from './places.js';
 import { handleSync } from './sync.js';
 import { handleAI } from './ai.js';
 import { handleAuth } from './auth.js';
+import { handleUsage } from './ai-usage.js';
 
 // What kind of events Dad HQ pulls in — days out with a young child.
 // `focus` is a function of the child's age so the prompt can be tuned from the
@@ -32,7 +33,7 @@ export default {
     // ---- The magic sheet's paid route (Claude, locked proxy) + /api/status ----
     // Before the open CORS preflight below: the proxy must not be callable from other sites.
     try {
-      const ai = await handleAI(request, env, url);
+      const ai = await handleAI(request, env, url, ctx);
       if (ai) return ai;
     } catch (err) {
       return json({ type: 'error', error: { message: String((err && err.message) || err) } }, 500);
@@ -52,6 +53,9 @@ export default {
       // ---- Optional password lock (off by default) — see src/auth.js ----
       const gated = await handleAuth(request, env, url);
       if (gated) return gated;
+
+      // ---- What Claude has cost here (AI actions page). After the gate: reading is open, setting the balance is a write ----
+      if (url.pathname === '/api/ai-usage') return await handleUsage(request, env);
 
       // ---- Backup: every table, as one JSON download (Add new → Download a backup) ----
       if (url.pathname === '/api/backup' && request.method === 'GET') {
