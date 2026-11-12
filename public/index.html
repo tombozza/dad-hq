@@ -132,10 +132,10 @@
 
 <header class="ui-bar">
   <span class="name dh-name">Dad <b>HQ</b></span>
-  <button class="ui-btn quiet icon small" id="loc-btn" title="Macclesfield" aria-label="Home location: Macclesfield" onclick="openLocModal()">📍</button>
-  <button class="ui-btn quiet small" id="nav-add-btn" title="Add new" aria-label="Add new" onclick="openAddNew()">
+  <button class="ui-btn quiet icon" id="loc-btn" title="Macclesfield" aria-label="Home location: Macclesfield" onclick="openLocModal()">📍</button>
+  <button class="ui-btn quiet icon" id="nav-add-btn" title="Add new" aria-label="Add new" onclick="openAddNew()">
     <svg class="dh-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-    <span class="ui-badge accent" id="nav-add-count" style="display:none;">0</span>
+    <span class="ui-count" id="nav-add-count" hidden>0</span>
   </button>
 </header>
 
@@ -144,7 +144,7 @@
   <button class="tab-btn t-meal" data-tab="meals"><span>🍽️</span>Meals</button>
   <button class="tab-btn t-craft" data-tab="crafts"><span>🎨</span>Crafts</button>
   <button class="tab-btn t-event" data-tab="events"><span>📅</span>Events</button>
-  <button class="tab-btn t-wish" data-tab="wishlist" id="nav-wish-btn"><span>🔖</span>Wishlist <span class="ui-badge accent" id="nav-wish-count" style="display:none;">0</span></button>
+  <button class="tab-btn t-wish" data-tab="wishlist" id="nav-wish-btn"><span>🔖</span>Wishlist<span class="ui-count" id="nav-wish-count" hidden>0</span></button>
 </nav>
 
 <main>
@@ -6296,7 +6296,7 @@ function updateDraftCount() {
   const b = document.getElementById('nav-add-count');
   if (!b) return;
   const n = S.drafts.length;
-  b.textContent = n; b.style.display = n ? 'inline-flex' : 'none';
+  b.textContent = n; b.hidden = !n;
 }
 
 function renderAddNew() {
@@ -6719,7 +6719,7 @@ function updateWishCount() {
   const b = document.getElementById('nav-wish-count');
   if (!b) return;
   const n = wishTotal();
-  b.textContent = n; b.style.display = n ? 'inline-flex' : 'none';
+  b.textContent = n; b.hidden = !n;
 }
 
 function renderWishlist() {
