@@ -132,8 +132,11 @@
   // AI Updates (sites/ai-updates): paste a ChatGPT block, preview, apply. public/ai/ holds the
   // schema, the guide and the pure resolve/handlers/context; openAiUpdates() below wires them in.
   import { openUpdates } from '/vendor/ai-protocol/updates-sheet.js';
+  import { captureHubKey, hubKey, shareContext } from '/vendor/ai-protocol/protocol.js';
   import { makeAiUpdates } from '/ai/updates.js';
+  captureHubKey();   // the App Hub's #ai-hub-key=… set-up link
   Object.assign(window, { openMagic, aiAvailable, askClaude, userKey, runNote, renderAiActions, openUpdates, makeAiUpdates });
+  shareAiContext({ hubKey, shareContext });   // the daily copy, once the data has loaded (below)
 </script>
 <script src="/vendor/clearx.js" defer></script>
 </head>
@@ -6563,6 +6566,21 @@ async function openAiUpdates() {
   });
 }
 
+// The daily copy (sites/ai-updates ARCHITECTURE §8b): once a page load, after the synced data and the
+// saved events are in, share the "Copy for ChatGPT" context with the App Hub. Only on a device with the
+// Hub key, and not while the lock screen is up. shareContext never throws and skips unchanged data.
+async function shareAiContext({ hubKey, shareContext }) {
+  try {
+    if (!hubKey()) return;
+    const lock = await window.AppLock?.ready;
+    if (lock?.enabled && !lock.unlocked) return;
+    await window.dadDataLoaded;
+    if (!EV.loaded) await loadEvents();
+    const ai = window.makeAiUpdates(aiUpdatesApp());
+    await shareContext(ai.schema, ai.context);
+  } catch (_) { /* offline: next load */ }
+}
+
 // ════════════════════════════════════════════
 //  EDIT A CARD — by hand, or by asking an AI to rewrite it
 // ════════════════════════════════════════════
@@ -7948,12 +7966,8 @@ document.addEventListener('keydown', e => {
 setLocBtn(document.getElementById('loc-btn'));
 renderAll();
 // Sync everything cross-device (custom places/meals/crafts, favourites, hides).
-loadPlaces();
-loadMeals();
-loadCrafts();
-loadDrafts();
-loadEdits();
-loadFlags();
+// Settles when all of it is in (AI Updates' daily copy waits for it).
+window.dadDataLoaded = Promise.all([loadPlaces(), loadMeals(), loadCrafts(), loadDrafts(), loadEdits(), loadFlags()]).catch(() => {});
 </script>
 <script>
 if ('serviceWorker' in navigator) {

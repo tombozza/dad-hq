@@ -107,6 +107,7 @@ There is **no import**. Restoring means writing the rows back by hand.
 
 Newest first. Dates are from commits or from the day Tom said it in a chat.
 
+- 2026-11-12: **AI Updates daily copy**: the module in `public/index.html` takes the App Hub's `#ai-hub-key=…` set-up link on load (`captureHubKey`), and `shareAiContext()` (next to `openAiUpdates()`) shares the AI Updates context with the App Hub (`shareContext`) once a page load, after the synced data (`window.dadDataLoaded`) and the saved events are in. It does nothing on a device without the Hub key or while the lock screen is up. Test in `test/ai-updates.test.mjs`; the contract is still `public/ai/`. Vendor ai-protocol and chassis re-synced. Service worker dadhq-v21.
 - 2026-11-12: **AI Updates** (sites/ai-updates, Phase 4). Add new › **AI Updates** opens the shared
   paste/preview/apply sheet (`vendor/ai-protocol`), with Copy for ChatGPT. App id `dad_hq`, v1,
   actions `add_place`, `add_meal`, `add_craft`, `add_events`, `add_jot`, `set_flag`. Everything is in

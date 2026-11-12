@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { processReply, checkAppSchema } from '../public/vendor/ai-protocol/protocol.js';
+import { processReply, checkAppSchema, shareContext } from '../public/vendor/ai-protocol/protocol.js';
 import schema, { examples, ENUMS } from '../public/ai/schema.js';
 import { makeAiUpdates, makeHandlers, makeResolve, buildContext, findItem, closeness, sortEvents } from '../public/ai/updates.js';
 
@@ -307,4 +307,20 @@ test('a context block pasted back is refused, not applied', () => {
   const { context, schema: s } = makeAiUpdates(fakeApp(), () => NOW);
   const text = `AI Updates context\n${JSON.stringify({ protocol: 'ai-updates', kind: 'context', app: 'dad_hq', v: 1, data: context().data })}`;
   assert.match(processReply(text, s).error, /context block/);
+});
+
+test('the daily copy: the context shares straight after load with the app’s schema', async () => {
+  const ai = makeAiUpdates(fakeApp(), () => NOW);   // as shareAiContext() in index.html builds it, after the data loads
+  const mem = new Map([['ai-updates-hub-key', 'k'.repeat(24)]]);
+  const store = { getItem: k => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, String(v)), removeItem: k => mem.delete(k) };
+  const calls = [];
+  const fetch = async (url, init) => { calls.push({ url, init }); return { ok: true, status: 200 }; };
+  assert.equal(ai.schema, schema);
+  assert.deepEqual(await shareContext(ai.schema, ai.context, { store, fetch, now: () => NOW.getTime() }), { shared: true });
+  assert.match(calls[0].url, new RegExp(`/api/ai-context/${schema.app}$`));
+  const body = JSON.parse(calls[0].init.body);
+  assert.equal(body.v, schema.v);
+  assert.deepEqual(body.data, ai.context().data);
+  assert.deepEqual(await shareContext(ai.schema, ai.context, { store, fetch, now: () => NOW.getTime() }), { shared: false, reason: 'unchanged' });
+  assert.equal(calls.length, 1);
 });
