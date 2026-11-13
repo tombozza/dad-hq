@@ -131,12 +131,17 @@
   import { renderAiActions } from '/lib/ai-actions.js';
   // AI Updates (sites/ai-updates): paste a ChatGPT block, preview, apply. public/ai/ holds the
   // schema, the guide and the pure resolve/handlers/context; openAiUpdates() below wires them in.
-  import { openUpdates } from '/vendor/ai-protocol/updates-sheet.js';
+  import { openUpdates, mountAiButton } from '/vendor/ai-protocol/updates-sheet.js';
   import { captureHubKey, hubKey, shareContext } from '/vendor/ai-protocol/protocol.js';
   import { makeAiUpdates } from '/ai/updates.js';
   captureHubKey();   // the App Hub's #ai-hub-key=… set-up link
   Object.assign(window, { openMagic, aiAvailable, askClaude, userKey, runNote, renderAiActions, openUpdates, makeAiUpdates });
   shareAiContext({ hubKey, shareContext });   // the daily copy, once the data has loaded (below)
+  // The ✨ AI button in the top bar, after the name (the bar is static: mounted once). It opens the
+  // same sheet as Settings › AI Updates and refreshes its badge of waiting parts when it closes.
+  const bar = document.querySelector('header.ui-bar');
+  window.aiButton = mountAiButton(bar, { app: 'dad_hq', open: () => openAiUpdates() });
+  bar.insertBefore(window.aiButton.button, document.getElementById('loc-btn'));
 </script>
 <script src="/vendor/clearx.js" defer></script>
 </head>
@@ -338,7 +343,7 @@
     <div class="ui-card"><ul class="ui-list">
       <li><button class="ui-row" onclick="selectTab('ai'); window.scrollTo(0, 0)"><span class="main"><span><magic-mark></magic-mark> AI actions</span>
         <span class="sub">Everything AI can do here, and what each one costs</span></span></button></li>
-      <li><button class="ui-row" onclick="openAiUpdates()"><span class="main"><span><svg class="dh-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg> AI Updates</span>
+      <li><button class="ui-row" onclick="openAiUpdates().then(() => window.aiButton?.refresh())"><span class="main"><span><svg class="dh-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg> AI Updates</span>
         <span class="sub">Paste a block from ChatGPT and pick what to add, or copy Dad HQ for ChatGPT</span></span></button></li>
     </ul></div>
 
@@ -6555,7 +6560,8 @@ async function openAiUpdates() {
   if (!window.openUpdates || !window.makeAiUpdates) { alert('Still loading — try again in a second.'); return; }
   if (!EV.loaded) await loadEvents(); // the duplicate check and the context need the saved events
   const ai = window.makeAiUpdates(aiUpdatesApp());
-  window.openUpdates({
+  // Resolves when the sheet closes (the ✨ AI button refreshes its badge then).
+  return window.openUpdates({
     schema: ai.schema, context: ai.context, resolve: ai.resolve, apply: ai.apply,
     done: results => {
       if (!results.some(r => r.ok)) return;

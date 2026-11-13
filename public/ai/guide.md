@@ -15,7 +15,7 @@ The **Add new** list is a jot-list of things to look up later.
 
 ## Context
 
-"Copy for ChatGPT" (Dad HQ › Add new › AI Updates) gives:
+Its block in the daily update (or ✨ AI › **Copy just Dad HQ**) gives:
 
 - `today`, `home_base` and `harry_age`.
 - `allowed`: the exact values for every category, region, weather, price and mess field.
