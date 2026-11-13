@@ -58,7 +58,6 @@
     overlay.className = 'applock';
     overlay.innerHTML = `<form class="ui-card" autocomplete="on">
         <h2 class="ui-h2">🔒 Locked</h2>
-        <p class="ui-sub">Enter the password to use this app on this device.</p>
         <input class="ui-input" type="password" name="password" autocomplete="current-password" placeholder="Password" aria-label="Password" required>
         <div class="err" aria-live="polite"></div>
         <button class="ui-btn primary block" type="submit">Unlock</button>

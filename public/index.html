@@ -186,7 +186,7 @@
         </div>
       </div>
       <div class="dh-group"><span class="ui-label">Cost</span><div class="ui-chips" id="price-row"></div></div>
-      <div class="ui-actions"><button class="ui-btn quiet small" id="clear-filters-btn">Clear all filters</button></div>
+      <div class="ui-actions"><button class="ui-btn quiet small" id="clear-filters-btn">Clear</button></div>
     </div>
     <div class="ui-head">
       <span class="ui-label ui-spacer" id="act-count"></span>
@@ -212,7 +212,7 @@
       <div class="dh-group"><span class="ui-label">Other</span>
         <label class="check dh-switch"><span>🥦 Includes veg</span><input type="checkbox" role="switch" id="meal-veg-toggle" onchange="toggleMealVeg()"></label>
       </div>
-      <div class="ui-actions"><button class="ui-btn quiet small" id="meal-clear-btn">Clear all filters</button></div>
+      <div class="ui-actions"><button class="ui-btn quiet small" id="meal-clear-btn">Clear</button></div>
     </div>
     <div class="ui-head">
       <span class="ui-label ui-spacer" id="meal-count"></span>
@@ -238,7 +238,7 @@
         <label class="check dh-switch"><span>💦 Messy</span><input type="checkbox" role="switch" id="craft-messy-toggle" onchange="toggleCraftMessy()" checked></label>
         <label class="check dh-switch"><span>🏠 At Home</span><input type="checkbox" role="switch" id="craft-home-toggle" onchange="toggleCraftHome()"></label>
       </div>
-      <div class="ui-actions"><button class="ui-btn quiet small" id="craft-clear-btn">Clear all filters</button></div>
+      <div class="ui-actions"><button class="ui-btn quiet small" id="craft-clear-btn">Clear</button></div>
     </div>
     <div class="ui-head">
       <span class="ui-label ui-spacer" id="craft-count"></span>
@@ -262,9 +262,9 @@
       <div class="dh-group"><span class="ui-label">Area</span><div class="ui-chips" id="ev-region-row"></div></div>
       <div class="dh-group"><span class="ui-label">Month</span><div class="ui-chips" id="ev-month-row"></div></div>
       <div class="dh-group"><span class="ui-label">Other</span>
-        <label class="check dh-switch"><span>Saved to wishlist only</span><input type="checkbox" role="switch" id="ev-fav-toggle" onchange="evToggleFavFilter()"></label>
+        <label class="check dh-switch"><span>Wishlist only</span><input type="checkbox" role="switch" id="ev-fav-toggle" onchange="evToggleFavFilter()"></label>
       </div>
-      <div class="ui-actions"><button class="ui-btn quiet small" id="ev-clear-btn" onclick="clearEvFilters()">Clear all filters</button></div>
+      <div class="ui-actions"><button class="ui-btn quiet small" id="ev-clear-btn" onclick="clearEvFilters()">Clear</button></div>
     </div>
 
     <div class="ui-head">
@@ -288,7 +288,7 @@
       <div class="dh-group"><span class="ui-label">Other</span>
         <label class="check dh-switch"><span>Favourites only</span><input type="checkbox" role="switch" id="wl-fav-toggle" onchange="toggleWlFavOnly()"></label>
       </div>
-      <div class="ui-actions"><button class="ui-btn quiet small" id="wl-clear-btn" onclick="clearWlFilters()">Clear all filters</button></div>
+      <div class="ui-actions"><button class="ui-btn quiet small" id="wl-clear-btn" onclick="clearWlFilters()">Clear</button></div>
     </div>
 
     <div class="ui-head"><span class="ui-label ui-spacer" id="wl-count"></span></div>
@@ -299,9 +299,6 @@
   <div class="tab-view t-act" id="tab-addnew">
     <div class="ui-stack">
       <h1 class="ui-title">Add something new</h1>
-      <p class="ui-sub">Jot down anything you want in the app — a place, a meal, a craft or an event. Just the name is enough.
-         When you've got a few, tap Fill in the details at the bottom and everything gets looked up and
-         added properly — you check it first.</p>
     </div>
 
     <div class="ui-card">
@@ -317,8 +314,8 @@
         <label class="ui-field"><span>Name</span>
           <input class="ui-input" id="an-name" placeholder="e.g. Bents Garden &amp; Home" autocomplete="off">
         </label>
-        <label class="ui-field"><span>Note (optional)</span>
-          <input class="ui-input" id="an-note" placeholder="e.g. near Glazebury, do the dinosaur trail" autocomplete="off">
+        <label class="ui-field"><span>Note</span>
+          <input class="ui-input" id="an-note" autocomplete="off">
         </label>
         <button class="ui-btn primary" id="an-add">Add to list</button>
       </div>
@@ -332,8 +329,6 @@
 
     <div class="ui-card ui-stack" id="an-research">
       <div class="ui-head"><h2 class="ui-h2">Fill in the details</h2></div>
-      <p class="ui-hint">Looks up the real details for everything on the list, then you tick what to add.</p>
-      <p class="ui-hint" id="an-hint" style="display:none;">Add something to the list first and it will cover everything on it.</p>
       <div class="ui-actions">
         <button class="ui-btn primary" id="an-fill" onclick="fillDrafts()"><magic-mark></magic-mark> Fill in the details</button>
       </div>
@@ -341,10 +336,8 @@
 
     <!-- Every AI job and what it costs (public/lib/ai-actions.js) -->
     <div class="ui-card"><ul class="ui-list">
-      <li><button class="ui-row" onclick="selectTab('ai'); window.scrollTo(0, 0)"><span class="main"><span><magic-mark></magic-mark> AI actions</span>
-        <span class="sub">Everything AI can do here, and what each one costs</span></span></button></li>
-      <li><button class="ui-row" onclick="openAiUpdates().then(() => window.aiButton?.refresh())"><span class="main"><span><svg class="dh-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg> AI Updates</span>
-        <span class="sub">Paste a block from ChatGPT and pick what to add, or copy Dad HQ for ChatGPT</span></span></button></li>
+      <li><button class="ui-row" onclick="selectTab('ai'); window.scrollTo(0, 0)"><span class="main"><span><magic-mark></magic-mark> AI actions</span></span></button></li>
+      <li><button class="ui-row" onclick="openAiUpdates().then(() => window.aiButton?.refresh())"><span class="main"><span><svg class="dh-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg> AI Updates</span></span></button></li>
     </ul></div>
 
     <!-- Settings: optional password lock + backup (public/lock.js does the work) -->
@@ -353,11 +346,9 @@
       <div class="ui-stack">
         <strong>Look</strong>
         <theme-switch></theme-switch>
-        <span class="ui-hint">Auto follows your phone or computer. Saved on this device.</span>
       </div>
       <label class="check top dh-switch" for="pw-on">
-        <span><strong>Require a password</strong><br>
-          <span class="ui-hint">Off: anyone with the link can make changes. On: changes need the password on each device.</span></span>
+        <span><strong>Require a password</strong></span>
         <input type="checkbox" role="switch" id="pw-on">
       </label>
       <div id="pw-form" class="ui-stack" style="display:none;">
@@ -372,9 +363,8 @@
       </div>
       <p id="pw-status" class="ui-hint" role="status"></p>
       <div class="ui-actions">
-        <button class="ui-btn" id="backup-btn">Download a backup</button>
+        <button class="ui-btn" id="backup-btn">Backup</button>
       </div>
-      <p class="ui-hint">Every event, place, meal, craft, note, edit and favourite saved online, as a JSON file.</p>
     </div>
   </div>
 
@@ -391,7 +381,6 @@
 <dialog class="ui-sheet t-act" id="edit-overlay" onclick="if(event.target===this)closeEditModal()" onclose="closeEditModal()">
   <header><h2>Edit this card</h2><button class="ui-btn quiet icon small" onclick="closeEditModal()" aria-label="Close">✕</button></header>
   <div class="body">
-    <p class="ui-hint">Change the wording yourself, or say what you want and have it rewritten.</p>
     <div class="dh-inline" id="ed-row" style="align-items:start">
       <label class="ui-field" id="ed-icon-wrap" style="inline-size:80px;flex:none"><span>Icon</span><input class="ui-input" id="ed-icon" maxlength="4"></label>
       <label class="ui-field" style="flex:1"><span>Name <span id="ed-name-count"></span></span><input class="ui-input" id="ed-name"></label>
@@ -400,7 +389,7 @@
       <textarea class="ui-input" id="ed-desc" rows="3"></textarea>
     </label>
     <div class="ui-actions">
-      <button class="ui-btn primary" id="ed-save" onclick="saveCardEdit()">Save changes</button>
+      <button class="ui-btn primary" id="ed-save" onclick="saveCardEdit()">Save</button>
       <button class="ui-btn" id="ed-reset" onclick="resetCardEdit()">Reset to original</button>
     </div>
 
@@ -408,8 +397,8 @@
       <magic-mark></magic-mark> Rewrite it <span class="ui-spacer"></span><span class="dh-caret">▾</span>
     </button>
     <div class="ui-card inset ui-stack" id="ed-ai" style="display:none;">
-      <label class="ui-field"><span>What should change? (optional)</span>
-        <textarea class="ui-input" id="ed-instruction" rows="2" placeholder="e.g. mention the new play area and that parking is free"></textarea>
+      <label class="ui-field"><span>Change</span>
+        <textarea class="ui-input" id="ed-instruction" rows="2"></textarea>
       </label>
       <div class="ui-actions">
         <button class="ui-btn primary" id="ed-rewrite" onclick="rewriteCard()"><magic-mark></magic-mark> Rewrite it</button>
@@ -421,7 +410,6 @@
 <dialog class="ui-sheet t-act" id="loc-overlay" onclick="if(event.target===this)closeLocModal()" onclose="closeLocModal()">
   <header><h2>Set home location</h2><button class="ui-btn quiet icon small" onclick="closeLocModal()" aria-label="Close">✕</button></header>
   <div class="body">
-    <p class="ui-hint">Distances will be recalculated from your location. Default is Macclesfield.</p>
     <label class="ui-field"><span>Town or postcode</span>
       <input class="ui-input" type="text" id="loc-input" placeholder="e.g. Stockport, or SK10 1AA">
     </label>
@@ -6331,7 +6319,6 @@ function renderAddNew() {
     : 'Nothing on the list yet';
   document.getElementById('an-clear').style.display = n ? '' : 'none';
   document.getElementById('an-fill').disabled = !n;
-  document.getElementById('an-hint').style.display = n ? 'none' : '';
   list.className = n ? 'ui-card' : '';
   list.innerHTML = n ? `<ul class="ui-list">${S.drafts.map(d => `<li class="ui-row">
       <span class="ui-badge">${DRAFT_KINDS[d.kind] ? DRAFT_KINDS[d.kind].label : d.kind}</span>
@@ -6395,7 +6382,7 @@ const askMagic = (prompt, opts) => window.askClaude(prompt, opts);
 
 // A tickable list for the sheet's check step. Rows already in the app start unticked.
 function pickPreview(rows, note) {
-  return `<p class="mg-note">${note || 'Untick anything you don’t want.'}</p><div class="ui-card flat dh-picks"><ul class="ui-list">${rows.map((r, i) => `<li class="ui-row"><label class="check top" style="flex:1">
+  return `${note ? `<p class="mg-note">${note}</p>` : ''}<div class="ui-card flat dh-picks"><ul class="ui-list">${rows.map((r, i) => `<li class="ui-row"><label class="check top" style="flex:1">
     <input type="checkbox" data-pick="${i}" ${r.dup ? '' : 'checked'}>
     <span><b>${evEsc(r.label)}</b>${r.sub || r.dup ? `<small>${evEsc([r.sub, r.dup ? 'already in the app' : ''].filter(Boolean).join(' · '))}</small>` : ''}</span></label></li>`).join('')}</ul></div>`;
 }
@@ -6476,11 +6463,11 @@ function fillDrafts() {
   const counts = Object.keys(DRAFT_KINDS).map(k => [k, S.drafts.filter(d => d.kind === k).length]).filter(([, n]) => n);
   magicSheet({
     title: `Fill in ${S.drafts.length} thing${S.drafts.length === 1 ? '' : 's'}`,
-    using: [...counts.map(([k, n]) => `${n} ${DRAFT_KINDS[k].label.toLowerCase()}${n === 1 ? '' : 's'}`), 'Looks things up on the web'],
+    using: [...counts.map(([k, n]) => `${n} ${DRAFT_KINDS[k].label.toLowerCase()}${n === 1 ? '' : 's'}`), 'Web search'],
     runNote: jobNote('fill-details', true),
     run: () => askMagic(prompt, { maxTokens: Math.min(8000, 800 + S.drafts.length * 350), search: true, job: 'fill-details' }),
     prompt: () => prompt,
-    freeNote: 'Use a chat with web search on, so the details are real.',
+    freeNote: 'Turn web search on',
     parse: text => {
       const obj = parseDraftReply(text);
       if (!obj) throw new Error('Couldn’t find the answer in that reply — paste the whole thing.');
@@ -6668,7 +6655,7 @@ async function saveCardEdit() {
   const btn = document.getElementById('ed-save');
   btn.disabled = true; btn.textContent = 'Saving…';
   await storeEdit({ id: ED.id, kind: ED.type, icon, name, desc });
-  btn.disabled = false; btn.textContent = 'Save changes';
+  btn.disabled = false; btn.textContent = 'Save';
   closeEditModal();
 }
 
@@ -6734,8 +6721,7 @@ function rewriteCard() {
       if (!out.name && !out.desc) throw new Error('That reply had no name or description in it.');
       return out;
     },
-    preview: r => `<div class="ui-card inset dh-rewrite"><b>${evEsc([ED.type === 'event' ? '' : r.icon, r.name].filter(Boolean).join(' '))}</b>${evEsc(r.desc)}</div>
-      <p class="mg-note">It goes into the fields — tap Save changes to keep it.</p>`,
+    preview: r => `<div class="ui-card inset dh-rewrite"><b>${evEsc([ED.type === 'event' ? '' : r.icon, r.name].filter(Boolean).join(' '))}</b>${evEsc(r.desc)}</div>`,
     applyLabel: 'Use this wording',
     apply: r => {
       if (r.icon) document.getElementById('ed-icon').value = r.icon;
@@ -6841,7 +6827,7 @@ function renderWishlist() {
 
   document.getElementById('wl-count').textContent = `${total} item${total!==1?'s':''} on the wishlist`;
   updateWishCount();
-  body.innerHTML = total ? html : `<div class="ui-empty"><span class="icon">${BOOKMARK_SVG}</span><span>Nothing here yet — tap the bookmark on any place, meal, craft or event to add it.</span></div>`;
+  body.innerHTML = total ? html : `<div class="ui-empty"><span class="icon">${BOOKMARK_SVG}</span><span>Nothing saved yet</span></div>`;
 }
 
 // ════════════════════════════════════════════
@@ -7099,7 +7085,7 @@ function renderEvents() {
   updateEvFilterBadge();
 
   body.innerHTML = list.length ? evListHTML(list)
-    : `<div class="ui-empty"><span class="icon">🗓️</span><span>${EV.events.length ? 'No events match these filters.' : 'No events yet — tap Update events to pull in what’s coming up.'}</span></div>`;
+    : `<div class="ui-empty"><span class="icon">🗓️</span><span>${EV.events.length ? 'No events match these filters.' : 'No events yet'}</span></div>`;
 }
 
 function activeEvFilterCount() {
@@ -7231,10 +7217,10 @@ async function getIdeas(type) {
     // Tom (12 Nov 2026): Find events on Claude "cost loads" (web search re-reads every page it found), so it's
     // free-only: Run it shows switched off. The other jobs keep both routes.
     ...(type === 'event'
-      ? { runOff: 'Switched off: too costly' }
+      ? { runOff: 'Off' }
       : { runNote: jobNote(job, search), run: () => askMagic(q.prompt, { maxTokens: Math.min(8000, 800 + q.count * 260), search, job }) }),
     prompt: () => q.prompt,
-    freeNote: search ? 'Use a chat with web search on, so the places and dates are real.' : undefined,
+    freeNote: search ? 'Turn web search on' : undefined,
     parse: text => {
       const arr = parseClientJSON(text);
       if (!arr.length) throw new Error('Couldn’t find a list in that reply — paste the whole thing.');

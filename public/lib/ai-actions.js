@@ -30,32 +30,32 @@ function credit() {
   const l = data.ledger, monthSpend = l.months?.[new Date().toISOString().slice(0, 7)] ?? 0;
   const left = data.remaining == null ? '—' : money(Math.max(0, data.remaining));
   const form = `<form class="ui-stack" data-balform>
-      <label class="ui-field"><span>Credit on your Anthropic account now ($)</span>
+      <label class="ui-field"><span>Credit ($)</span>
         <input class="ui-input" name="amount" inputmode="decimal" placeholder="e.g. 18.40" value="${data.balance ? data.balance.amount : ''}"></label>
       <div class="ui-actions"><button class="ui-btn primary small" ${st.saving ? 'disabled' : ''}>Save</button>
         <button type="button" class="ui-btn quiet small" data-balcancel>Cancel</button>
         ${data.balance ? '<button type="button" class="ui-btn quiet small" data-balclear>Remove</button>' : ''}</div>
       ${st.error ? `<p class="ui-hint dh-ai-error">${esc(st.error)}</p>` : ''}
-      <p class="ui-hint">Find it at console.anthropic.com › Billing. Anthropic doesn’t share it with apps, so type it in after a top-up; Dad HQ takes off what it spends from then on.</p>
+      <p class="ui-hint">console.anthropic.com › Billing</p>
     </form>`;
   return `<div class="ui-stats">
-      <div class="ui-stat"><strong>${left}</strong><span>Credit left · ${data.balance ? `from ${money(data.balance.amount)} on ${new Date(data.balance.asOf).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : 'not set yet'}</span></div>
-      <div class="ui-stat"><strong>${money(monthSpend)}</strong><span>Spent here this month · ${l.runs} Claude run${l.runs === 1 ? '' : 's'} logged</span></div>
+      <div class="ui-stat"><strong>${left}</strong><span>Credit left${data.balance ? ` · from ${money(data.balance.amount)} on ${new Date(data.balance.asOf).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : ''}</span></div>
+      <div class="ui-stat"><strong>${money(monthSpend)}</strong><span>This month · ${l.runs} run${l.runs === 1 ? '' : 's'}</span></div>
     </div>
     ${st.editing ? form : `<div class="ui-actions"><button class="ui-btn small" data-baledit>${data.balance ? 'Update credit balance' : 'Set credit balance'}</button></div>`}`;
 }
 
 function costLine(a) {
-  if (a.off) return `<span class="dh-ai-cost"><span class="ui-badge good">Free · ChatGPT</span><span class="ui-badge">Claude · ${esc(a.off)}</span></span>`;
+  if (a.off) return `<span class="dh-ai-cost"><span class="ui-badge good">Free</span><span class="ui-badge">Paid · off</span></span>`;
   const c = jobCost(a.job, data?.ledger);
   const cls = c.cost != null && c.cost > PRICEY ? 'warn' : 'accent';
-  return `<span class="dh-ai-cost"><span class="ui-badge good">Free · ChatGPT</span>
+  return `<span class="dh-ai-cost"><span class="ui-badge good">Free</span>
     <span class="ui-badge ${cls}">Paid · ${money(c.cost).startsWith('<') ? '' : '~'}${money(c.cost)}</span>
     <small>${howSure(c)}${a.search ? ' · uses web search' : ''}</small></span>`;
 }
 
 const row = a => `<li><button class="ui-row" data-job="${a.job}" data-ai-row data-text="${esc(`${a.title} ${a.text} ${a.where} ${a.group}`.toLowerCase())}">
-    <span class="main"><span>${esc(a.title)}</span><span class="sub">${esc(a.text)}</span><span class="sub">${esc(a.where)}</span>${costLine(a)}</span></button></li>`;
+    <span class="main"><span>${esc(a.title)}</span>${costLine(a)}</span></button></li>`;
 
 function draw() {
   const el = root(); if (!el) return;
@@ -63,15 +63,13 @@ function draw() {
     <div class="ui-stack">
       <div class="ui-head"><button class="ui-btn quiet small" data-aiback>← Back</button></div>
       <h1 class="ui-title"><magic-mark></magic-mark> AI actions</h1>
-      <p class="ui-sub">Everything AI can do in Dad HQ, and what each costs. Every job can be done free in ChatGPT, and most by Claude in the app for the price shown; tap one and pick which.</p>
     </div>
     <div class="ui-card ui-stack" data-credit>${credit()}</div>
     <input class="ui-input search" type="search" placeholder="Search — ideas, events, rewrite…" value="${esc(st.q)}" data-aiq aria-label="Search AI actions">
     ${AI_GROUPS.map(g => `<section class="ui-stack" data-ai-group>
       <span class="ui-label">${esc(g)}</span>
       <div class="ui-card"><ul class="ui-list">${AI_ACTIONS.filter(a => a.group === g).map(row).join('')}</ul></div></section>`).join('')}
-    <p class="ui-hint" data-ainone hidden>Nothing matches.</p>
-    <p class="ui-hint">Claude costs are worked out from what each run used, at Anthropic’s prices for Haiku 5.5, plus 1¢ for each web search. Web search jobs cost most because the pages Claude reads count too. “avg” is the last 10 runs; “estimate” means it hasn’t run since costs started being logged (12 Nov 2026). Runs go on your own Anthropic key.</p>`;
+    <p class="ui-hint" data-ainone hidden>Nothing matches.</p>`;
   filter();
 }
 
@@ -112,10 +110,9 @@ function choose(a) {
   }
   dlg.innerHTML = `<header><h2>${esc(a.title)}</h2><button class="ui-btn quiet icon small" data-close aria-label="Close">✕</button></header>
     <div class="body">
-      <p class="ui-hint">${a.open === 'card' ? 'Open a card and tap Edit; the sheet there opens on the route you pick here.' : 'The sheet opens on the route you pick here, and you can still switch there.'}</p>
       <div class="ui-card"><ul class="ui-list">
-        <li><button class="ui-row" data-route="run"><span class="main"><span>Paid · Claude, about ${money(c.cost)}</span><span class="sub">Claude does it in the app (${howSure(c)}${a.search ? ', with web search' : ''})</span></span></button></li>
-        <li><button class="ui-row" data-route="free"><span class="main"><span>Free · ChatGPT</span><span class="sub">Copy the prompt into ChatGPT${a.search ? ' (with web search on)' : ''}, paste its reply back</span></span></button></li>
+        <li><button class="ui-row" data-route="run"><span class="main"><span>Paid · ${money(c.cost).startsWith('<') ? '' : '~'}${money(c.cost)}</span></span></button></li>
+        <li><button class="ui-row" data-route="free"><span class="main"><span>Free</span></span></button></li>
       </ul></div>
     </div>`;
   dlg.onclick = e => {
@@ -134,8 +131,8 @@ function go(a) {
   else if (kind === 'addnew') {
     window.openAddNew();
     if (app.drafts()) window.fillDrafts();
-    else { document.getElementById('an-name')?.scrollIntoView({ block: 'center' }); toast('Jot something on the list first, then Fill in the details'); }
-  } else { window.selectTab('activities'); toast('Open any card, then Edit › Rewrite it'); }
+    else { document.getElementById('an-name')?.scrollIntoView({ block: 'center' }); toast('List is empty'); }
+  } else { window.selectTab('activities'); }
 }
 
 /** Draw the page into #ai-body (renderTab('ai') calls this, passing what it needs from S). */
