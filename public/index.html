@@ -140,7 +140,7 @@
   // The ✨ AI button in the top bar, after the name (the bar is static: mounted once). It opens the
   // same sheet as Settings › AI Updates and refreshes its badge of waiting parts when it closes.
   const bar = document.querySelector('header.ui-bar');
-  window.aiButton = mountAiButton(bar, { app: 'dad_hq', open: () => openAiUpdates() });
+  window.aiButton = mountAiButton(bar, { app: 'dad_hq', className: 'ui-btn quiet', open: () => openAiUpdates() });
   bar.insertBefore(window.aiButton.button, document.getElementById('loc-btn'));
 </script>
 <script src="/vendor/clearx.js" defer></script>
