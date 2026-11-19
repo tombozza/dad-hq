@@ -124,6 +124,11 @@
     }
   </style>
 <script src="/lock.js"></script>
+<!-- The safety net (sites/_shared/safety, copy in vendor/safety): every save waits on the device until the
+     server takes it, and deletes go to Recently deleted. The shim is first so the app script can queue
+     saves straight away; lib/safety.js (a module) builds the queue and the sheets. -->
+<script src="/lib/safety-shim.js" data-app="dad-hq"></script>
+<script type="module" src="/lib/safety.js"></script>
 <script src="/vendor/fuzzy-plain.js"></script>
 <!-- The magic button (sites/_shared/magic, synced copy in vendor/magic) and the paid route.
      The app script is a classic script, so the module hands what it needs to window. -->
@@ -151,6 +156,7 @@
 
 <header class="ui-bar">
   <span class="name dh-name">Dad <b>HQ</b></span>
+  <span data-save-status></span>
   <button class="ui-btn quiet icon" id="loc-btn" title="Macclesfield" aria-label="Home location: Macclesfield" onclick="openLocModal()">📍</button>
   <button class="ui-btn quiet icon" id="nav-add-btn" title="Add new" aria-label="Add new" onclick="openAddNew()">
     <svg class="dh-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
@@ -367,6 +373,8 @@
       <p id="pw-status" class="ui-hint" role="status"></p>
       <div class="ui-actions">
         <button class="ui-btn" id="backup-btn">Backup</button>
+        <button class="ui-btn" id="restore-btn">Restore from a backup</button>
+        <button class="ui-btn" id="bin-btn">Recently deleted</button>
       </div>
     </div>
   </div>
@@ -6297,7 +6305,7 @@ async function removeDraft(id) {
   S.drafts = S.drafts.filter(d => d.id !== id);
   saveDrafts();
   renderAddNew();
-  try { await fetch(EV_API + '/api/drafts/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (_) {}
+  deleteOnServer('drafts', id);
 }
 
 async function clearDrafts() {
@@ -6305,9 +6313,7 @@ async function clearDrafts() {
   if (!confirm('Clear the whole list? This does not remove anything already imported.')) return;
   const ids = S.drafts.map(d => d.id);
   S.drafts = []; saveDrafts(); renderAddNew();
-  for (const id of ids) {
-    try { await fetch(EV_API + '/api/drafts/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (_) {}
-  }
+  for (const id of ids) deleteOnServer('drafts', id);
 }
 
 function updateDraftCount() {
@@ -6500,7 +6506,7 @@ function fillDrafts() {
       // Everything was looked up, so the jotted list has done its job.
       const ids = S.drafts.map(d => d.id);
       S.drafts = []; saveDrafts();
-      for (const id of ids) { try { await fetch(EV_API + '/api/drafts/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (_) {} }
+      for (const id of ids) deleteOnServer('drafts', id, { bin: false }); // looked up: nothing to keep
       renderChips(); renderAddNew();
       dhToast(`${n} added`);
     },
@@ -6740,7 +6746,7 @@ async function saveEventEdit(name, desc) {
   if (i >= 0) EV.events[i] = { ...EV.events[i], ...d }; else EV.events.push(d);
   if (editFor(d.id)) {
     S.edits = S.edits.filter(e => e.id !== d.id); saveJSON('dh_edits', S.edits);
-    try { await fetch(EV_API + '/api/edits/' + encodeURIComponent(d.id), { method: 'DELETE' }); } catch (_) {}
+    deleteOnServer('edits', d.id, { bin: false }); // folded into the event itself
   }
   const c = loadJSON('dh_evState') || {}; c._cache = EV.events; saveJSON('dh_evState', c);
   EV.events = withEdits(EV.events);
@@ -6768,7 +6774,7 @@ async function resetCardEdit() {
   if (!confirm('Put this card back as it was (wording and details)?')) return;
   S.edits = S.edits.filter(e => e.id !== id);
   saveJSON('dh_edits', S.edits);
-  try { await fetch(EV_API + '/api/edits/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (_) {}
+  deleteOnServer('edits', id); // Recently deleted can put the changes back
   EV.events = withEdits(EV.events || []);
   renderTab(S.tab);
   closeEditModal();
@@ -6973,7 +6979,7 @@ async function loadEvents() {
   try {
     const r = await fetch(EV_API + '/api/events');
     if (!r.ok) throw 0;
-    EV.events = await r.json();
+    EV.events = sqOverlay(await r.json(), 'events'); // edits and deletes not sent yet win
     const c = loadJSON('dh_evState') || {};
     EV.events.forEach(e => { if (c[e.id]) { e.favourite = !!c[e.id].favourite; e.inPlans = !!c[e.id].inPlans; } });
   } catch (e) {
@@ -7002,18 +7008,20 @@ const placeBody = item => ({
   priceLabel: item.priceLabel, tags: item.tags,
 });
 
-async function savePlaceToServer(item) {
-  try {
-    await fetch(EV_API + '/api/places', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(placeBody(item)),
-    });
-  } catch (_) { /* offline — the local cache still has it */ }
+// Saves go through the save queue (lib/safety-shim.js → vendor/safety/save-queue.js, 19 Nov 2026): kept on
+// the device until the server takes them, retried, and "Not saved yet · Retry" in the top bar meanwhile.
+// Before, an error here was ignored and the next load let the server's copy replace the local one.
+function savePlaceToServer(item) {
+  sqPush({ url: EV_API + '/api/places', method: 'POST', body: placeBody(item), key: 'places:' + item.id, coll: 'places', id: item.id, item });
+}
+
+// A delete, queued the same way. bin: false skips Recently deleted (the app's own tidy-ups).
+function deleteOnServer(coll, id, { bin = true } = {}) {
+  sqPush({ url: `${EV_API}/api/${coll}/${encodeURIComponent(id)}${bin ? '' : '?bin=0'}`, method: 'DELETE', key: coll + ':' + id, coll, id });
 }
 
 // A POST that throws when it doesn't save (offline, locked, or refused), for AI Updates, whose
-// sheet reports each failure. The older saves above and below swallow errors on purpose.
+// sheet reports each failure. Everyday saves go through the save queue instead.
 async function postStrict(path, body) {
   let r;
   try {
@@ -7026,13 +7034,8 @@ async function postStrict(path, body) {
 }
 
 // Generic POST for JSON-blob collections (meals, crafts).
-async function saveCustomToServer(kind, item) {
-  try {
-    await fetch(EV_API + '/api/' + kind, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(item),
-    });
-  } catch (_) { /* offline — the local cache still has it */ }
+function saveCustomToServer(kind, item) {
+  sqPush({ url: EV_API + '/api/' + kind, method: 'POST', body: item, key: kind + ':' + item.id, coll: kind, id: item.id, item });
 }
 
 async function loadCollection(kind, stateKey, storeKey, markerKey, saveOne, rerender) {
@@ -7042,6 +7045,8 @@ async function loadCollection(kind, stateKey, storeKey, markerKey, saveOne, rere
     if (r.ok) server = await r.json();
   } catch (_) { /* offline — keep the local cache */ }
   if (!Array.isArray(server)) return;
+  // Saves not sent yet win over the server's copy, so nothing on screen goes back.
+  server = sqOverlay(server, kind);
 
   if (!loadJSON(markerKey)) {
     const serverIds = new Set(server.map(x => x.id));
@@ -7068,13 +7073,10 @@ const loadEdits = () => loadCollection('edits', 'edits', 'dh_edits', 'dh_editsMi
   it => saveCustomToServer('edits', it), () => { EV.events = withEdits(EV.events || []); renderTab(S.tab); });
 
 // Favourites + hidden built-ins (sets of ids) for act/meal/craft.
-async function saveFlagToServer(scope, kind, id, on) {
-  try {
-    await fetch(EV_API + '/api/flags', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ scope, kind, item_id: id, on: !!on }),
-    });
-  } catch (_) { /* offline — the local cache still has it */ }
+// label: the item's name, for Recently deleted when the flag hides a built-in.
+function saveFlagToServer(scope, kind, id, on, label) {
+  sqPush({ url: EV_API + '/api/flags', method: 'POST', body: { scope, kind, item_id: id, on: !!on, label },
+    key: `flags:${scope}:${kind}:${id}`, coll: 'flags', id: `${scope}:${kind}:${id}`, flag: { scope, kind, id, on: !!on } });
 }
 
 const FLAG_MAP = [
@@ -7096,6 +7098,15 @@ async function loadFlags() {
     if (r.ok) f = await r.json();
   } catch (_) { /* offline — keep the local cache */ }
   if (!f || typeof f !== 'object') return;
+  // Flag changes not sent yet win over the server's copy.
+  for (const op of sqWaiting()) {
+    if (!op || op.coll !== 'flags' || !op.flag) continue;
+    const { scope, kind, id, on } = op.flag;
+    if (!f[scope]) f[scope] = {};
+    const ids = new Set(f[scope][kind] || []);
+    if (on) ids.add(id); else ids.delete(id);
+    f[scope][kind] = [...ids];
+  }
 
   const migrated = loadJSON('dh_flagsMigrated');
   for (const [scope, kind, stateKey, storeKey] of FLAG_MAP) {
@@ -7119,7 +7130,8 @@ async function setItemFlag(scope, kind, id, on) {
   const row = FLAG_MAP.find(([s, k]) => s === scope && k === kind);
   if (!row) throw new Error(`Can’t set ${scope} on a ${kind}`);
   const [, , stateKey, storeKey] = row;
-  await postStrict('/api/flags', { scope, kind, item_id: id, on: !!on });
+  const label = scope === 'hidden' ? (allById(kind).find(x => x.id === id) || {}).name : undefined;
+  await postStrict('/api/flags', { scope, kind, item_id: id, on: !!on, label });
   if (on) S[stateKey].add(id); else S[stateKey].delete(id);
   saveJSON(storeKey, [...S[stateKey]]);
 }
@@ -7264,7 +7276,8 @@ async function evSave(id, body) {
   const c = loadJSON('dh_evState') || {};
   c[id] = { favourite: e.favourite, inPlans: e.inPlans }; c._cache = EV.events;
   saveJSON('dh_evState', c);
-  try { await fetch(`${EV_API}/api/events/${encodeURIComponent(id)}`, { method:'PATCH', headers:{'content-type':'application/json'}, body: JSON.stringify(body) }); } catch (_) {}
+  // Keyed by the fields it changes, so a star and a bookmark tapped while offline both get sent.
+  sqPush({ url: `${EV_API}/api/events/${encodeURIComponent(id)}`, method: 'PATCH', body, key: `events:${id}:${Object.keys(body).join(',')}`, coll: 'events', id, patch: body });
 }
 async function evTogglePlan(id) { const e = EV.events.find(x => x.id === id); if (!e) return; await evSave(id, { inPlans: !e.inPlans }); renderTab(S.tab); }
 
@@ -7700,38 +7713,38 @@ async function removeItem(type, id) {
   const isCustom = String(id).startsWith('custom-');
   if (type === 'act') {
     if (isCustom) {
-      if (!confirm('Delete this place? This removes it on all your devices.')) return;
+      if (!confirm('Delete this place? It goes to Recently deleted (Add new › Settings) for 30 days.')) return;
       S.customActs = S.customActs.filter(a => a.id !== id);
       saveJSON('dh_customActs', S.customActs);
-      try { await fetch(EV_API + '/api/places/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (_) {}
+      deleteOnServer('places', id);
     } else {
-      if (!confirm('Hide this place? It will be hidden on all your devices.')) return;
+      if (!confirm('Hide this place? It will be hidden on all your devices; Recently deleted (Add new › Settings) can bring it back.')) return;
       S.hiddenActs.add(id); saveJSON('dh_hiddenActs', [...S.hiddenActs]);
-      saveFlagToServer('hidden', 'act', id, true);
+      saveFlagToServer('hidden', 'act', id, true, (allById('act').find(x => x.id === id) || {}).name);
     }
     closeSpotlight(); renderActivities();
   } else if (type === 'meal') {
     if (isCustom) {
-      if (!confirm('Delete this meal? This removes it on all your devices.')) return;
+      if (!confirm('Delete this meal? It goes to Recently deleted (Add new › Settings) for 30 days.')) return;
       S.customMeals = S.customMeals.filter(m => m.id !== id);
       saveJSON('dh_customMeals', S.customMeals);
-      try { await fetch(EV_API + '/api/meals/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (_) {}
+      deleteOnServer('meals', id);
     } else {
-      if (!confirm('Hide this meal? It will be hidden on all your devices.')) return;
+      if (!confirm('Hide this meal? It will be hidden on all your devices; Recently deleted (Add new › Settings) can bring it back.')) return;
       S.hiddenMeals.add(id); saveJSON('dh_hiddenMeals', [...S.hiddenMeals]);
-      saveFlagToServer('hidden', 'meal', id, true);
+      saveFlagToServer('hidden', 'meal', id, true, (allById('meal').find(x => x.id === id) || {}).name);
     }
     closeSpotlight(); renderMeals();
   } else if (type === 'craft') {
     if (isCustom) {
-      if (!confirm('Delete this craft? This removes it on all your devices.')) return;
+      if (!confirm('Delete this craft? It goes to Recently deleted (Add new › Settings) for 30 days.')) return;
       S.customCrafts = S.customCrafts.filter(c => c.id !== id);
       saveJSON('dh_customCrafts', S.customCrafts);
-      try { await fetch(EV_API + '/api/crafts/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (_) {}
+      deleteOnServer('crafts', id);
     } else {
-      if (!confirm('Hide this craft? It will be hidden on all your devices.')) return;
+      if (!confirm('Hide this craft? It will be hidden on all your devices; Recently deleted (Add new › Settings) can bring it back.')) return;
       S.hiddenCrafts.add(id); saveJSON('dh_hiddenCrafts', [...S.hiddenCrafts]);
-      saveFlagToServer('hidden', 'craft', id, true);
+      saveFlagToServer('hidden', 'craft', id, true, (allById('craft').find(x => x.id === id) || {}).name);
     }
     closeSpotlight(); renderCrafts();
   }
@@ -7739,12 +7752,12 @@ async function removeItem(type, id) {
 
 // Events live only in D1, so a delete is a real delete (across all devices).
 async function removeEvent(id) {
-  if (!confirm('Delete this event? This removes it on all your devices.')) return;
+  if (!confirm('Delete this event? It goes to Recently deleted (Add new › Settings) for 30 days.')) return;
   closeSpotlight();
   const i = EV.events.findIndex(e => e.id === id);
   if (i >= 0) EV.events.splice(i, 1);
   const c = loadJSON('dh_evState') || {}; delete c[id]; c._cache = EV.events; saveJSON('dh_evState', c);
-  try { await fetch(`${EV_API}/api/events/${encodeURIComponent(id)}`, { method: 'DELETE' }); } catch (_) {}
+  deleteOnServer('events', id);
   renderEvents();
 }
 
@@ -8102,6 +8115,53 @@ if ('serviceWorker' in navigator) {
   $('backup-btn').addEventListener('click', async () => {
     try { await window.AppLock.download('dad-hq'); say('Backup downloaded.'); } catch (e) { say(e.message); }
   });
+
+  // Recently deleted and Restore from a backup (the safety net, 19 Nov 2026; lib/safety.js).
+  const getJSON = async (path, init) => {
+    const r = await fetch(path, { credentials: 'same-origin', ...init });
+    const d = await r.json().catch(() => ({}));
+    if (r.status === 401) throw new Error('The password lock is on: unlock this device first.');
+    if (!r.ok && !d.error) throw new Error(`Couldn’t reach Dad HQ (HTTP ${r.status}).`);
+    return d;
+  };
+  const ready = () => { if (!window.openBin) { say('Still loading — try again in a second.'); return false; } return true; };
+  // Everything comes back from the server, redrawn where it is (the page doesn't move).
+  const reload = async () => {
+    const y = window.scrollY;
+    await Promise.all([loadPlaces(), loadMeals(), loadCrafts(), loadDrafts(), loadEdits(), loadFlags(), loadEvents()]);
+    renderTab(S.tab); window.scrollTo(0, y);
+  };
+  const KINDS = { place: 'Place', event: 'Event', meal: 'Meal', craft: 'Craft', 'jotted item': 'Jotted item', 'card changes': 'Card changes', hidden: 'Hidden' };
+  $('bin-btn').addEventListener('click', async () => {
+    if (!ready()) return;
+    const n = await window.openBin({
+      load: () => getJSON('/api/bin').then(d => { if (d.error) throw new Error(d.error); return d; }),
+      restore: e => getJSON(`/api/bin/${encodeURIComponent(e.id)}/restore`, { method: 'POST' }),
+      forget: e => getJSON(`/api/bin/${encodeURIComponent(e.id)}`, { method: 'DELETE' }),
+      kinds: KINDS,
+    });
+    if (n) await reload();
+  });
+  const TABLES = { places: r => r.id, events: r => r.id, meals: r => r.id, crafts: r => r.id };
+  $('restore-btn').addEventListener('click', async () => {
+    if (!ready()) return;
+    const added = await window.openRestore({
+      read: async file => {
+        const b = JSON.parse(await file.text());
+        if (!b || b.app !== 'dad-hq') throw new Error('it isn’t a Dad HQ backup.');
+        return b;
+      },
+      plan: async backup => window.restoreMissingAll(await getJSON('/api/backup', { cache: 'no-store' }), backup, TABLES),
+      names: { places: ['place', 'places'], events: ['event', 'events'], meals: ['meal', 'meals'], crafts: ['craft', 'crafts'] },
+      apply: plan => getJSON('/api/restore', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ tables: Object.fromEntries(Object.keys(TABLES).map(t => [t, plan[t].add])) }),
+      }),
+    });
+    if (added) await reload();
+  });
+  // A save the server refused for good (not offline, not locked): say so rather than drop it quietly.
+  window.addEventListener('save-dropped', e => dhToast(`Couldn’t save that change: ${String(e.detail.message).slice(0, 120)}`));
 })();
 </script>
 </body>

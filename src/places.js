@@ -40,8 +40,10 @@ function rowToPlace(r) {
   };
 }
 
+import { keepDeleted } from './safety.js';
+
 // Router: returns a Response if the request is a places route, else null.
-export async function handlePlaces(request, env, ctx, url) {
+export async function handlePlaces(request, env, ctx, url, bin) {
   const { pathname } = url;
 
   // List every custom place.
@@ -106,11 +108,12 @@ export async function handlePlaces(request, env, ctx, url) {
     return json(results.length ? rowToPlace(results[0]) : { id });
   }
 
-  // Delete a place.
+  // Delete a place. It goes to Recently deleted for 30 days (its card edit and flags stay where they
+  // are, so a restored place comes back exactly as it was).
   const m = pathname.match(/^\/api\/places\/([^/]+)$/);
   if (m && request.method === 'DELETE') {
     const id = decodeURIComponent(m[1]);
-    await env.DB.prepare('DELETE FROM places WHERE id=?').bind(id).run();
+    await keepDeleted(env.DB, bin, { kind: 'place', label: (r) => r.name, table: 'places', where: 'id = ?', binds: [id] });
     return json({ ok: true });
   }
 

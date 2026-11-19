@@ -7,12 +7,17 @@ import { handleSync } from './sync.js';
 import { handleAI } from './ai.js';
 import { handleAuth } from './auth.js';
 import { handleUsage } from './ai-usage.js';
+import { handleSafety } from './safety.js';
+
+// Recently deleted lives in this D1 table (created on first use). See src/safety.js.
+const BIN = 'dh_bin';
 
 // What kind of events Dad HQ pulls in — days out with a young child.
 // `focus` is a function of the child's age so the prompt can be tuned from the
 // app (the age comes in on the /api/events/prompt query string).
 const EVENTS_PERSONA = {
   site: 'Dad HQ',
+  bin: BIN, // the events engine keeps a deleted event here
   childName: 'Harry',
   defaultAge: 5,
   focus(age) {
@@ -72,16 +77,33 @@ export default {
         } });
       }
 
+      // ---- Recently deleted, and Restore from a backup (adds only) ----
+      const sf = await handleSafety(request, env, url, {
+        bin: BIN, json, restorable: ['places', 'events', 'meals', 'crafts'],
+        // A hidden built-in comes back by deleting its hide flag (the built-in itself was never deleted).
+        special: async (db, entry) => {
+          if (entry.kind !== 'hidden') return null;
+          let flags = [];
+          try { flags = JSON.parse(entry.data).rows.flags || []; } catch { /* unreadable: nothing to un-hide */ }
+          for (const f of flags) {
+            await db.prepare('DELETE FROM flags WHERE scope=? AND kind=? AND item_id=?').bind(f.scope, f.kind, f.item_id).run();
+          }
+          await db.prepare(`DELETE FROM ${BIN} WHERE id = ?`).bind(entry.id).run();
+          return { ok: true, restored: flags.length };
+        },
+      });
+      if (sf) return sf;
+
       // ---- Events (kid/family-friendly) ----
       const ev = await handleEvents(request, env, ctx, url, EVENTS_PERSONA);
       if (ev) return ev;
 
       // ---- Custom places (user-added, cross-device) ----
-      const pl = await handlePlaces(request, env, ctx, url);
+      const pl = await handlePlaces(request, env, ctx, url, BIN);
       if (pl) return pl;
 
       // ---- Meals, crafts, favourites & hidden flags (cross-device) ----
-      const sy = await handleSync(request, env, ctx, url);
+      const sy = await handleSync(request, env, ctx, url, BIN);
       if (sy) return sy;
 
       // ---- Static assets (the PWA) ----

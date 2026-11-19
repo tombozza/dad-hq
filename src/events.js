@@ -3,6 +3,8 @@
 // Claude API web-search tool and upserts them into D1. The only thing that
 // differs between the two sites is the `persona` passed in from index.js.
 
+import { keepDeleted } from './safety.js';
+
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
     status,
@@ -257,10 +259,11 @@ export async function handleEvents(request, env, ctx, url, persona) {
     return row ? json(rowToEvent(row)) : json({ error: 'not found' }, 404);
   }
 
-  // Delete an event.
+  // Delete an event. With persona.bin (the app's Recently deleted table) it's kept there for 30 days.
   if (m && request.method === 'DELETE') {
     const id = decodeURIComponent(m[1]);
-    await env.DB.prepare('DELETE FROM events WHERE id=?').bind(id).run();
+    if (persona.bin) await keepDeleted(env.DB, persona.bin, { kind: 'event', label: (r) => r.title, table: 'events', where: 'id = ?', binds: [id] });
+    else await env.DB.prepare('DELETE FROM events WHERE id=?').bind(id).run();
     return json({ ok: true });
   }
 

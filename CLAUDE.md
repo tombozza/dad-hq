@@ -103,8 +103,13 @@ settings screen, so the card lives there.
   save). Secret: `AUTH_SECRET`. Forgot it?
   `npx wrangler d1 execute dad-hq --remote --command "UPDATE app_settings SET password_enabled=0, password_hash=NULL WHERE id=1"`.
 - **Download a backup** (`GET /api/backup`): every row of events, places, meals, crafts,
-  drafts, edits and flags as JSON. No import (a safe merge would need per-table rules, e.g.
-  events' favourite/in_plans flags) — restore by hand if ever needed.
+  drafts, edits and flags as JSON. **Restore from a backup** adds only the places, events, meals
+  and crafts that aren't there now (`POST /api/restore`); it never changes or deletes anything.
+- **Recently deleted** (19 Nov 2026): every delete and every hide of a built-in keeps a copy for
+  30 days in `dh_bin` (`src/safety.js`, shared with Bozza HQ). A new delete route must call
+  `keepDeleted()`. Every everyday save goes through the save queue (`sqPush()` from
+  `public/lib/safety-shim.js`), never a bare `fetch` with the error swallowed; a load from the
+  server runs through `sqOverlay()` so waiting saves win.
 
 ## Look: the shared components (10 Nov 2026)
 
