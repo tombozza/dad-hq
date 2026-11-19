@@ -130,7 +130,7 @@ export default {
         type: 'object',
         required: ['type', 'events'],
         additionalProperties: false,
-        description: 'Add real, dated events to the Events tab. The same title and start date as a saved event updates it.',
+        description: 'Add real, dated events to the Events tab. The same title and start date as a saved event updates it, unless Tom edited or added that event himself.',
         properties: {
           type: { const: 'add_events' },
           events: { type: 'array', minItems: 1, maxItems: 30, items: { $ref: '#/defs/event' }, description: 'Up to 30 events.' },

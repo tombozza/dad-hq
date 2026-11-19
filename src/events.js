@@ -117,14 +117,65 @@ When finished, respond with ONLY a JSON array (no prose, no markdown) where each
 {"title": str, "category": str, "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD", "region": str, "distance_miles": int|null, "location": str, "price": str, "url": str, "description": str (1-2 sentences), "kid_friendly": bool}${existingBlock}`;
 }
 
+// What Tom can change by hand (Edit event, Add an event): the client's camelCase name → the column.
+export const EVENT_CATEGORIES = ['festival', 'car_show', 'fair', 'celebration', 'market', 'music', 'food_drink', 'sport', 'comedy', 'seasonal', 'family', 'other'];
+export const EVENT_REGIONS = ['local', 'manchester', 'chester', 'liverpool', 'peaks', 'uk'];
+const EDITABLE = {
+  title: 'title', category: 'category', startDate: 'start_date', endDate: 'end_date',
+  region: 'region', distanceMiles: 'distance_miles', location: 'location', price: 'price',
+  url: 'url', description: 'description', kidFriendly: 'kid_friendly',
+};
+// An event Tom has edited ('edited') or added himself ('hand') is his: an import never
+// overwrites it (see upsertEvents).
+const OWNED = ['edited', 'hand'];
+const isDate = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(Date.parse(v + 'T00:00:00Z'));
+const text = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
+
+// Check and tidy a hand edit. `cur` is the stored row (snake_case) or null for a new event.
+// Returns { cols } (column → value, only the fields sent) or { error }.
+export function cleanEventEdit(b, cur) {
+  const cols = {};
+  for (const [k, col] of Object.entries(EDITABLE)) {
+    if (!(k in b)) continue;
+    let v = b[k];
+    if (k === 'title') { v = text(v, 160); if (!v) return { error: 'An event needs a name.' }; }
+    else if (k === 'startDate') { if (!isDate(v)) return { error: 'The start date should be a date.' }; }
+    else if (k === 'endDate') { v = v ? v : null; if (v && !isDate(v)) return { error: 'The end date should be a date.' }; }
+    else if (k === 'category') v = EVENT_CATEGORIES.includes(v) ? v : 'other';
+    else if (k === 'region') v = EVENT_REGIONS.includes(v) ? v : 'uk';
+    else if (k === 'distanceMiles') { const n = v === '' || v == null ? null : Math.round(Number(v)); v = Number.isFinite(n) && n >= 0 ? n : null; }
+    else if (k === 'kidFriendly') v = v ? 1 : 0;
+    else if (k === 'url') { v = text(v, 500); if (v && !/^https?:\/\//i.test(v)) v = 'https://' + v; }
+    else v = text(v, k === 'description' ? 1000 : 200);
+    cols[col] = v;
+  }
+  // The end date can't be before the start; a missing one means a one-day event.
+  const start = 'start_date' in cols ? cols.start_date : cur && cur.start_date;
+  if (!start) return { error: 'An event needs a start date.' };
+  let end = 'end_date' in cols ? cols.end_date : cur && cur.end_date;
+  if (!end || end < start) end = start;
+  if ('start_date' in cols || 'end_date' in cols) cols.end_date = end;
+  return { cols };
+}
+
 // Upsert parsed events into D1. Returns the number of rows written.
+// The id is slug(title)__start_date as the import first saw it, and it never changes, so an
+// event Tom edited (new name or date) is still matched by the import that sends the old one.
+// Owned rows (edited or hand-added) are left exactly as Tom set them, and an incoming event
+// that matches an existing row's current name and date is skipped rather than doubled.
 async function upsertEvents(env, raw, source) {
   const now = new Date().toISOString();
+  const { results: existing } = await env.DB.prepare('SELECT id, title, start_date, source FROM events').all();
+  const byId = new Map(existing.map((r) => [r.id, r]));
+  const current = new Set(existing.map((r) => `${slug(r.title)}__${r.start_date}`));
   const stmts = [];
   let upserts = 0;
   for (const e of raw) {
     if (!e || !e.title || !e.start_date) continue;
     const id = `${slug(e.title)}__${e.start_date}`;
+    const have = byId.get(id);
+    if (have && OWNED.includes(have.source)) continue;
+    if (!have && current.has(id)) continue;
     stmts.push(
       env.DB.prepare(
         `INSERT INTO events
@@ -135,7 +186,8 @@ async function upsertEvents(env, raw, source) {
            end_date=excluded.end_date, region=excluded.region, distance_miles=excluded.distance_miles,
            location=excluded.location, price=excluded.price, url=excluded.url,
            description=excluded.description, kid_friendly=excluded.kid_friendly,
-           refreshed_at=excluded.refreshed_at`
+           refreshed_at=excluded.refreshed_at
+         WHERE events.source NOT IN ('edited','hand')`
       ).bind(
         id, e.title, e.category || 'other', e.start_date, e.end_date || e.start_date,
         e.region || 'uk', Number.isFinite(e.distance_miles) ? e.distance_miles : null,
@@ -163,26 +215,46 @@ export async function handleEvents(request, env, ctx, url, persona) {
     return json(results.map(rowToEvent));
   }
 
-  // Toggle favourite / in_plans (and allow note-free field edits).
+  // Add an event by hand. It's Tom's ('hand'), so no import ever overwrites it.
+  if (pathname === '/api/events' && request.method === 'POST') {
+    let b;
+    try { b = await request.json(); } catch { return json({ error: 'Send the event as JSON.' }, 400); }
+    const c = cleanEventEdit({ category: 'other', region: 'local', location: '', price: '', url: '', description: '', ...b, title: b.title ?? '', startDate: b.startDate ?? '' }, null);
+    if (c.error) return json({ error: c.error }, 400);
+    const base = `${slug(c.cols.title)}__${c.cols.start_date}`;
+    let id = base;
+    for (let n = 2; await env.DB.prepare('SELECT 1 FROM events WHERE id=?').bind(id).first(); n++) id = `${base}-${n}`;
+    const cols = { ...c.cols, id, source: 'hand', refreshed_at: new Date().toISOString() };
+    const names = Object.keys(cols);
+    await env.DB.prepare(`INSERT INTO events (${names.join(',')}) VALUES (${names.map(() => '?').join(',')})`)
+      .bind(...names.map((k) => cols[k])).run();
+    const row = await env.DB.prepare(`SELECT ${EVENT_COLS} FROM events WHERE id=?`).bind(id).first();
+    return json(rowToEvent(row), 201);
+  }
+
+  // Toggle favourite / in_plans, and Edit event (any of EDITABLE). An edit marks the row as
+  // Tom's ('edited'), so a later import leaves it alone; the id stays as it was.
   const m = pathname.match(/^\/api\/events\/([^/]+)$/);
   if (m && request.method === 'PATCH') {
     const id = decodeURIComponent(m[1]);
     const b = await request.json();
-    const map = { favourite: 'favourite', inPlans: 'in_plans' };
+    const cur = await env.DB.prepare(`SELECT ${EVENT_COLS} FROM events WHERE id=?`).bind(id).first();
+    if (!cur) return json({ error: 'not found' }, 404);
     const sets = [], vals = [];
-    for (const [k, col] of Object.entries(map)) {
-      if (k in b) {
-        sets.push(`${col}=?`);
-        vals.push(b[k] ? 1 : 0);
-      }
+    for (const [k, col] of Object.entries({ favourite: 'favourite', inPlans: 'in_plans' })) {
+      if (k in b) { sets.push(`${col}=?`); vals.push(b[k] ? 1 : 0); }
+    }
+    if (Object.keys(EDITABLE).some((k) => k in b)) {
+      const c = cleanEventEdit(b, cur);
+      if (c.error) return json({ error: c.error }, 400);
+      for (const [col, v] of Object.entries(c.cols)) { sets.push(`${col}=?`); vals.push(v); }
+      if (cur.source !== 'hand') { sets.push('source=?'); vals.push('edited'); }
     }
     if (!sets.length) return json({ error: 'nothing to update' }, 400);
     vals.push(id);
     await env.DB.prepare(`UPDATE events SET ${sets.join(',')} WHERE id=?`).bind(...vals).run();
-    const { results } = await env.DB.prepare(`SELECT ${EVENT_COLS} FROM events WHERE id=?`)
-      .bind(id)
-      .all();
-    return results.length ? json(rowToEvent(results[0])) : json({ error: 'not found' }, 404);
+    const row = await env.DB.prepare(`SELECT ${EVENT_COLS} FROM events WHERE id=?`).bind(id).first();
+    return row ? json(rowToEvent(row)) : json({ error: 'not found' }, 404);
   }
 
   // Delete an event.

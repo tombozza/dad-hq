@@ -60,7 +60,8 @@ already saved).
 - Event dates are `YYYY-MM-DD` and must be upcoming. `end_date` is left out for a one-day event and
   is never before `start_date`.
 - The app stores an event by its title and start date: sending the same title and start date again
-  updates the saved one rather than adding a second.
+  updates the saved one rather than adding a second. An event Tom has edited or added by hand in the
+  app is his: sending it again changes nothing.
 - `kid_friendly` is true only if it genuinely suits a young child (it defaults to true).
 - Descriptions are 1–2 plain sentences for a dad deciding whether to bother. No marketing fluff.
 - Names already in the app (the same name, ignoring capitals) are shown to Tom as "Already have …"

@@ -66,6 +66,8 @@ in the Anthropic console, or those runs fail (the sheet then points at the Free 
 There is **no server-side Claude call** in the events engine any more: an earlier version
 refreshed events from the Worker; now both routes go through the sheet and end in the same
 upsert. Starred events and in-plans flags **survive** an import — upsert, never wipe the table.
+An event Tom edits (`PATCH /api/events/:id`, source becomes `edited`) or adds by hand (`POST /api/events`,
+source `hand`) is his: imports skip it, and its id never changes, so a re-import can't double it (19 Nov 2026).
 
 **Keys.** The site has no `ANTHROPIC_API_KEY` secret (checked 4 Nov 2026) and doesn't need one.
 Tom's call: Run it is always offered; the first tap asks for his own Anthropic key, which is
