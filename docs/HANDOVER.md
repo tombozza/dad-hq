@@ -107,6 +107,7 @@ There is **no import**. Restoring means writing the rows back by hand.
 
 Newest first. Dates are from commits or from the day Tom said it in a chat.
 
+- 2026-11-19: **Recovery code** (Round 3, "Never locked out"; Golf Tracker's behaviour). Setting a lock password makes a recovery code: the server keeps only its SHA-256 (`recovery_hash`, column in `app_settings`, added on first save) and `PUT /api/settings` answers `recovery_code` once; `lock.js` shows it in the shared sheet (`vendor/safety/recovery-sheet.js`, loaded with `import()`) before `AppLock.save` resolves. On the lock screen the code works in place of the password (`POST /api/auth` answers `recovered: true`; case, spaces and dashes don't matter), and the screen says so with Continue before going in. Settings has a Recovery code row while the lock is on (`AppLock.mountRecovery`: New code, after a confirm, or Make one when `GET /api/settings` says `has_recovery_code: false`, as for any lock set before today). `{ new_recovery_code: true }` is refused unless the lock is on, and like every settings PUT needs the session. A new password makes a new code, a blank box keeps both, Off clears it. The lock screen is now a modal `<dialog>`, so it shows above an open sheet or dialog (it was drawn under Swipefy's Settings dialog), and its title lost the emoji. Same `auth.js`/`lock.js` in Storage Log, Swipefy, Dad HQ and Bozza HQ. Tested locally with curl and in the browser at 375 in Light and Dark; local lock left off. Deployed; the live lock stays off.
 - 2026-11-19: **Safety net** (Round 2). (1) **No silent save loss:** every everyday save (places, meals, crafts, jotted items, card edits, favourite/wishlist/hidden flags, event star and plans, and every delete) goes through the shared save queue (`vendor/safety/save-queue.js`, wired by `public/lib/safety-shim.js` + `public/lib/safety.js`, both shared byte for byte with Bozza HQ). A save that fails (offline, locked, server hiccup) waits on the device (`localStorage` `sq:dad-hq`), is retried, and the top bar says "Not saved yet · Retry" (or "Locked: unlock the app to save"); a reload from the server lays the waiting saves over the server's copy (`sqOverlay`), so it can't put back what's deleted on screen or undo an edit. A save the server refuses for good shows a toast. (2) **Recently deleted** (Add new › Settings): deleting a place, event, meal, craft, jotted item or card's changes, or hiding a built-in, keeps it for 30 days in D1 table `dh_bin` (created on first use, no migration). `GET /api/bin`, `POST /api/bin/:id/restore`, `DELETE /api/bin/:id` (`src/safety.js`, shared with Bozza HQ; writes gated like the rest). Restoring a hidden built-in deletes its hide flag. The app's own tidy-ups (the jotted list after Fill in the details, an edit folded into an event) send `?bin=0`. (3) **Restore from a backup** next to Backup: adds only the places, events, meals and crafts whose id isn't there now (`POST /api/restore`, `INSERT OR IGNORE`); drafts, edits and flags are not restored (an old file would re-hide or re-star things). The shared events engine keeps a deleted event in `persona.bin` (same change in Bozza HQ). Service worker dadhq-v27 (now also caches the safety files). Not deployed.
 - 2026-11-19: Card corners: the star and bookmark buttons had no gap and touched when both were on (the shared live check's `touching`). `.dh-flags` now has a `--sp-1` gap. Live.
 - 2026-11-19: **Fix it after the fact** (Round 1). Edit this card now also changes the fields the filters use: places get miles from home, price (Free to £££), price in words and indoor/outdoor; meals get kind and minutes. Only what Tom changed is stored in the same `edits` row, so Reset still puts the built-in back. Events: the same sheet edits every field (name, first and last day, where, kind, area, price, miles, website, description, kid-friendly) through the shared engine's `PATCH /api/events/:id`, and **Add an event** (Events tab) adds one by hand with `POST /api/events`. An edited event becomes `source='edited'`, a hand-added one `'hand'`; imports skip both, the id (title and date as first imported) never changes, and an import matching an event's current name and date is skipped, so nothing doubles. An old wording-only edit of an event is folded into the row and dropped on save. No schema change. AI Updates guide/schema wording updated. Service worker dadhq-v26. Not deployed.
@@ -187,6 +188,25 @@ Newest first. Dates are from commits or from the day Tom said it in a chat.
   different. The app was renamed from the `harry-planner` folder to `dad-hq`.
 - 2026-06-10: Places should be specific and plannable (not "regional" catch-alls). Local filters
   of under 5, 10 and 20 miles, measured from the current home location (a guest location can be set).
+
+## Break glass (locked out, no password, no recovery code)
+
+Cloudflare dashboard › Storage & Databases › D1 › `dad-hq` › Console:
+
+```sql
+UPDATE app_settings SET password_enabled = 0, password_hash = NULL, recovery_hash = NULL WHERE id = 1;
+```
+
+(`recovery_hash` exists whenever a lock has been set since 19 Nov 2026; if the console says there's no such column,
+drop `, recovery_hash = NULL`.)
+
+**Undelete:** use Add new › Settings › Recently deleted (it puts rows back with `INSERT OR IGNORE` and handles
+hidden built-ins). The console can only show what's there; each entry keeps its rows as JSON:
+
+```sql
+SELECT id, kind, label, deleted_at FROM dh_bin ORDER BY deleted_at DESC;
+SELECT data FROM dh_bin WHERE id = '<id from above>';
+```
 
 ## Status (12 Nov 2026)
 

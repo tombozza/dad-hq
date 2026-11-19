@@ -370,6 +370,7 @@
           <button class="ui-btn" id="pw-lock" style="display:none;">Lock this device</button>
         </div>
       </div>
+      <ul class="ui-list" id="pw-recovery-list" hidden><li class="ui-row" id="pw-recovery"></li></ul>
       <p id="pw-status" class="ui-hint" role="status"></p>
       <div class="ui-actions">
         <button class="ui-btn" id="backup-btn">Backup</button>
@@ -8112,6 +8113,7 @@ if ('serviceWorker' in navigator) {
     sync();
   });
   lockBtn.addEventListener('click', () => window.AppLock.lock());
+  window.AppLock.mountRecovery($('pw-recovery'), { hide: $('pw-recovery-list') });
   $('backup-btn').addEventListener('click', async () => {
     try { await window.AppLock.download('dad-hq'); say('Backup downloaded.'); } catch (e) { say(e.message); }
   });

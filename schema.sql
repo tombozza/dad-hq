@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS app_settings (
   id               INTEGER PRIMARY KEY CHECK (id = 1),
   password_enabled INTEGER DEFAULT 0,
   password_hash    TEXT,               -- pbkdf2$iter$salt$hash, never plain text
+  recovery_hash    TEXT,               -- SHA-256 of the recovery code (added by src/auth.js on first save if missing)
   updated_at       TEXT DEFAULT (datetime('now'))
 );
 
