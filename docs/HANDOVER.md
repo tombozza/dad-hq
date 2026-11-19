@@ -106,6 +106,7 @@ Backup:
 There is **no import**. Restoring means writing the rows back by hand.
 
 ## Decisions
+- 2026-11-19: `keep_vars: true` in wrangler.jsonc, so an `AI_MODEL` (or any variable) set in the Cloudflare dashboard survives the next `wrangler deploy`.
 
 - 19 Nov 2026 (Round 4, real life out of the code): the home town and the child are **Settings › Family and
   home** (bottom of Add new), synced in D1 `dh_profile` through `GET/PUT /api/profile` (`src/profile.js`; the

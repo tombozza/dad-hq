@@ -3,6 +3,8 @@
   "name": "dad-hq",
   "main": "src/index.js",
   "compatibility_date": "2025-01-01",
+  // Keep variables set in the dashboard (AI_MODEL) when deploying (Round 4, 19 Nov 2026).
+  "keep_vars": true,
   "assets": {
     "directory": "./public",
     "binding": "ASSETS"
