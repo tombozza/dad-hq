@@ -74,6 +74,8 @@
     .dh-panel:not(.open) { display: none; }
     .dh-group { display: grid; gap: var(--sp-2); }
     .dh-inline { display: flex; align-items: center; gap: var(--sp-3); }
+    /* Two short fields side by side in the edit sheet (dates, price and distance). */
+    .dh-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
     .dh-inline input[type='range'] { flex: 1; max-width: 320px; }
     .dh-switch { display: flex; justify-content: space-between; padding: var(--sp-1) 0; font-weight: 600; }
 
@@ -269,6 +271,7 @@
 
     <div class="ui-head">
       <span class="ui-label ui-spacer" id="ev-count"></span>
+      <button class="ui-btn small" id="ev-add-btn" onclick="openEditModal('event', null)">Add an event</button>
       <button class="ui-btn small" id="ev-update-btn" onclick="getIdeas('event')"><magic-mark></magic-mark> Find events</button>
     </div>
     <div id="ev-body"></div>
@@ -379,7 +382,7 @@
 
 <!-- EDIT CARD -->
 <dialog class="ui-sheet t-act" id="edit-overlay" onclick="if(event.target===this)closeEditModal()" onclose="closeEditModal()">
-  <header><h2>Edit this card</h2><button class="ui-btn quiet icon small" onclick="closeEditModal()" aria-label="Close">✕</button></header>
+  <header><h2 id="ed-title">Edit this card</h2><button class="ui-btn quiet icon small" onclick="closeEditModal()" aria-label="Close">✕</button></header>
   <div class="body">
     <div class="dh-inline" id="ed-row" style="align-items:start">
       <label class="ui-field" id="ed-icon-wrap" style="inline-size:80px;flex:none"><span>Icon</span><input class="ui-input" id="ed-icon" maxlength="4"></label>
@@ -388,6 +391,7 @@
     <label class="ui-field"><span>Description <span id="ed-desc-count"></span></span>
       <textarea class="ui-input" id="ed-desc" rows="3"></textarea>
     </label>
+    <div class="ui-stack" id="ed-extra"></div>
     <div class="ui-actions">
       <button class="ui-btn primary" id="ed-save" onclick="saveCardEdit()">Save</button>
       <button class="ui-btn" id="ed-reset" onclick="resetCardEdit()">Reset to original</button>
@@ -5939,10 +5943,14 @@ function withEdit(item) {
   if (e.icon) out.icon = e.icon;
   if (e.name) { out.name = e.name; if ('title' in out) out.title = e.name; }
   if (e.desc) { out.desc = e.desc; if ('description' in out) out.description = e.desc; }
+  // The fields the filters use (19 Nov 2026): only what Tom changed is stored.
+  for (const k of ED_FACTS) if (e[k] !== undefined && e[k] !== null && e[k] !== '') out[k] = e[k];
   return out;
 }
 
 const withEdits = list => list.map(withEdit);
+// Besides the wording, an edit can hold the fields the filters use (set in Edit this card).
+const ED_FACTS = ['dist', 'price', 'priceLabel', 'weather', 'cat', 'time'];
 
 function filteredActs() {
   return withEdits([...ACTIVITIES, ...S.customActs]).filter(a => {
@@ -6594,16 +6602,69 @@ function editFields(item) {
   };
 }
 
+// Besides the wording, the fields the filters run on (19 Nov 2026). Places: distance, price and
+// indoor/outdoor; meals: kind and time. Stored in the same edit, so Reset puts them back too.
+// Events are rows in D1, so their edit goes to the events engine instead (PATCH /api/events/:id).
+const ED_PRICES = [[0, 'Free'], [1, '£'], [2, '££'], [3, '£££']];
+const ED_WEATHER = [['outdoor', 'Outdoor'], ['indoor', 'Indoor'], ['both', 'Indoor and outdoor']];
+const ED_MEAL_CATS = [['quick', 'Quick win'], ['proper', 'Proper meal'], ['weekend', 'Weekend'], ['baking', 'Baking']];
+const edOpts = (list, cur) => list.map(([v, l]) => `<option value="${evEsc(v)}" ${String(v) === String(cur) ? 'selected' : ''}>${evEsc(l)}</option>`).join('');
+const edField = (label, control) => `<label class="ui-field"><span>${label}</span>${control}</label>`;
+
+function editExtraHTML(type, it) {
+  if (type === 'act') return `
+    <div class="dh-pair">
+      ${edField('Miles from home', `<input class="ui-input" id="ed-dist" type="number" inputmode="numeric" min="0" max="500" value="${evEsc(it.dist ?? '')}">`)}
+      ${edField('Price', `<select class="ui-input" id="ed-price">${edOpts(ED_PRICES, it.price)}</select>`)}
+    </div>
+    ${edField('Price in words', `<input class="ui-input" id="ed-priceLabel" maxlength="40" value="${evEsc(it.priceLabel || '')}">`)}
+    ${edField('Indoor or outdoor', `<select class="ui-input" id="ed-weather">${edOpts(ED_WEATHER, it.weather)}</select>`)}`;
+  if (type === 'meal') return `
+    <div class="dh-pair">
+      ${edField('Kind', `<select class="ui-input" id="ed-cat">${edOpts(ED_MEAL_CATS, it.cat)}</select>`)}
+      ${edField('Minutes', `<input class="ui-input" id="ed-time" type="number" inputmode="numeric" min="0" max="600" value="${evEsc(it.time ?? '')}">`)}
+    </div>`;
+  if (type === 'event') return `
+    <div class="dh-pair">
+      ${edField('First day', `<input class="ui-input" id="ed-start" type="date" value="${evEsc(it.startDate || '')}">`)}
+      ${edField('Last day', `<input class="ui-input" id="ed-end" type="date" value="${evEsc(it.endDate && it.endDate !== it.startDate ? it.endDate : '')}">`)}
+    </div>
+    ${edField('Where', `<input class="ui-input" id="ed-location" maxlength="200" value="${evEsc(it.location || '')}">`)}
+    <div class="dh-pair">
+      ${edField('Kind', `<select class="ui-input" id="ed-category">${edOpts(EVENT_CATS.map(c => [c.key, c.label]), it.category || 'other')}</select>`)}
+      ${edField('Area', `<select class="ui-input" id="ed-region">${edOpts(Object.entries(EV_REGION_LABEL), it.region || 'local')}</select>`)}
+    </div>
+    <div class="dh-pair">
+      ${edField('Price', `<input class="ui-input" id="ed-evprice" maxlength="200" value="${evEsc(it.price || '')}">`)}
+      ${edField('Miles from home', `<input class="ui-input" id="ed-evdist" type="number" inputmode="numeric" min="0" max="500" value="${evEsc(it.distanceMiles ?? '')}">`)}
+    </div>
+    ${edField('Website', `<input class="ui-input" id="ed-url" type="url" inputmode="url" maxlength="500" value="${evEsc(it.url || '')}">`)}
+    <label class="check"><input type="checkbox" id="ed-kid" ${it.kidFriendly || !it.id ? 'checked' : ''}> Kid-friendly</label>`;
+  return '';
+}
+
+// The item without Tom's edit on top: what Reset goes back to, and what a change is measured against.
+function baseItem(type, id) {
+  const list = type === 'act' ? [...ACTIVITIES, ...S.customActs] : type === 'meal' ? [...MEALS, ...S.customMeals]
+    : type === 'craft' ? [...CRAFTS, ...S.customCrafts] : (EV.events || []);
+  return list.find(x => x.id === id);
+}
+
+// id null with type 'event' = Add an event by hand.
 function openEditModal(type, id) {
-  const item = editableItem(type, id);
+  const isNew = type === 'event' && !id;
+  const item = isNew ? { kidFriendly: true } : editableItem(type, id);
   if (!item) return;
   ED.type = type; ED.id = id;
   const f = editFields(item);
+  document.getElementById('ed-title').textContent = isNew ? 'Add an event' : type === 'event' ? 'Edit this event' : 'Edit this card';
   document.getElementById('ed-icon').value = f.icon;
   document.getElementById('ed-name').value = f.name;
   document.getElementById('ed-desc').value = f.desc;
+  document.getElementById('ed-extra').innerHTML = editExtraHTML(type, item);
   document.getElementById('ed-instruction').value = '';
   toggleEditAI(false); // opens compact; the AI half is one tap away
+  document.getElementById('ed-ai-toggle').style.display = isNew ? 'none' : '';
   document.getElementById('ed-reset').style.display = editFor(id) ? '' : 'none';
   // Events don't show an icon on their row, so don't offer to set one.
   const isEvent = type === 'event';
@@ -6647,22 +6708,64 @@ async function storeEdit(edit) {
   renderTab(S.tab);
 }
 
+// What the details fields say, for the edit (only the ones that differ from the original).
+function editFacts(type, id) {
+  const val = k => { const el = document.getElementById('ed-' + k); return el ? el.value.trim() : ''; };
+  const num = k => { const v = val(k); return v === '' ? null : Math.max(0, Math.round(Number(v)) || 0); };
+  const got = type === 'act' ? { dist: num('dist'), price: Number(val('price')), priceLabel: val('priceLabel'), weather: val('weather') }
+    : type === 'meal' ? { cat: val('cat'), time: num('time') } : {};
+  const base = baseItem(type, id) || {};
+  const out = {};
+  for (const [k, v] of Object.entries(got)) if (v !== null && v !== '' && String(v) !== String(base[k] ?? '')) out[k] = v;
+  return out;
+}
+
+// An event: everything goes to its row in D1. Its old wording-only edit (if any) is folded in and dropped.
+async function saveEventEdit(name, desc) {
+  const v = k => document.getElementById('ed-' + k).value.trim();
+  const body = {
+    title: name, description: desc, startDate: v('start'), endDate: v('end') || v('start'),
+    location: v('location'), category: v('category'), region: v('region'), price: v('evprice'),
+    distanceMiles: v('evdist'), url: v('url'), kidFriendly: document.getElementById('ed-kid').checked,
+  };
+  if (!body.startDate) { document.getElementById('ed-start').focus(); throw new Error('Pick the first day.'); }
+  const isNew = !ED.id;
+  const r = await fetch(isNew ? `${EV_API}/api/events` : `${EV_API}/api/events/${encodeURIComponent(ED.id)}`, {
+    method: isNew ? 'POST' : 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+  });
+  const d = await r.json().catch(() => ({}));
+  if (r.status === 401) throw new Error('The password lock is on: unlock this device first.');
+  if (!r.ok) throw new Error(d.error || `Couldn’t save (HTTP ${r.status})`);
+  const i = EV.events.findIndex(e => e.id === d.id);
+  if (i >= 0) EV.events[i] = { ...EV.events[i], ...d }; else EV.events.push(d);
+  if (editFor(d.id)) {
+    S.edits = S.edits.filter(e => e.id !== d.id); saveJSON('dh_edits', S.edits);
+    try { await fetch(EV_API + '/api/edits/' + encodeURIComponent(d.id), { method: 'DELETE' }); } catch (_) {}
+  }
+  const c = loadJSON('dh_evState') || {}; c._cache = EV.events; saveJSON('dh_evState', c);
+  EV.events = withEdits(EV.events);
+  renderTab(S.tab);
+}
+
 async function saveCardEdit() {
   const name = document.getElementById('ed-name').value.trim();
   const desc = document.getElementById('ed-desc').value.trim();
   const icon = document.getElementById('ed-icon').value.trim();
-  if (!name) { document.getElementById('ed-name').style.borderColor = 'red'; return; }
+  if (!name) { document.getElementById('ed-name').focus(); return; }
   const btn = document.getElementById('ed-save');
   btn.disabled = true; btn.textContent = 'Saving…';
-  await storeEdit({ id: ED.id, kind: ED.type, icon, name, desc });
-  btn.disabled = false; btn.textContent = 'Save';
-  closeEditModal();
+  try {
+    if (ED.type === 'event') await saveEventEdit(name, desc);
+    else await storeEdit({ id: ED.id, kind: ED.type, icon, name, desc, ...editFacts(ED.type, ED.id) });
+    closeEditModal();
+  } catch (e) { alert(String(e.message || e).slice(0, 160)); }
+  finally { btn.disabled = false; btn.textContent = 'Save'; }
 }
 
 async function resetCardEdit() {
   const id = ED.id;
   if (!editFor(id)) return;
-  if (!confirm('Put this card back to its original wording?')) return;
+  if (!confirm('Put this card back as it was (wording and details)?')) return;
   S.edits = S.edits.filter(e => e.id !== id);
   saveJSON('dh_edits', S.edits);
   try { await fetch(EV_API + '/api/edits/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (_) {}
