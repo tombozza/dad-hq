@@ -52,7 +52,9 @@ function fakeApp({ failSave = false } = {}) {
     flagged: (scope, type) => st.flags[scope][type],
     events: () => st.events,
     drafts: () => st.drafts,
-    age: () => 5,
+    child: () => ({ name: 'Harry', age: 5 }),
+    homeBase: () => 'Macclesfield, Cheshire, England',
+    localMiles: () => 20,
     map: MAP,
     async saveImported(type, items) {
       if (failSave) throw new Error('Couldn’t save (HTTP 500)');
@@ -283,12 +285,13 @@ test('a failed save throws, so the sheet reports it', async () => {
 // ---------------------------------------------------------------------------------------
 // context
 
-test('context: home base, age, the allowed values, Tom’s items, flags and the next 60 days of events', () => {
+test('context: home base, local miles, the child, the allowed values, Tom’s items, flags and the next 60 days of events', () => {
   const { data, note } = buildContext(fakeApp(), NOW);
-  assert.deepEqual(Object.keys(data), ['today', 'home_base', 'harry_age', 'allowed', 'added_by_tom', 'favourites', 'wishlist', 'upcoming_events', 'add_new_list']);
+  assert.deepEqual(Object.keys(data), ['today', 'home_base', 'local_miles', 'child', 'allowed', 'added_by_tom', 'favourites', 'wishlist', 'upcoming_events', 'add_new_list']);
   assert.equal(data.today, '2026-11-12');
   assert.equal(data.home_base, 'Macclesfield, Cheshire, England');
-  assert.equal(data.harry_age, 5);
+  assert.equal(data.local_miles, 20);
+  assert.deepEqual(data.child, { name: 'Harry', age: 5 });
   assert.deepEqual(data.allowed.place_region, ENUMS.place_region);
   assert.deepEqual(data.allowed.event_category, ENUMS.event_category);
   assert.deepEqual(data.added_by_tom, { places: [{ id: 'custom-act-1-aaaaa', name: 'Brookside Miniature Railway' }], meals: [], crafts: [] });

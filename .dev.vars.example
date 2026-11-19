@@ -7,3 +7,8 @@ AUTH_SECRET=
 # Optional. Site-wide Anthropic key for the magic sheet's "Run it" route. Leave empty:
 # the live site has none, and Run it asks each browser for its own key instead.
 ANTHROPIC_API_KEY=
+
+# Optional (a plain variable, not a secret). The Claude model Run it uses, e.g. claude-haiku-5-5.
+# Unset: Haiku 5.5. Set it in the Cloudflare dashboard (Workers & Pages › dad-hq › Settings › Variables)
+# when Anthropic retires a model; it must start with claude-.
+AI_MODEL=

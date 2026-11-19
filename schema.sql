@@ -109,3 +109,11 @@ CREATE TABLE IF NOT EXISTS ai_usage (
   balance    TEXT,
   updated_at TEXT
 );
+
+-- Home town and child (Settings › Family and home, 19 Nov 2026). One row of JSON, shaped by
+-- public/lib/profile.js; src/profile.js also creates it on first use. No row = today's defaults.
+CREATE TABLE IF NOT EXISTS dh_profile (
+  id         INTEGER PRIMARY KEY CHECK (id = 1),
+  data       TEXT,
+  updated_at TEXT
+);

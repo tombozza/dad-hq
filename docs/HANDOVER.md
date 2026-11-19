@@ -84,6 +84,7 @@ Names only. Locally in `.dev.vars` (gitignored; template in `.dev.vars.example`)
 |---|---|---|
 | `AUTH_SECRET` | Signs the `dh_session` cookie for the password lock. Lock fails closed without it. | Unconfirmed: check with `npx wrangler secret list` |
 | `ANTHROPIC_API_KEY` | Site-wide key for Run it. | Deliberately **not** set (see Decisions) |
+| `AI_MODEL` | Plain variable, not a secret: the Claude model Run it uses (must start `claude-`). Unset = Haiku 5.5. Change it in Workers & Pages › dad-hq › Settings › Variables when Anthropic retires a model; a retired one gets a message saying exactly that. | Not set |
 
 Bindings in `wrangler.jsonc`: `DB` (D1 `dad-hq`), `ASSETS` (`public/`). In the browser,
 `localStorage` key `anthropic-key` holds the user's own Anthropic key, per device.
@@ -91,7 +92,8 @@ Bindings in `wrangler.jsonc`: `DB` (D1 `dad-hq`), `ASSETS` (`public/`). In the b
 ## Data
 
 All real data is in Cloudflare D1 database **`dad-hq`**: tables `events`, `places`, `meals`,
-`crafts`, `drafts`, `edits`, `flags`, `refresh_status`, `app_settings`. The built-in curated
+`crafts`, `drafts`, `edits`, `flags`, `refresh_status`, `app_settings`, `dh_profile` (home town and
+child, one JSON row; no row = Macclesfield, Harry, age 5). The built-in curated
 Activities/Meals/Crafts are not in D1; they are in `public/index.html` (so they are in git).
 
 Backup:
@@ -104,6 +106,30 @@ Backup:
 There is **no import**. Restoring means writing the rows back by hand.
 
 ## Decisions
+
+- 19 Nov 2026 (Round 4, real life out of the code): the home town and the child are **Settings › Family and
+  home** (bottom of Add new), synced in D1 `dh_profile` through `GET/PUT /api/profile` (`src/profile.js`; the
+  shape, defaults and prompt wording in `public/lib/profile.js`, shared by the Worker, the page and the tests).
+  Home = town name, area, map position (found with the same OpenStreetMap search as the 📍 button) and what
+  "local" means (20 miles by default). Child = name, son/daughter, birthday; a list is stored, the first is shown.
+  The age is worked out from the birthday, so it moves on by itself; until a birthday is set the app uses the
+  device's picked age (5 by default) exactly as before, and Settings shows a "Set Harry's birthday" note. With a
+  birthday set, the Get ideas age dropdown starts at the real age and a different pick is for that run only.
+  Every prompt (events persona and home block, Get ideas, Fill in the details, Rewrite it), the paid web
+  search's location and the AI Updates context read the settings; with nothing saved they read word for word as
+  before. The built-in distances were measured from Macclesfield (`MACC` in index.html, now documented as the
+  data's origin): once home moves, distances are re-estimated from the new home, as the 📍 guest mode always did.
+  Known limit: places added after a move carry miles from the new home but are re-estimated as if from
+  Macclesfield. The 📍 button is now "Measure distances from" (this device only). `src/events.js` gained one
+  line, `persona.locationContext || LOCATION_CONTEXT`, which Bozza HQ's copy doesn't have yet (that helper owned
+  Bozza HQ this round): copy it across so the two stay identical. AI Updates context: `harry_age` became
+  `child {name, age}`, plus `local_miles`.
+- 19 Nov 2026: the AI model is a setting: `AI_MODEL` (plain Cloudflare variable) is the default and allowed by
+  the allowlist when it starts `claude-`; otherwise Haiku 5.5. The page no longer sends a model
+  (`public/lib/claude.js`). The 4.5 rerun on a refused web search stays. A 404 `not_found_error` answers "The AI
+  model … isn't available any more. Set AI_MODEL …". `/api/status` reports the model. The cost log prices an
+  unknown model as the newest listed one of its family and marks those runs `estimated`. Tests:
+  `test/profile.test.mjs`.
 
 Newest first. Dates are from commits or from the day Tom said it in a chat.
 

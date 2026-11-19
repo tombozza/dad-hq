@@ -8,22 +8,30 @@ import { handleAI } from './ai.js';
 import { handleAuth } from './auth.js';
 import { handleUsage } from './ai-usage.js';
 import { handleSafety } from './safety.js';
+import { handleProfile, loadProfile } from './profile.js';
+import { firstChild, ageOn, eventsFocus, locationContext, DEFAULT_AGE } from '../public/lib/profile.js';
 
 // Recently deleted lives in this D1 table (created on first use). See src/safety.js.
 const BIN = 'dh_bin';
 
 // What kind of events Dad HQ pulls in — days out with a young child.
 // `focus` is a function of the child's age so the prompt can be tuned from the
-// app (the age comes in on the /api/events/prompt query string).
-const EVENTS_PERSONA = {
-  site: 'Dad HQ',
-  bin: BIN, // the events engine keeps a deleted event here
-  childName: 'Harry',
-  defaultAge: 5,
-  focus(age) {
-    return `Days out and events suitable for a dad with a ${age}-year-old son (Harry). Family-friendly festivals and fairs, character meet-and-greets, kids' theatre and storytelling, farm and animal events, soft-play and outdoor play events, school-holiday activities, Santa's grottos and seasonal family days, fun runs and family sports days, and family-friendly food/market events. Crossover events the dad would enjoy too — car shows, transport rallies, air shows, steam-railway days — are welcome (mark kid_friendly true). Mark kid_friendly true for anything genuinely suited to a young child; bias the whole list toward things a ${age}-year-old would love.`;
-  },
-};
+// app (the age comes in on the /api/events/prompt query string). The child's name and the
+// home town come from Settings (D1 dh_profile, src/profile.js; Round 4, 19 Nov 2026), so this is
+// built per request for the prompt route; the default profile gives today's words exactly.
+function eventsPersona(profile) {
+  const kid = firstChild(profile);
+  return {
+    site: 'Dad HQ',
+    bin: BIN, // the events engine keeps a deleted event here
+    childName: kid.name,
+    defaultAge: ageOn(kid.birthDate) ?? DEFAULT_AGE,
+    // null keeps the engine's own home block (Macclesfield); a moved home brings its own.
+    locationContext: locationContext(profile),
+    focus: age => eventsFocus(kid, age),
+  };
+}
+const EVENTS_PERSONA = eventsPersona(null);
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -64,7 +72,8 @@ export default {
 
       // ---- Backup: every table, as one JSON download (Add new → Download a backup) ----
       if (url.pathname === '/api/backup' && request.method === 'GET') {
-        const tables = ['events', 'places', 'meals', 'crafts', 'drafts', 'edits', 'flags'];
+        await loadProfile(env); // makes sure dh_profile exists, so the SELECT below can't fail
+        const tables = ['events', 'places', 'meals', 'crafts', 'drafts', 'edits', 'flags', 'dh_profile'];
         const rows = await Promise.all(tables.map((t) => env.DB.prepare(`SELECT * FROM ${t}`).all().then((r) => r.results)));
         const data = Object.fromEntries(tables.map((t, i) => [t, rows[i]]));
         const day = new Date().toISOString().slice(0, 10);
@@ -94,8 +103,13 @@ export default {
       });
       if (sf) return sf;
 
-      // ---- Events (kid/family-friendly) ----
-      const ev = await handleEvents(request, env, ctx, url, EVENTS_PERSONA);
+      // ---- Home town and child (Settings) ----
+      const pr = await handleProfile(request, env, url, json);
+      if (pr) return pr;
+
+      // ---- Events (kid/family-friendly). Only the prompt needs the saved profile. ----
+      const persona = url.pathname === '/api/events/prompt' ? eventsPersona(await loadProfile(env)) : EVENTS_PERSONA;
+      const ev = await handleEvents(request, env, ctx, url, persona);
       if (ev) return ev;
 
       // ---- Custom places (user-added, cross-device) ----

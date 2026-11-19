@@ -1,11 +1,10 @@
 // The paid route for the magic sheet (public/vendor/magic): is there a key on the site, and
-// one call through the locked-down proxy (src/ai.js). Every AI job goes through these, so the
-// model id lives in one place. Haiku unless a job genuinely needs more (sites/CLAUDE.md).
+// one call through the locked-down proxy (src/ai.js). Every AI job goes through these.
+// The model is chosen on the server (src/ai.js: the AI_MODEL variable, else Haiku 5.5), so the page
+// doesn't name one (19 Nov 2026). Haiku unless a job genuinely needs more (sites/CLAUDE.md).
 // Based on sites/_shared/starter/public/lib/claude.js, plus a `search` option (web search,
 // capped on the server) for jobs about real places and dated events.
 
-// Haiku 5.5 since 12 Nov 2026: about a tenth of Haiku 4.5's price per token. src/ai.js keeps its thinking off.
-const MODEL = 'claude-haiku-5-5';
 const KEY = 'anthropic-key';   // this device's own key, if the person added one (per site)
 let status = null;
 
@@ -44,7 +43,7 @@ export function runNote(job, { search = false } = {}) {
 export async function askClaude(content, { maxTokens = 2000, search = false, job } = {}) {
   const res = await fetch('/api/anthropic', {
     method: 'POST', headers: { 'content-type': 'application/json', ...(userKey.has() ? { 'x-user-key': userKey.get() } : {}) },
-    body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, search, job, messages: [{ role: 'user', content }] }),
+    body: JSON.stringify({ max_tokens: maxTokens, search, job, messages: [{ role: 'user', content }] }),
   });
   let body; try { body = await res.json(); } catch { body = null; }
   if (res.status === 401 && userKey.has()) throw new Error('Anthropic didn’t accept your API key — tap Change key to fix it');

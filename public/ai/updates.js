@@ -10,7 +10,9 @@
 //   flagged(scope, type)        array/Set of ids with that flag (scope fav|wish|hidden)
 //   events()                    the saved events, as served ({title, startDate, endDate})
 //   drafts()                    the Add new list ([{kind, name, note}])
-//   age()                       Harry's age setting
+//   child()                     {name, age}: the child in Settings (age from the birthday, else the device's pick)
+//   homeBase()                  "Town, area" from Settings (Macclesfield, Cheshire, England by default)
+//   localMiles()                what "local" means, in miles (20 by default)
 //   map: {act, meal, craft, event}   the app's own mappers (mapImportedAct… and normaliseEvent)
 //   saveImported(type, items)   the app's save for mapped items; must throw if the save fails
 //   addDraft(kind, name, note)  add to the Add new list; must throw if the save fails
@@ -31,9 +33,10 @@ const FLAG_WORDS = {
   hidden: ['Hide', 'Show again'],
 };
 
-// The home base the app's own prompts use (buildDraftPrompt, buildEditPrompt, the paid search's
-// user_location). The shared events engine says "central Cheshire" instead (audit §4.4).
+// The home base and the child come from the app's Settings (19 Nov 2026; public/lib/profile.js).
+// These are the defaults, for an adapter that doesn't pass them.
 export const HOME_BASE = 'Macclesfield, Cheshire, England';
+const DEFAULT_CHILD = { name: 'Harry', age: 5 };
 
 export const lower = x => String(x ?? '').trim().toLowerCase();
 /** Looser form for close matches: no accents, punctuation, "the"/"a", or "(National Trust)"-style asides. */
@@ -230,8 +233,9 @@ export function buildContext(app, now = new Date()) {
   return {
     data: {
       today,
-      home_base: HOME_BASE,
-      harry_age: app.age(),
+      home_base: app.homeBase ? app.homeBase() : HOME_BASE,
+      local_miles: app.localMiles ? app.localMiles() : 20,
+      child: app.child ? app.child() : DEFAULT_CHILD,
       allowed: {
         place_cat: ENUMS.place_cat, weather: ENUMS.weather, place_region: ENUMS.place_region,
         price: '0 free, 1 £, 2 ££, 3 £££ (per person)',

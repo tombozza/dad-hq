@@ -2,8 +2,9 @@
 
 ## What it is
 
-Dad HQ is Tom's planner for days out and things to do with his son Harry (5 by default; the
-context gives the current age setting). Home base is Macclesfield, Cheshire. It has four lists:
+Dad HQ is Tom's planner for days out and things to do with his child. The context's `child`
+gives the name and current age, and `home_base` the home town (both set in the app's Settings).
+It has four lists:
 
 - **Activities**: places to go (several hundred built in, plus the ones Tom adds).
 - **Meals**: kid-friendly things to cook.
@@ -17,7 +18,8 @@ The **Add new** list is a jot-list of things to look up later.
 
 Its block in the daily update (or ✨ AI › **Copy just Dad HQ**) gives:
 
-- `today`, `home_base` and `harry_age`.
+- `today`, `home_base` (the home town), `local_miles` (what "local" means) and `child` (`name`
+  and `age`).
 - `allowed`: the exact values for every category, region, weather, price and mess field.
   Use only these.
 - `added_by_tom`: the places, meals and crafts Tom has added, with ids.
@@ -39,7 +41,7 @@ already saved).
   look it up if you can. Don't add one that's already in `added_by_tom`; if it might be a built-in
   one, add it anyway and the app will flag the duplicate for Tom.
 - **add_meal** / **add_craft**: a new meal or craft for those lists. Ordinary home cooking and cheap
-  household materials, suited to Harry's age.
+  household materials, suited to the child's age.
 - **add_events**: one or more real, dated events for the Events tab, in one action. Check the dates.
   Skip anything already in `upcoming_events`.
 - **add_jot**: Tom mentions something to look into later and the details aren't settled yet (a name
@@ -54,7 +56,8 @@ already saved).
 
 - Real places and events only. Never invent a venue, a date, a price or a web address. If you
   can't confirm one, say so and leave the optional field out.
-- Distances are rough one-way driving miles from Macclesfield. "local" means within about 20 miles.
+- Distances are rough one-way driving miles from `home_base`. "local" means within about
+  `local_miles` miles of it.
 - Use the regions in `allowed`: places have more regions than events. For an event further away
   than the named regions, use `uk` and `"distance_miles": null`.
 - Event dates are `YYYY-MM-DD` and must be upcoming. `end_date` is left out for a one-day event and
@@ -77,5 +80,5 @@ already saved).
   and **Find events** on Events. In this conversation, send the ideas Tom picks as add_* actions.
 - **Deleting** a place, meal, craft or event Tom added, or deleting an event: Tom does that from the
   card (Remove). `hidden` takes an item out of the lists without deleting it.
-- **Starring or bookmarking events**, changing Harry's age, the home location, or the password lock:
+- **Starring or bookmarking events**, changing the child's name or birthday, the home town, or the password lock:
   done in the app's own screens.

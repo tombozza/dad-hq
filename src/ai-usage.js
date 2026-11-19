@@ -6,8 +6,9 @@
 // paid call here; the AI actions page reads it. Stored in D1 table `ai_usage` (one row). Two
 // calls landing at the same moment can lose one record: fine for a running estimate.
 
-// US dollars per million tokens (Anthropic's price list, Nov 2026). A model not listed is priced
-// as the dearest one here, so an unknown model never looks cheap.
+// US dollars per million tokens (Anthropic's price list, Nov 2026). A model not listed (AI_MODEL can
+// name any, 19 Nov 2026) is priced as the newest listed one of its family (haiku, sonnet), or as the
+// dearest here when its family isn't listed, and its runs are marked `estimated`.
 export const PRICES = {
   'claude-haiku-4-5': { in: 1, out: 5 },
   'claude-haiku-5-5': { in: 0.1, out: 0.5, over: { at: 100000, in: 0.5, out: 2.5 } },   // dearer past 100K input
@@ -20,7 +21,17 @@ export const PER_SEARCH = 0.01;   // web search: $10 per 1,000 searches, on top 
 const RECENT = 10;          // runs kept per job for the average
 
 // "claude-haiku-4-5-20251001" → the price-list name
-const priceOf = model => PRICES[String(model ?? '').replace(/-\d{8}$/, '')] ?? DEAREST;
+const listName = model => String(model ?? '').replace(/-\d{8}$/, '');
+
+/** { price, estimated } for a model: its own price, or the nearest known one. */
+export function priceFor(model) {
+  const name = listName(model);
+  if (PRICES[name]) return { price: PRICES[name], estimated: false };
+  const family = (name.match(/haiku|sonnet|opus/) || [])[0];
+  const same = family ? Object.keys(PRICES).filter(k => k.includes(family)) : [];
+  return { price: same.length ? PRICES[same[same.length - 1]] : DEAREST, estimated: true };
+}
+const priceOf = model => priceFor(model).price;
 
 /** Dollars for one reply's `usage` block. Cache writes cost 1.25×, cache reads 0.1× of input; each web search 1¢. */
 export function costOf(model, usage = {}) {
@@ -46,7 +57,8 @@ export function record(ledger, { job, model, usage, at = new Date().toISOString(
   const j = l.jobs[job] ?? { runs: 0, cost: 0, recent: [] };
   j.runs += 1;
   j.cost += cost;
-  j.recent = [...j.recent, { cost, in: Number(usage?.input_tokens) || 0, out: Number(usage?.output_tokens) || 0, searches: Number(usage?.server_tool_use?.web_search_requests) || 0, model, at }].slice(-RECENT);
+  const estimated = priceFor(model).estimated;
+  j.recent = [...j.recent, { cost, in: Number(usage?.input_tokens) || 0, out: Number(usage?.output_tokens) || 0, searches: Number(usage?.server_tool_use?.web_search_requests) || 0, model, at, ...(estimated ? { estimated: true } : {}) }].slice(-RECENT);
   j.lastAt = at;
   l.jobs[job] = j;
   l.months[month] = (l.months[month] ?? 0) + cost;

@@ -2,8 +2,10 @@
 
 Read docs/HANDOVER.md first.
 
-Family planning and activity finder for days out with Harry (5), centred on
-**Macclesfield**. Cloudflare Worker + D1 + a hand-curated single-page PWA.
+Family planning and activity finder for days out with Tom's son, centred on his home town. The
+child (name, birthday) and the home town are **Settings**, synced in D1 `dh_profile`
+(`public/lib/profile.js`, `src/profile.js`); the defaults are Harry and Macclesfield. Never write them
+into a prompt again: use `kid()`, `kidAge()`, `homeBaseText()`, `profileHome()` in index.html. Cloudflare Worker + D1 + a hand-curated single-page PWA.
 
 Live: https://dad-hq.tombolton21.workers.dev · Repo: `github.com/tombozza/dad-hq`
 See also [`README.md`](README.md) for the fuller product write-up.
@@ -18,7 +20,9 @@ src/events.js       the events engine — research prompt out, pasted/returned J
 src/places.js       place data helpers
 src/sync.js         cross-device state sync
 public/index.html   the entire curated PWA — ~9k lines, one file
-public/lib/claude.js  aiAvailable() + askClaude() for the paid route (model id lives here)
+public/lib/claude.js  aiAvailable() + askClaude() for the paid route (the model is AI_MODEL, chosen in src/ai.js)
+public/lib/profile.js home town + child: shape, defaults, age from birthday, prompt wording (Worker and page)
+src/profile.js      GET/PUT /api/profile (D1 dh_profile)
 public/vendor/magic   COPY of sites/_shared/magic — edit there, run node _shared/sync.mjs dad-hq
 public/vendor/chassis COPY of sites/_shared/chassis: tokens, controls, ui- components (all loaded)
 schema.sql          D1 schema (no migrations dir; this is applied wholesale)
@@ -45,7 +49,8 @@ steam railways), tagged kid-friendly. Bozza HQ's persona is the grown-up equival
 
 Every AI job goes through the shared magic sheet (`openMagic()` from `public/vendor/magic/`),
 which offers **Run it** (Claude Haiku 5.5 since 12 Nov 2026, thinking off, through this Worker, on the site's key) and **Free**
-(copy the prompt into ChatGPT/claude.ai, paste the reply back). Nothing is saved until the
+(copy the prompt into ChatGPT/claude.ai, paste the reply back). The model is the `AI_MODEL` variable
+when set (19 Nov 2026), else Haiku 5.5. Nothing is saved until the
 check step: lists come back as tick boxes, a rewrite drops into the edit fields.
 `index.html` is a classic script, so a small module in `<head>` puts `openMagic`,
 `aiAvailable` and `askClaude` on `window`; `magicSheet()` in the app wraps it.

@@ -12,7 +12,8 @@ const json = (data, status = 200) =>
   });
 
 // Home base + how far each region sits from it. Shared by both sites so
-// "local" means the same thing everywhere.
+// "local" means the same thing everywhere. A persona can bring its own (`persona.locationContext`):
+// Dad HQ's comes from its Settings once Tom moves the home town (19 Nov 2026).
 export const LOCATION_CONTEXT = `Home base is Macclesfield, Cheshire, England. Use these approximate driving distances when tagging the "region" and "distance_miles" fields:
 - "local": within ~20 miles of Macclesfield (e.g. Knutsford, Wilmslow, Northwich, Altrincham, Stockport)
 - "manchester": Greater Manchester, ~20 miles
@@ -101,7 +102,7 @@ function buildResearchPrompt(persona, from, to, opts = {}) {
 
   return `You are an events researcher for ${persona.site}. Search the web for real, specific, upcoming events and return them as structured data.
 
-${LOCATION_CONTEXT}
+${persona.locationContext || LOCATION_CONTEXT}
 
 Audience & focus for this site:
 ${focus}

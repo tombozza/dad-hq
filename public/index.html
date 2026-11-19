@@ -101,6 +101,8 @@
     /* Add new. */
     .dh-form { display: grid; grid-template-columns: 150px 1fr 1fr auto; gap: var(--sp-3); align-items: end; }
     .wl-group { display: grid; gap: var(--sp-3); }
+    /* Settings › Family and home: fields side by side when there's room. */
+    .dh-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: var(--sp-3); align-items: end; }
 
     /* Pick lists inside the magic sheet's check step. */
     .dh-picks { max-height: 50vh; overflow-y: auto; margin-top: var(--sp-2); }
@@ -141,6 +143,10 @@
   import { openUpdates, mountAiButton } from '/vendor/ai-protocol/updates-sheet.js';
   import { captureHubKey, hubKey, shareContext } from '/vendor/ai-protocol/protocol.js';
   import { makeAiUpdates } from '/ai/updates.js';
+  // Home town and child (Settings › Family and home; lib/profile.js, synced in D1 dh_profile).
+  import * as DHP from '/lib/profile.js';
+  window.DHP = DHP;
+  window.loadProfile();
   captureHubKey();   // the App Hub's #ai-hub-key=… set-up link
   Object.assign(window, { openMagic, aiAvailable, askClaude, userKey, runNote, renderAiActions, openUpdates, makeAiUpdates });
   shareAiContext({ hubKey, shareContext });   // the daily copy, once the data has loaded (below)
@@ -157,7 +163,7 @@
 <header class="ui-bar">
   <span class="name dh-name">Dad <b>HQ</b></span>
   <span data-save-status></span>
-  <button class="ui-btn quiet icon" id="loc-btn" title="Macclesfield" aria-label="Home location: Macclesfield" onclick="openLocModal()">📍</button>
+  <button class="ui-btn quiet icon" id="loc-btn" title="Home" aria-label="Measure distances from" onclick="openLocModal()">📍</button>
   <button class="ui-btn quiet icon" id="nav-add-btn" title="Add new" aria-label="Add new" onclick="openAddNew()">
     <svg class="dh-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
     <span class="ui-count" id="nav-add-count" hidden>0</span>
@@ -356,6 +362,25 @@
         <strong>Look</strong>
         <theme-switch></theme-switch>
       </div>
+      <!-- Home town and child, the same on every device (lib/profile.js, D1 dh_profile; 19 Nov 2026) -->
+      <div class="ui-stack" id="fam">
+        <strong>Family and home</strong>
+        <p class="ui-note info" id="fam-nudge" hidden></p>
+        <div class="dh-pair">
+          <label class="ui-field"><span>Child’s name</span><input class="ui-input" id="fam-name" autocomplete="off" maxlength="40"></label>
+          <label class="ui-field"><span>Birthday</span><input class="ui-input" type="date" id="fam-bday"></label>
+          <label class="ui-field"><span>Son or daughter</span>
+            <select class="ui-input" id="fam-rel"><option value="son">Son</option><option value="daughter">Daughter</option><option value="child">Rather not say</option></select>
+          </label>
+        </div>
+        <p class="ui-hint" id="fam-age"></p>
+        <div class="dh-pair">
+          <label class="ui-field"><span>Home town</span><input class="ui-input" id="fam-town" placeholder="e.g. Stockport, or SK10 1AA" autocomplete="off" maxlength="60"></label>
+          <label class="ui-field"><span>“Local” means within</span><select class="ui-input" id="fam-radius"></select></label>
+        </div>
+        <div class="ui-actions"><button class="ui-btn primary" id="fam-save">Save</button></div>
+        <p class="ui-hint" id="fam-status" role="status"></p>
+      </div>
       <label class="check top dh-switch" for="pw-on">
         <span><strong>Require a password</strong></span>
         <input type="checkbox" role="switch" id="pw-on">
@@ -421,12 +446,13 @@
 </dialog>
 
 <dialog class="ui-sheet t-act" id="loc-overlay" onclick="if(event.target===this)closeLocModal()" onclose="closeLocModal()">
-  <header><h2>Set home location</h2><button class="ui-btn quiet icon small" onclick="closeLocModal()" aria-label="Close">✕</button></header>
+  <header><h2>Measure distances from</h2><button class="ui-btn quiet icon small" onclick="closeLocModal()" aria-label="Close">✕</button></header>
   <div class="body">
     <label class="ui-field"><span>Town or postcode</span>
       <input class="ui-input" type="text" id="loc-input" placeholder="e.g. Stockport, or SK10 1AA">
     </label>
     <p class="ui-hint" id="loc-status" role="status"></p>
+    <p class="ui-hint">Just this device, for a day away. Your home town is in Settings (the ＋ page).</p>
   </div>
   <footer class="ui-actions end">
     <button class="ui-btn" onclick="resetLocation()">Reset</button>
@@ -5970,12 +5996,12 @@ function filteredActs() {
     if (S.actWeather === 'outdoor' && !(a.weather === 'outdoor' || a.weather === 'both')) return false;
     if (S.actWeather === 'indoor'  && !(a.weather === 'indoor'  || a.weather === 'both')) return false;
     if (S.actRegion.size) {
-      // 'local' means "within 20mi of the current home location" (recalculated
-      // live in guest mode); other regions are fixed geographic areas.
+      // 'local' means "within the Settings radius (20mi until changed) of where distances are measured
+      // from" (recalculated live in guest mode); other regions are fixed geographic areas.
       const matchesRegion = [...S.actRegion].some(r =>
         r === 'local5' ? getEffectiveDist(a) <= 5 :
         r === 'local10' ? getEffectiveDist(a) <= 10 :
-        r === 'local' ? getEffectiveDist(a) <= 20 : getRegion(a) === r
+        r === 'local' ? getEffectiveDist(a) <= profileHome().radius : getRegion(a) === r
       );
       if (!matchesRegion) return false;
     }
@@ -6162,7 +6188,7 @@ function renderChips() {
     {val:'all',label:'📍 All areas'},
     {val:'local5',label:'🏠 Local (< 5mi)'},
     {val:'local10',label:'🏠 Local (< 10mi)'},
-    {val:'local',label:'🏠 Local (< 20mi)'},
+    {val:'local',label:`🏠 Local (< ${profileHome().radius}mi)`},
     {val:'manchester',label:'🏙️ Manchester'},
     {val:'chester',label:'🏰 Chester & Cheshire'},
     {val:'liverpool',label:'⚽ Liverpool'},
@@ -6363,8 +6389,8 @@ function buildDraftPrompt() {
     return `${DRAFT_KINDS[k].label.toUpperCase()}S:\n${rows}`;
   }).join('\n\n');
   const shape = kinds.map(k => `  "${DRAFT_KEYS[k]}": [ ${DRAFT_SCHEMAS[k]} ]`).join(',\n');
-  const age = evGetAge();
-  return `You are a research assistant for Dad HQ, a family activity app. Home base is Macclesfield, Cheshire, England, and the kid is ${age} years old.
+  const age = kidAge();
+  return `You are a research assistant for Dad HQ, a family activity app. Home base is ${homeBaseText()}, and the kid is ${age} years old.
 
 Look up each item below and fill in its real details. Use web search where you can — do not invent facts, and keep descriptions to 1-2 plain sentences aimed at a dad deciding whether to bother.
 
@@ -6373,7 +6399,7 @@ ${listing}
 Rules:
 - Return one entry per item above, in the same order, keeping the name I gave (tidy it up to the official name if mine is rough).
 - If you genuinely cannot find an item, still return it with your best honest description and leave unknown fields sensible/empty rather than guessing specifics.
-- Distances are rough one-way driving miles from Macclesfield.
+- Distances are rough one-way driving miles from ${profileHome().name}.
 - Dates must be real, upcoming dates in YYYY-MM-DD form.
 
 Reply with ONLY a JSON object (no prose, no markdown) shaped exactly like this:
@@ -6550,7 +6576,9 @@ function aiUpdatesApp() {
     flagged: (scope, kind) => S[flagKey(scope, kind)] || [],
     events: () => EV.events || [],
     drafts: () => S.drafts,
-    age: evGetAge,
+    child: () => ({ name: kid().name, age: kidAge() }),
+    homeBase: homeBaseText,
+    localMiles: () => profileHome().radius,
     map: MAPPERS,
     saveImported: (type, items) => saveImported(type, items, { strict: true }),
     addDraft: (kind, name, note) => saveDraft(kind, name, note, { strict: true }),
@@ -6787,7 +6815,7 @@ function buildEditPrompt() {
   const f = editFields(item);
   const kind = { act: 'place to visit', meal: 'meal', craft: 'craft activity', event: 'event' }[ED.type] || 'item';
   const instruction = document.getElementById('ed-instruction').value.trim();
-  return `You are helping edit a card in Dad HQ, a family activity app. Home base is Macclesfield, Cheshire, England.
+  return `You are helping edit a card in Dad HQ, a family activity app. Home base is ${homeBaseText()}.
 
 This card is a ${kind}. Here is exactly what it says now:
 
@@ -7300,11 +7328,13 @@ const UPD_META = {
   meal:  { title: 'Get meal ideas',  unit: 'meals',  one: 'meal',  into: 'Meals' },
   craft: { title: 'Get craft ideas', unit: 'crafts', one: 'craft', into: 'Crafts' },
 };
-// One sheet, straight from the sparkle: Harry's age and how many are dropdowns at the top
-// of the magic sheet (its `choices`), so there's no form in front of it.
+// One sheet, straight from the sparkle: the child's age and how many are dropdowns at the top
+// of the magic sheet (its `choices`), so there's no form in front of it. With a birthday in Settings
+// the age starts at the real one and a different pick is for this run only; without, it's kept on
+// the device as before.
 async function getIdeas(type) {
   const m = UPD_META[type];
-  const q = { age: evGetAge(), count: updGetCount(), prompt: '' };
+  const q = { age: kidAge(), count: updGetCount(), prompt: '' };
   // The events prompt comes from the server, which knows what's already in D1.
   const makePrompt = async () => {
     if (type !== 'event') { q.prompt = buildClientPrompt(type, q.age, q.count); return; }
@@ -7318,16 +7348,19 @@ async function getIdeas(type) {
   const search = type === 'event' || type === 'act'; // real places and dates need looking up
   const job = type === 'event' ? 'find-events' : `ideas-${type}`;   // its cost is logged under this
   const known = knownNames(type);
-  const ages = []; for (let a = EV_AGE_MIN; a <= EV_AGE_MAX; a++) ages.push(a);
+  const ages = []; for (let a = Math.min(EV_AGE_MIN, q.age); a <= Math.max(EV_AGE_MAX, q.age); a++) ages.push(a);
   magicSheet({
     title: () => type === 'event' ? `Find ${q.count} new events` : `Get ${q.count} ${m.one} ideas`,
     using: () => [known.size ? `Skips the ${known.size} you have` : `Skips what you have`],
     choices: [
-      { key: 'age', label: "Harry's age", value: q.age, choices: ages },
+      { key: 'age', label: `${kid().name}’s age`, value: q.age, choices: ages },
       { key: 'count', label: 'How many', value: q.count, choices: UPD_COUNTS },
     ],
     choose: async (key, v) => {
-      if (key === 'age') { evSetAge(v); q.age = evGetAge(); }
+      if (key === 'age') {
+        if (kid().birthDate) { const a = parseInt(v, 10); if (Number.isFinite(a)) q.age = a; }
+        else { evSetAge(v); q.age = evGetAge(); }
+      }
       else { updSetCount(v); q.count = updGetCount(); }
       await makePrompt();
     },
@@ -7436,15 +7469,9 @@ function buildClientPrompt(type, age, count) {
 }
 
 function buildActPrompt(age, count) {
-  return `You are a family days-out researcher for Dad HQ. Suggest real, specific places to visit that suit a dad with a ${age}-year-old son.
+  return `You are a family days-out researcher for Dad HQ. Suggest real, specific places to visit that suit a dad with a ${age}-year-old ${window.DHP.kidWord(kid())}.
 
-Home base is Macclesfield, central Cheshire, England. Tag each place with a region and rough one-way driving distance in miles:
-- "local": within ~20 miles (Knutsford, Wilmslow, Macclesfield, Northwich, Altrincham, Stockport)
-- "manchester": Greater Manchester (~20mi)
-- "peaks": Peak District & Derbyshire (~20-30mi)
-- "chester": Chester & west Cheshire / Ellesmere Port (~33mi)
-- "liverpool": Liverpool & Merseyside (~40mi)
-- "wales" (North Wales), "lakes" (Lake District), "yorkshire", "midlands", or "uk" for anywhere else worth the trip
+${window.DHP.placeRegionLines(PROFILE)}
 
 Rules:
 - Suggest about ${count} places, spread across the regions.
@@ -7771,9 +7798,64 @@ function onOverlayClick(e, id) {
 // ════════════════════════════════════════════
 
 // ════════════════════════════════════════════
+//  HOME TOWN AND CHILD (Settings › Family and home; Round 4, 19 Nov 2026)
+// ════════════════════════════════════════════
+// Synced in D1 (GET/PUT /api/profile, src/profile.js), cached on the device for a quick first paint.
+// lib/profile.js (window.DHP, a module, so it arrives after this script) holds the shape and the
+// defaults; until it's here, and with nothing saved, everything reads as before: Macclesfield, Harry, 5.
+let PROFILE = loadJSON('dh_profile');
+let PROFILE_SAVED = false;
+const P = () => (window.DHP ? window.DHP.normaliseProfile(PROFILE) : null);
+function profileHome() {
+  const p = P();
+  return p ? p.home : { name: 'Macclesfield', area: 'Cheshire, England', lat: MACC.lat, lon: MACC.lon, radius: 20 };
+}
+function kid() { const p = P(); return p ? p.children[0] : { name: 'Harry', relation: 'son', birthDate: null }; }
+/** The child's age: from the birth date once it's set; until then the age picked on this device (5 by default). */
+function kidAge() {
+  const a = window.DHP ? window.DHP.ageOn(kid().birthDate) : null;
+  return a == null ? evGetAge() : a;
+}
+function homeBaseText() { return window.DHP ? window.DHP.homeBase(PROFILE) : 'Macclesfield, Cheshire, England'; }
+
+async function loadProfile() {
+  try {
+    const r = await fetch(EV_API + '/api/profile', { cache: 'no-store' });
+    if (r.ok) {
+      const d = await r.json();
+      PROFILE = d.profile; PROFILE_SAVED = !!d.saved;
+      saveJSON('dh_profile', PROFILE);
+    }
+  } catch (_) { /* offline: the cached copy */ }
+  // A save not sent yet wins over the server's copy.
+  const waiting = (window.sqWaiting ? window.sqWaiting() : []).filter(op => op && op.coll === 'profile').pop();
+  if (waiting && waiting.item) { PROFILE = waiting.item; PROFILE_SAVED = true; }
+  profileChanged();
+}
+window.loadProfile = loadProfile;
+
+function saveProfile(next) {
+  PROFILE = window.DHP.normaliseProfile(next); PROFILE_SAVED = true;
+  saveJSON('dh_profile', PROFILE);
+  sqPush({ url: EV_API + '/api/profile', method: 'PUT', body: PROFILE, key: 'profile', coll: 'profile', id: 1, item: PROFILE });
+  profileChanged();
+}
+
+// Redraw what depends on it, where it is (a click never moves the page).
+function profileChanged() {
+  const y = window.scrollY;
+  setLocBtn(document.getElementById('loc-btn'));
+  if (typeof renderFamily === 'function') renderFamily();
+  renderAll();
+  window.scrollTo(0, y);
+}
+
+// ════════════════════════════════════════════
 //  LOCATION / GUEST MODE
 // ════════════════════════════════════════════
 
+// Where the built-in distances were measured from (the curated lists were written in Macclesfield).
+// A fact about the data, not about where home is: home is in Settings (PROFILE, below).
 const MACC = { lat: 53.2587, lon: -2.1268 };
 const REGION_CENTROIDS = {
   local:      { lat: 53.2587, lon: -2.1268 },
@@ -7811,20 +7893,30 @@ function approxCoord(a) {
   return { lat: MACC.lat + brgLat * dLat, lon: MACC.lon + brgLon * dLon };
 }
 
+// This device only: "measure from somewhere else today" (the 📍 button). Home itself is in Settings.
 let homeLoc = loadJSON('dh_homeLoc') || null;
 
+// Distances are measured from the device's own spot if one is set, else from home when home has moved
+// away from where the lists were measured. Home still in Macclesfield: the stored miles, as before.
+function distOrigin() {
+  if (homeLoc) return homeLoc;
+  const h = profileHome();
+  if (h.lat == null || h.lon == null) return null;
+  return haversineMi(h, MACC) > 1 ? h : null;
+}
 function getEffectiveDist(a) {
-  if (!homeLoc) return a.dist;
+  const from = distOrigin();
+  if (!from) return a.dist;
   const coord = approxCoord(a);
-  return Math.round(haversineMi(homeLoc, coord));
+  return Math.round(haversineMi(from, coord));
 }
 
 // The location button is icon-only now — the place name lives in its tooltip.
 function setLocBtn(btn) {
   if (!btn) return;
-  const name = homeLoc ? (homeLoc.name || 'Custom') : 'Macclesfield';
+  const name = homeLoc ? (homeLoc.name || 'Custom') : profileHome().name;
   btn.title = name;
-  btn.setAttribute('aria-label', 'Home location: ' + name);
+  btn.setAttribute('aria-label', 'Measuring distances from ' + name);
   btn.setAttribute('aria-pressed', String(!!homeLoc));
 }
 
@@ -7894,7 +7986,7 @@ function useGPS() {
 function resetLocation() {
   homeLoc = null;
   localStorage.removeItem('dh_homeLoc');
-  document.getElementById('loc-status').textContent = 'Reset to Macclesfield';
+  document.getElementById('loc-status').textContent = 'Back to ' + profileHome().name;
   document.getElementById('loc-status').style.color = 'var(--success)';
   recalcDistances();
   setTimeout(closeLocModal, 800);
@@ -8085,6 +8177,74 @@ if ('serviceWorker' in navigator) {
     r.update();
   }).catch(() => {});
 }
+</script>
+<script>
+// Add new › Settings › Family and home (19 Nov 2026). Filled from PROFILE whenever it loads, unless
+// Tom is part-way through typing; saved through the save queue like every other change.
+(function () {
+  const $ = (id) => document.getElementById(id);
+  let dirty = false;
+  const status = (m) => { $('fam-status').textContent = m; };
+  $('fam-radius').innerHTML = (window.DHP ? window.DHP.RADII : [5, 10, 15, 20, 25, 30, 40, 50])
+    .map(r => `<option value="${r}">${r} miles</option>`).join('');
+  ['fam-name', 'fam-bday', 'fam-rel', 'fam-town', 'fam-radius'].forEach(id => $(id).addEventListener('input', () => { dirty = true; }));
+  $('fam-bday').max = new Date().toISOString().slice(0, 10);
+
+  function ageLine() {
+    const k = kid();
+    const a = window.DHP ? window.DHP.ageOn(k.birthDate) : null;
+    $('fam-age').textContent = a == null ? '' : `${k.name} is ${a}, going up by one on each birthday.`;
+    const nudge = $('fam-nudge');
+    nudge.hidden = a != null;
+    const picked = loadJSON('dh_kidAge') != null;
+    nudge.textContent = `Set ${k.name}’s birthday so the age moves on by itself. Until then Dad HQ uses ${evGetAge()}${picked ? ', picked on this device' : ''}.`;
+  }
+  window.renderFamily = function () {
+    ageLine();
+    if (dirty) return;
+    const k = kid(), h = profileHome();
+    $('fam-name').value = k.name;
+    $('fam-bday').value = k.birthDate || '';
+    $('fam-rel').value = k.relation;
+    $('fam-town').value = h.name;
+    $('fam-radius').value = String(h.radius);
+  };
+
+  // A new town is looked up on the map (the same OpenStreetMap search as the 📍 button) for its distances.
+  async function findTown(q) {
+    const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=gb&q=' + encodeURIComponent(q));
+    if (!r.ok) throw new Error('The map search didn’t answer. Try again in a minute.');
+    const j = await r.json();
+    if (!j.length) return null;
+    const parts = j[0].display_name.split(',').map(x => x.trim()).filter(x => x && x !== 'United Kingdom' && !/\d/.test(x));
+    return { name: /\d/.test(q) ? parts[0] : q.replace(/\s+/g, ' ').trim(), area: parts.slice(1).slice(-2).join(', '), lat: parseFloat(j[0].lat), lon: parseFloat(j[0].lon) };
+  }
+
+  $('fam-save').addEventListener('click', async () => {
+    if (!window.DHP) { status('Still loading — try again in a second.'); return; }
+    const cur = window.DHP.normaliseProfile(PROFILE);
+    const name = $('fam-name').value.trim(), town = $('fam-town').value.trim();
+    if (!name) { status('Give your child’s name.'); return; }
+    if (!town) { status('Give the home town.'); return; }
+    let home = { ...cur.home, radius: Number($('fam-radius').value) };
+    if (town.toLowerCase() !== cur.home.name.toLowerCase()) {
+      status('Looking up ' + town + '…');
+      try {
+        const found = await findTown(town);
+        if (!found) { status(`Couldn’t find ${town} on the map. Try the town’s full name or a postcode.`); return; }
+        home = { ...found, radius: home.radius };
+      } catch (e) { status(e.message === 'Failed to fetch' ? 'Couldn’t reach the map search. Check the connection.' : e.message); return; }
+    }
+    const child = { name, relation: $('fam-rel').value, birthDate: $('fam-bday').value || null };
+    const next = { home, children: [child, ...cur.children.slice(1)] };
+    const { error } = window.DHP.cleanProfile(next);
+    if (error) { status(error); return; }
+    dirty = false;
+    saveProfile(next);
+    status(`Saved. ${home.name !== cur.home.name ? 'Distances are now measured from ' + home.name + '. ' : ''}Every device sees this.`);
+  });
+  window.renderFamily();
+})();
 </script>
 <script>
 // Add new → Password & backup. Updates in place, so the page never moves.
